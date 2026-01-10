@@ -269,6 +269,22 @@ class SpawnAgentTool:
             agent_def_path = self.agent_types_dir / f"{agent_type}.md"
             agent_definition = AgentDefinition.from_file(agent_def_path)
 
+            # Validate required inputs
+            required_fields = agent_definition.get_required_input_fields()
+            provided_fields = set(input_data.keys())
+            missing_fields = required_fields - provided_fields
+
+            if missing_fields:
+                error_msg = (
+                    f"Missing required input fields for {agent_type}: {sorted(missing_fields)}. "
+                    f"Required: {sorted(required_fields)}, Provided: {sorted(provided_fields)}"
+                )
+                logger.error(error_msg)
+                return {
+                    "success": False,
+                    "error": error_msg
+                }
+
             # Create runtime for the agent
             runtime = AgentRuntime(
                 agent_definition,

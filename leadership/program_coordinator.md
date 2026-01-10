@@ -61,11 +61,21 @@ You drive the show from concept through performance. Report to Executive Directo
 
 **4. Task Breakdown (for FIRST milestone) - USE spawn_agent TOOL**
 - **CRITICAL: Actually use spawn_agent tool**, don't just write task files
-- For milestone 1, spawn each Caption Head using spawn_agent:
-  - spawn_agent("caption_heads/brass_captain", {milestone, requirements_file, architecture_file})
-  - spawn_agent("caption_heads/percussion_captain", {milestone, requirements_file, architecture_file})
-  - spawn_agent("caption_heads/guard_captain", {milestone, requirements_file, architecture_file})
-  - spawn_agent("caption_heads/pit_captain", {milestone, requirements_file, architecture_file})
+- For milestone 1, spawn each Caption Head using spawn_agent with proper inputs:
+  - spawn_agent("caption_heads/brass_captain", {
+      "milestone": "description of milestone 1",
+      "architecture": "path/to/architecture.md",
+      "requirements": "path/to/requirements.md",
+      "output_file": "path/to/brass_tasks.md"
+    })
+  - spawn_agent("caption_heads/percussion_captain", {
+      "milestone": "description of milestone 1",
+      "architecture": "path/to/architecture.md",
+      "requirements": "path/to/requirements.md",
+      "output_file": "path/to/percussion_tasks.md"
+    })
+  - spawn_agent("caption_heads/guard_captain", {similar inputs})
+  - spawn_agent("caption_heads/pit_captain", {similar inputs})
 - Review each Caption Head's output for task breakdown
 - Consolidate task lists, identify dependencies
 

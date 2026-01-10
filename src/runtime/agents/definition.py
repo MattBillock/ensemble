@@ -1,7 +1,8 @@
 """Agent definition parser for loading agent type definitions from markdown files."""
+import json
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Set
 
 
 class AgentDefinition:
@@ -30,6 +31,37 @@ class AgentDefinition:
         self.clarification_conditions = clarification_conditions
         self.model_preference = model_preference
         self.max_iterations = max_iterations
+
+    def get_required_input_fields(self) -> Set[str]:
+        """
+        Extract required input fields from the input_format JSON schema.
+
+        Returns:
+            Set of required field names
+        """
+        try:
+            # Parse the input format JSON
+            schema = json.loads(self.input_format)
+
+            # Look for required fields (common pattern in JSON schemas)
+            if "required" in schema:
+                return set(schema["required"])
+
+            # If no explicit required list, look for fields without "optional" in description
+            required_fields = set()
+            if "properties" in schema or isinstance(schema, dict):
+                props = schema.get("properties", schema)
+                for field_name, field_def in props.items():
+                    if isinstance(field_def, dict):
+                        description = field_def.get("description", "")
+                        # Consider required if description doesn't mention "optional"
+                        if "(optional)" not in description.lower() and "optional" not in description.lower():
+                            required_fields.add(field_name)
+
+            return required_fields
+        except (json.JSONDecodeError, AttributeError):
+            # If we can't parse, return empty set
+            return set()
 
     @classmethod
     def from_file(cls, file_path: Path) -> "AgentDefinition":
