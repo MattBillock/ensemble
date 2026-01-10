@@ -129,7 +129,7 @@ Performers (optional - help when needed)
 **Domain Expertise:** Each tech has deep knowledge of their specific coding domain
 
 #### Trumpet Tech
-**Status:** Future
+**Status:** ✅ Implemented (`brass/trumpet_tech.md`)
 **Domain:** Frontend development (React, JavaScript/TypeScript, UI components)
 **Supervises:** Trumpet (frontend code writer)
 **Responsibilities:**
@@ -149,7 +149,7 @@ Performers (optional - help when needed)
 - Reports to Brass Caption Head
 
 #### Baritone Tech
-**Status:** Future
+**Status:** ✅ Implemented (`brass/baritone_tech.md`)
 **Domain:** Backend development (Python, business logic, data processing)
 **Supervises:** Baritone (backend code writer)
 **Responsibilities:**
@@ -173,7 +173,7 @@ Performers (optional - help when needed)
 **Domain Expertise:** Each tech has deep knowledge of their specific testing domain
 
 #### Snare Tech
-**Status:** Future
+**Status:** ✅ Implemented (`percussion/snare_tech.md`)
 **Domain:** Unit testing (pytest, test design, mocking, TDD red phase)
 **Supervises:** Snare (unit test writer)
 **Responsibilities:**
@@ -519,6 +519,9 @@ Performers are additional instances instantiated by section leaders when needed.
 - Guard Caption Head (visual/UX coordination)
 - Pit Caption Head (infrastructure coordination)
 - Drum Major (TDD task orchestration)
+- Trumpet Tech (frontend supervision)
+- Baritone Tech (backend supervision)
+- Snare Tech (unit testing supervision)
 - Snare (unit test writer)
 - Baritone (backend code writer)
 - Bass (performance test writer)
@@ -526,10 +529,10 @@ Performers are additional instances instantiated by section leaders when needed.
 - Logistics Manager (codebase exploration)
 
 **🚧 Next Priority:**
-- Section Techs (starting with most critical domains)
 - Drill Writer (documentation agent)
 - Frontend section leaders (Trumpet, Horn)
 - Additional backend/API section leaders (Tuba)
+- Additional Section Techs (Tuba Tech, Horn Tech, etc.)
 
 **📋 Future:**
 - All remaining section leaders
