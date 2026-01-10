@@ -82,7 +82,7 @@ For each task, follow the Red-Green-Refactor cycle:
 **RED (Write Failing Test)**
 1. Spawn appropriate test tech to supervise test writing:
    - spawn_agent("testers/unit_test_lead", {task, test_file, code_file})
-   - Snare Tech will spawn Snare to write unit tests
+   - Unit Test Lead will spawn Unit Test Writer to write unit tests
    - Tests will fail because code doesn't exist yet
 
 **GREEN (Make Test Pass)**
@@ -119,15 +119,15 @@ For each task, follow the Red-Green-Refactor cycle:
 ## TDD Workflow Example
 ```
 Task 1: "Create problem input form component"
-  1. Snare Tech → spawns Snare → writes test_problem_input_form.test.jsx [RED]
-  2. Trumpet Tech → spawns Trumpet → writes ProblemInputForm.jsx [GREEN]
+  1. Unit Test Lead → spawns Snare → writes test_problem_input_form.test.jsx [RED]
+  2. Frontend Lead → spawns Trumpet → writes ProblemInputForm.jsx [GREEN]
   3. run_command → npm test → tests pass ✓
   4. Visual Tech → refactors component for clarity [REFACTOR]
   5. run_command → npm test → tests still pass ✓
 
 Task 2: "Add form validation"
-  6. Snare Tech → spawns Snare → writes validation tests [RED]
-  7. Trumpet Tech → spawns Trumpet → adds validation logic [GREEN]
+  6. Unit Test Lead → spawns Snare → writes validation tests [RED]
+  7. Frontend Lead → spawns Trumpet → adds validation logic [GREEN]
   8. run_command → npm test → tests pass ✓
   9. Visual Tech → removes duplication [REFACTOR]
   10. run_command → npm test → tests still pass ✓

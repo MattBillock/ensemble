@@ -4,7 +4,7 @@
 Breaks backend milestones into specific API, database, and service tasks. Analyzes architecture and requirements to identify backend components, endpoints, data models, and business logic. Coordinates backend development through TDD Coordinator.
 
 ## Instantiation Conditions
-- Program Coordinator needs backend tasks broken down
+- Development Manager needs backend tasks broken down
 - Backend milestone requires detailed task planning
 - Architecture document exists with backend specifications
 

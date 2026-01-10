@@ -4,7 +4,7 @@
 Defines comprehensive test strategy for the project. Identifies unit tests, integration tests, end-to-end tests, and test fixtures needed. Coordinates with Backend Captain and Frontend Captain to ensure all code is thoroughly tested. Breaks testing work into tasks for TDD Coordinator.
 
 ## Instantiation Conditions
-- Program Coordinator needs test strategy defined
+- Development Manager needs test strategy defined
 - Project requires comprehensive test coverage
 - Architecture and requirements exist
 

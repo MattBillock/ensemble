@@ -4,7 +4,7 @@
 Breaks frontend milestones into specific component, page, and service tasks. Analyzes architecture and requirements to identify UI components, user flows, state management, and API integration needs. Coordinates frontend development through TDD Coordinator.
 
 ## Instantiation Conditions
-- Program Coordinator needs frontend tasks broken down
+- Development Manager needs frontend tasks broken down
 - Frontend milestone requires detailed task planning
 - Architecture document exists with frontend specifications
 
