@@ -452,15 +452,17 @@ Performers (optional - help when needed)
 
 ## Logistics & Support Staff
 
-### Scout
+### Logistics Manager
 **Status:** Future
-**Role:** Bus driver (gets us to the next location/codebase)
-**Purpose:** File explorer and codebase surveying
+**Role:** Coordinates transportation, equipment, and site surveying
+**Purpose:** File exploration and codebase surveying - gets the ensemble oriented in new codebases
 **Responsibilities:**
 - Explores existing codebases
-- Maps file structures
+- Maps file structures and dependencies
 - Identifies relevant code sections
+- Surveys the "venue" before the show
 - Provides context to other agents
+- Handles navigation between different parts of the codebase
 
 ### Monitor
 **Status:** Future
@@ -518,7 +520,7 @@ Performers are additional instances instantiated by section leaders when needed.
 - Visual Tech (refactoring)
 
 **🚧 Next Priority:**
-- Scout (file explorer)
+- Logistics Manager (file explorer, codebase surveying)
 - Executive Director (project definition)
 - Caption Heads (all four)
 - Section Techs (starting with most critical domains)
