@@ -4,9 +4,11 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from anthropic import Anthropic
+from pathlib import Path
 
 from .definition import AgentDefinition
 from .tools import ToolRegistry
+from .state import StateManager
 
 # Set up structured logging
 logging.basicConfig(
@@ -30,7 +32,8 @@ class AgentRuntime:
         self,
         definition: AgentDefinition,
         api_key: str,
-        tools: Optional[ToolRegistry] = None
+        tools: Optional[ToolRegistry] = None,
+        state_file: Optional[Path] = None
     ):
         """
         Initialize agent runtime.
@@ -39,11 +42,13 @@ class AgentRuntime:
             definition: Agent definition specifying behavior
             api_key: Anthropic API key
             tools: Optional tool registry for agent capabilities
+            state_file: Optional path to state file for persistence/resume
         """
         self.definition = definition
         self.client = Anthropic(api_key=api_key)
         self.tools = tools
         self.iteration_count = 0
+        self.state_manager = StateManager(state_file) if state_file else None
 
     def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -60,6 +65,18 @@ class AgentRuntime:
         """
         # Validate input
         self._validate_input(input_data)
+
+        # Initialize or resume state
+        if self.state_manager:
+            if self.state_manager.can_resume():
+                logger.info("Resuming from previous state")
+                resume_info = self.state_manager.get_resume_info()
+                self.iteration_count = resume_info["iteration"]
+                # For now, we'll start fresh but log the resume
+                # Full resume with conversation history would need message reconstruction
+                logger.info(f"Previous execution had {resume_info['spawned_agents_count']} spawned agents")
+            else:
+                self.state_manager.init_execution(self.definition.name, input_data)
 
         # Build prompts
         system_prompt = self._build_system_prompt()
@@ -88,36 +105,56 @@ class AgentRuntime:
 
         # Execute agent loop
         response_data = None
-        while self.iteration_count < self.definition.max_iterations:
-            self.iteration_count += 1
-            logger.info(f"Iteration {self.iteration_count}/{self.definition.max_iterations}")
+        try:
+            while self.iteration_count < self.definition.max_iterations:
+                self.iteration_count += 1
+                logger.info(f"Iteration {self.iteration_count}/{self.definition.max_iterations}")
 
-            # Call Anthropic API
-            response = self.client.messages.create(**api_kwargs)
+                # Call Anthropic API
+                response = self.client.messages.create(**api_kwargs)
 
-            # Handle tool use
-            if response.stop_reason == "tool_use":
-                logger.info("Agent requested tool use")
-                messages = self._handle_tool_use(messages, response)
-                api_kwargs["messages"] = messages
-                continue
+                # Record iteration in state
+                if self.state_manager:
+                    assistant_message = {
+                        "role": "assistant",
+                        "content": response.content
+                    }
+                    self.state_manager.record_iteration(self.iteration_count, assistant_message)
+                    self.state_manager.checkpoint()
 
-            # Extract final response
-            response_data = self._extract_final_response(response)
+                # Handle tool use
+                if response.stop_reason == "tool_use":
+                    logger.info("Agent requested tool use")
+                    messages = self._handle_tool_use(messages, response)
+                    api_kwargs["messages"] = messages
+                    continue
 
-            # Check termination conditions
-            if not response_data.get("needs_clarification", False):
-                logger.info("Agent completed successfully")
-                break
+                # Extract final response
+                response_data = self._extract_final_response(response)
 
-            # If we need clarification, we would handle that here
-            # For now, we'll just continue (in a real system, we'd ask the user)
-            logger.warning("Agent needs clarification but continuing anyway")
+                # Check termination conditions
+                if not response_data.get("needs_clarification", False):
+                    logger.info("Agent completed successfully")
+                    break
 
-        if self.iteration_count >= self.definition.max_iterations:
-            logger.warning(f"Agent reached max iterations ({self.definition.max_iterations})")
+                # If we need clarification, we would handle that here
+                # For now, we'll just continue (in a real system, we'd ask the user)
+                logger.warning("Agent needs clarification but continuing anyway")
 
-        return response_data
+            if self.iteration_count >= self.definition.max_iterations:
+                logger.warning(f"Agent reached max iterations ({self.definition.max_iterations})")
+
+            # Mark as completed
+            if self.state_manager and response_data:
+                self.state_manager.mark_completed(response_data)
+
+            return response_data
+
+        except Exception as e:
+            # Mark as failed on exception
+            if self.state_manager:
+                self.state_manager.mark_failed(str(e))
+            raise
 
     def _validate_input(self, input_data: Dict[str, Any]) -> None:
         """
@@ -296,6 +333,14 @@ Remember to respond with valid JSON matching the expected output format.
                 else:
                     logger.error(f"Unknown tool: {content_block.name}")
                     result = {"success": False, "error": f"Unknown tool: {content_block.name}"}
+
+                # Record tool result in state
+                if self.state_manager:
+                    self.state_manager.record_tool_result(
+                        content_block.name,
+                        content_block.input,
+                        result
+                    )
 
                 # Add tool result
                 tool_results.append({
