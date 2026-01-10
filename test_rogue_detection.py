@@ -17,17 +17,17 @@ def test_supervisor_blocked_from_code():
     print("=" * 70)
     print()
 
-    # Load Program Coordinator (supervisor with can_write_code=false)
-    prog_coord_path = Path("leadership/program_coordinator.md")
-    prog_coord_def = AgentDefinition.from_file(prog_coord_path)
+    # Load Development Manager (supervisor with can_write_code=false)
+    dev_mgr_path = Path("leadership/development_manager.md")
+    dev_mgr_def = AgentDefinition.from_file(dev_mgr_path)
 
-    print(f"Agent: {prog_coord_def.name}")
-    print(f"can_write_code: {prog_coord_def.can_write_code}")
-    print(f"can_write_tests: {prog_coord_def.can_write_tests}")
+    print(f"Agent: {dev_mgr_def.name}")
+    print(f"can_write_code: {dev_mgr_def.can_write_code}")
+    print(f"can_write_tests: {dev_mgr_def.can_write_tests}")
     print()
 
     # Create tools with permission checking
-    tools = ToolRegistry.default(prog_coord_def)
+    tools = ToolRegistry.default(dev_mgr_def)
 
     # Try to write a code file
     write_tool = tools.get_tool("write_file")
@@ -58,17 +58,17 @@ def test_supervisor_blocked_from_tests():
     print("=" * 70)
     print()
 
-    # Load Drum Major (supervisor with can_write_tests=false)
-    drum_major_path = Path("leadership/drum_major.md")
-    drum_major_def = AgentDefinition.from_file(drum_major_path)
+    # Load TDD Coordinator (supervisor with can_write_tests=false)
+    tdd_coord_path = Path("leadership/tdd_coordinator.md")
+    tdd_coord_def = AgentDefinition.from_file(tdd_coord_path)
 
-    print(f"Agent: {drum_major_def.name}")
-    print(f"can_write_code: {drum_major_def.can_write_code}")
-    print(f"can_write_tests: {drum_major_def.can_write_tests}")
+    print(f"Agent: {tdd_coord_def.name}")
+    print(f"can_write_code: {tdd_coord_def.can_write_code}")
+    print(f"can_write_tests: {tdd_coord_def.can_write_tests}")
     print()
 
     # Create tools with permission checking
-    tools = ToolRegistry.default(drum_major_def)
+    tools = ToolRegistry.default(tdd_coord_def)
 
     # Try to write a test file
     write_tool = tools.get_tool("write_file")
@@ -99,17 +99,17 @@ def test_code_writer_allowed():
     print("=" * 70)
     print()
 
-    # Load Trumpet (code writer with can_write_code=true)
-    trumpet_path = Path("brass/trumpet.md")
-    trumpet_def = AgentDefinition.from_file(trumpet_path)
+    # Load Frontend Developer (code writer with can_write_code=true)
+    frontend_dev_path = Path("developers/frontend_developer.md")
+    frontend_dev_def = AgentDefinition.from_file(frontend_dev_path)
 
-    print(f"Agent: {trumpet_def.name}")
-    print(f"can_write_code: {trumpet_def.can_write_code}")
-    print(f"can_write_tests: {trumpet_def.can_write_tests}")
+    print(f"Agent: {frontend_dev_def.name}")
+    print(f"can_write_code: {frontend_dev_def.can_write_code}")
+    print(f"can_write_tests: {frontend_dev_def.can_write_tests}")
     print()
 
     # Create tools with permission checking
-    tools = ToolRegistry.default(trumpet_def)
+    tools = ToolRegistry.default(frontend_dev_def)
 
     # Try to write a code file (NOT starting with "test_")
     write_tool = tools.get_tool("write_file")
@@ -141,17 +141,17 @@ def test_test_writer_allowed():
     print("=" * 70)
     print()
 
-    # Load Snare (test writer with can_write_tests=true)
-    snare_path = Path("percussion/snare.md")
-    snare_def = AgentDefinition.from_file(snare_path)
+    # Load Unit Test Writer (test writer with can_write_tests=true)
+    unit_test_writer_path = Path("testers/unit_test_writer.md")
+    unit_test_writer_def = AgentDefinition.from_file(unit_test_writer_path)
 
-    print(f"Agent: {snare_def.name}")
-    print(f"can_write_code: {snare_def.can_write_code}")
-    print(f"can_write_tests: {snare_def.can_write_tests}")
+    print(f"Agent: {unit_test_writer_def.name}")
+    print(f"can_write_code: {unit_test_writer_def.can_write_code}")
+    print(f"can_write_tests: {unit_test_writer_def.can_write_tests}")
     print()
 
     # Create tools with permission checking
-    tools = ToolRegistry.default(snare_def)
+    tools = ToolRegistry.default(unit_test_writer_def)
 
     # Try to write a test file
     write_tool = tools.get_tool("write_file")
@@ -183,17 +183,17 @@ def test_test_writer_blocked_from_code():
     print("=" * 70)
     print()
 
-    # Load Snare (test writer with can_write_code=false)
-    snare_path = Path("percussion/snare.md")
-    snare_def = AgentDefinition.from_file(snare_path)
+    # Load Unit Test Writer (test writer with can_write_code=false)
+    unit_test_writer_path2 = Path("testers/unit_test_writer.md")
+    unit_test_writer_def = AgentDefinition.from_file(unit_test_writer_path2)
 
-    print(f"Agent: {snare_def.name}")
-    print(f"can_write_code: {snare_def.can_write_code}")
-    print(f"can_write_tests: {snare_def.can_write_tests}")
+    print(f"Agent: {unit_test_writer_def.name}")
+    print(f"can_write_code: {unit_test_writer_def.can_write_code}")
+    print(f"can_write_tests: {unit_test_writer_def.can_write_tests}")
     print()
 
     # Create tools with permission checking
-    tools = ToolRegistry.default(snare_def)
+    tools = ToolRegistry.default(unit_test_writer_def)
 
     # Try to write a production code file
     write_tool = tools.get_tool("write_file")

@@ -1,11 +1,11 @@
-# Tenor
+# Integration Test Writer
 
 ## Purpose
 Integration test writer. Writes tests that verify multiple components/services work together. Tests API integrations, component interactions, and data flow.
 
 ## Instantiation Conditions
 - Integration tests need to be written
-- Supervised by Tenor Tech
+- Supervised by Integration Test Writer Tech
 
 ## Termination Conditions
 - Integration tests written and saved
@@ -52,7 +52,7 @@ test('submitting form calls API and displays result', async () => {
 ```
 
 ## Supervised By
-Tenor Tech
+Integration Test Writer Tech
 
 ## Model Preference
 haiku

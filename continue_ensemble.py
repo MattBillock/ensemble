@@ -1,4 +1,4 @@
-"""Continue the Ensemble build - spawn Program Coordinator to drive lifecycle."""
+"""Continue the Ensemble build - spawn Development Manager to drive lifecycle."""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -10,7 +10,7 @@ load_dotenv()
 
 
 def main():
-    """User approved requirements - spawn Program Coordinator to drive the build."""
+    """User approved requirements - spawn Development Manager to drive the build."""
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -19,32 +19,32 @@ def main():
     print("=" * 70)
     print("🎺 USER APPROVED - PROCEEDING WITH BUILD 🥁")
     print("=" * 70)
-    print("\nSpawning Program Coordinator to drive lifecycle:")
+    print("\nSpawning Development Manager to drive lifecycle:")
     print("  1. Break into milestones")
-    print("  2. Spawn Designer for architecture")
-    print("  3. Spawn Caption Heads for task breakdown")
-    print("  4. Coordinate with Drum Major for implementation")
+    print("  2. Spawn System Architect for architecture")
+    print("  3. Spawn Coordinators for task breakdown")
+    print("  4. Coordinate with TDD Coordinator for implementation")
     print("\n" + "=" * 70)
 
-    # Load Program Coordinator
-    print("\n📋 Loading Program Coordinator...")
-    prog_coord_def = AgentDefinition.from_file(Path("leadership/program_coordinator.md"))
+    # Load Development Manager
+    print("\n📋 Loading Development Manager...")
+    dev_mgr_def = AgentDefinition.from_file(Path("leadership/development_manager.md"))
 
     # Set up tools
     tools = ToolRegistry.default()
 
-    # Add spawn_agent tool so Program Coordinator can spawn other agents
+    # Add spawn_agent tool so Development Manager can spawn other agents
     spawn_tool = SpawnAgentTool(
-        agent_types_dir=Path("."),  # Project root - agents can use paths like "leadership/designer"
+        agent_types_dir=Path("."),  # Project root - agents can use paths like "leadership/system_architect"
         api_key=api_key,
         tools=tools  # Spawned agents get same tools
     )
     tools.register(spawn_tool)
 
-    runtime = AgentRuntime(prog_coord_def, api_key=api_key, tools=tools)
+    runtime = AgentRuntime(dev_mgr_def, api_key=api_key, tools=tools)
 
-    # Execute Program Coordinator
-    print("\n🚀 Launching Program Coordinator...")
+    # Execute Development Manager
+    print("\n🚀 Launching Development Manager...")
     print("=" * 70)
 
     input_data = {

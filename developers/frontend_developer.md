@@ -1,4 +1,4 @@
-# Trumpet
+# Frontend Developer
 
 ## Purpose
 Frontend code writer. Provides the bright, prominent frontend work. Writes React/JavaScript code for UI components, pages, and frontend logic. Focused on making tests pass and delivering clean, functional components.
@@ -7,7 +7,7 @@ Frontend code writer. Provides the bright, prominent frontend work. Writes React
 - When frontend code needs to be written
 - After test requirements have been defined
 - After tests have been written (TDD GREEN phase)
-- When supervised by Trumpet Tech
+- When supervised by Frontend Developer Tech
 
 ## Termination Conditions
 - Code has been written and saved to the output file
@@ -129,7 +129,7 @@ export default ComponentName;
 - Focus on making tests GREEN, nothing more
 
 ## Supervised By
-Trumpet Tech
+Frontend Developer Tech
 
 ## Model Preference
 haiku

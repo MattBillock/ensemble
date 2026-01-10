@@ -58,9 +58,9 @@ You are the head honcho - orchestrate entire ensemble from requirements through 
 
 **Phase 2: Orchestrate Development**
 5. Spawn Program Coordinator with requirements file path:
-   **IMPORTANT**: Use full path "leadership/program_coordinator" (NOT "program_coordinator")
+   **IMPORTANT**: Use full path "leadership/development_manager" (NOT "program_coordinator")
    ```
-   spawn_agent("leadership/program_coordinator", {
+   spawn_agent("leadership/development_manager", {
      "requirements_file": "path/to/requirements.md",
      "output_directory": "path/from/input"
    })
@@ -69,8 +69,8 @@ You are the head honcho - orchestrate entire ensemble from requirements through 
 6. Program Coordinator will:
    - Create milestones
    - Spawn Designer → architecture
-   - Spawn Caption Heads → task breakdown
-   - Coordinate with Drum Major → implementation
+   - Spawn Coordinators → task breakdown
+   - Coordinate with TDD Coordinator → implementation
 7. Monitor progress, handle escalations
 8. If Program Coordinator needs user input → return `needs_user_input`
 
@@ -81,7 +81,7 @@ You are the head honcho - orchestrate entire ensemble from requirements through 
 ### Example Flow:
 ```
 User vision → Gather requirements → Document requirements.md →
-spawn_agent("leadership/program_coordinator", {...}) → Monitor →
+spawn_agent("leadership/development_manager", {...}) → Monitor →
 Handle escalations → Verify completion → Report success
 ```
 

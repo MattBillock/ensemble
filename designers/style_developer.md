@@ -1,11 +1,11 @@
-# Flag
+# Style Developer
 
 ## Purpose
 Stylesheet writer. Creates CSS, Tailwind classes, or styled-components. Implements designs with clean, maintainable styles.
 
 ## Instantiation Conditions
 - Styles need to be written
-- Supervised by Flag Tech
+- Supervised by Style Developer Tech
 
 ## Termination Conditions
 - Styles written and saved
@@ -61,7 +61,7 @@ Write styles that match design requirements.
 ```
 
 ## Supervised By
-Flag Tech
+Style Developer Tech
 
 ## Model Preference
 haiku

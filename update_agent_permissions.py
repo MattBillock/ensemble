@@ -6,37 +6,42 @@ from pathlib import Path
 PERMISSIONS = {
     # Leadership (all supervisors - no code writing)
     "leadership/executive_director.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "leadership/program_coordinator.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "leadership/designer.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "leadership/drum_major.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "leadership/development_manager.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "leadership/system_architect.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "leadership/tdd_coordinator.md": {"can_write_code": "false", "can_write_tests": "false"},
 
-    # Brass Tech (supervisors - no code writing)
-    "brass/trumpet_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "brass/baritone_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "brass/tuba_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "brass/horn_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
+    # Coordinators (task breakdown - no code writing)
+    "coordinators/backend_coordinator.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "coordinators/frontend_coordinator.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "coordinators/test_coordinator.md": {"can_write_code": "false", "can_write_tests": "false"},
 
-    # Brass Writers (code writers only)
-    "brass/trumpet.md": {"can_write_code": "true", "can_write_tests": "false"},
-    "brass/baritone.md": {"can_write_code": "true", "can_write_tests": "false"},
-    "brass/tuba.md": {"can_write_code": "true", "can_write_tests": "false"},
-    "brass/horn.md": {"can_write_code": "true", "can_write_tests": "false"},
+    # Developer Leads (supervisors - no code writing)
+    "developers/frontend_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "developers/backend_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "developers/api_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "developers/component_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
 
-    # Percussion Tech (supervisors - no writing)
-    "percussion/snare_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "percussion/cymbal_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
-    "percussion/tenor_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
+    # Developers (code writers only)
+    "developers/frontend_developer.md": {"can_write_code": "true", "can_write_tests": "false"},
+    "developers/backend_developer.md": {"can_write_code": "true", "can_write_tests": "false"},
+    "developers/api_developer.md": {"can_write_code": "true", "can_write_tests": "false"},
+    "developers/component_developer.md": {"can_write_code": "true", "can_write_tests": "false"},
 
-    # Percussion Writers (test writers only)
-    "percussion/snare.md": {"can_write_code": "false", "can_write_tests": "true"},
-    "percussion/bass.md": {"can_write_code": "false", "can_write_tests": "true"},
-    "percussion/tenor.md": {"can_write_code": "false", "can_write_tests": "true"},
+    # Test Leads (supervisors - no writing)
+    "testers/unit_test_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "testers/test_validator.md": {"can_write_code": "false", "can_write_tests": "false"},
+    "testers/integration_test_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
 
-    # Guard Tech (supervisor)
-    "guard/flag_tech.md": {"can_write_code": "false", "can_write_tests": "false"},
+    # Test Writers (test writers only)
+    "testers/unit_test_writer.md": {"can_write_code": "false", "can_write_tests": "true"},
+    "testers/test_fixture_writer.md": {"can_write_code": "false", "can_write_tests": "true"},
+    "testers/integration_test_writer.md": {"can_write_code": "false", "can_write_tests": "true"},
 
-    # Guard Writer (styling - counts as code)
-    "guard/flag.md": {"can_write_code": "true", "can_write_tests": "false"},
+    # Style Lead (supervisor)
+    "designers/style_lead.md": {"can_write_code": "false", "can_write_tests": "false"},
+
+    # Style Developer (styling - counts as code)
+    "designers/style_developer.md": {"can_write_code": "true", "can_write_tests": "false"},
 }
 
 def add_permissions_to_agent(file_path: Path, permissions: dict):

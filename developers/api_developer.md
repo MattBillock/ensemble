@@ -1,4 +1,4 @@
-# Tuba
+# API Developer
 
 ## Purpose
 API code writer. Provides the deep, foundational API work. Writes FastAPI/Flask/Express code for REST endpoints. Focused on making tests pass and delivering clean, functional APIs.
@@ -7,7 +7,7 @@ API code writer. Provides the deep, foundational API work. Writes FastAPI/Flask/
 - When API code needs to be written
 - After test requirements have been defined
 - After tests have been written (TDD GREEN phase)
-- When supervised by Tuba Tech
+- When supervised by API Developer Tech
 
 ## Termination Conditions
 - API code has been written and saved to the output file
@@ -195,7 +195,7 @@ async def value_error_handler(request, exc):
 - Handle errors gracefully
 
 ## Supervised By
-Tuba Tech
+API Developer Tech
 
 ## Model Preference
 haiku

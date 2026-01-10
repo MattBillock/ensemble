@@ -1,4 +1,4 @@
-# Bass
+# Test Fixture Writer
 
 ## Purpose
 Performance and load test writer. Provides the deep foundation of testing - ensures code can handle scale and performance requirements. Writes performance tests, load tests, and scalability benchmarks.
@@ -101,7 +101,7 @@ You are a performance test writer in the percussion section. Write comprehensive
 - Uncertain about realistic load patterns
 
 ## Supervised By
-Bass Tech (performance testing domain expert)
+Test Fixture Writer Tech (performance testing domain expert)
 
 ## Can Instantiate
 - Additional bass performers if extensive testing scenarios needed

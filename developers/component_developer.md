@@ -1,4 +1,4 @@
-# Horn
+# Component Developer
 
 ## Purpose
 Component code writer. Creates reusable, composable UI components. Writes clean component APIs that pass tests and work across multiple contexts.
@@ -6,7 +6,7 @@ Component code writer. Creates reusable, composable UI components. Writes clean 
 ## Instantiation Conditions
 - When reusable component code needs to be written
 - After tests have been written (TDD GREEN phase)
-- When supervised by Horn Tech
+- When supervised by Component Developer Tech
 
 ## Termination Conditions
 - Component code written and saved
@@ -88,7 +88,7 @@ export default Button;
 ```
 
 ## Supervised By
-Horn Tech
+Component Developer Tech
 
 ## Model Preference
 haiku

@@ -2,16 +2,16 @@
 """Add Fail Fast rules to all Tech (supervisor) agents."""
 from pathlib import Path
 
-# Tech agents that supervise writers
-TECH_AGENTS = {
-    "brass/trumpet_tech.md": "brass/trumpet",
-    "brass/baritone_tech.md": "brass/baritone",
-    "brass/tuba_tech.md": "brass/tuba",  # Already done
-    "brass/horn_tech.md": "brass/horn",
-    "percussion/snare_tech.md": "percussion/snare",
-    "percussion/cymbal_tech.md": None,  # Validator, doesn't spawn writers
-    "percussion/tenor_tech.md": "percussion/tenor",
-    "guard/flag_tech.md": "guard/flag",
+# Lead agents that supervise writers
+LEAD_AGENTS = {
+    "developers/frontend_lead.md": "developers/frontend_developer",
+    "developers/backend_lead.md": "developers/backend_developer",
+    "developers/api_lead.md": "developers/api_developer",
+    "developers/component_lead.md": "developers/component_developer",
+    "testers/unit_test_lead.md": "testers/unit_test_writer",
+    "testers/test_validator.md": None,  # Validator, doesn't spawn writers
+    "testers/integration_test_lead.md": "testers/integration_test_writer",
+    "designers/style_lead.md": "designers/style_developer",
 }
 
 def add_fail_fast_rules(file_path: Path, spawns_path: str):
@@ -69,16 +69,16 @@ def add_fail_fast_rules(file_path: Path, spawns_path: str):
     return True
 
 def main():
-    """Update all Tech agents with Fail Fast rules."""
+    """Update all Lead agents with Fail Fast rules."""
     print("=" * 70)
-    print("🛑 ADDING FAIL FAST RULES TO TECH AGENTS")
+    print("🛑 ADDING FAIL FAST RULES TO LEAD AGENTS")
     print("=" * 70)
     print()
 
     updated_count = 0
     skipped_count = 0
 
-    for agent_path, spawns in TECH_AGENTS.items():
+    for agent_path, spawns in LEAD_AGENTS.items():
         file_path = Path(agent_path)
         if not file_path.exists():
             print(f"  ⚠️  Not found: {file_path}")

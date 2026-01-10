@@ -11,7 +11,7 @@ load_dotenv()
 
 
 def main():
-    """Execute Program Coordinator to complete frontend integration."""
+    """Execute Development Manager to complete frontend integration."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable not set")
@@ -29,12 +29,12 @@ def main():
     print("="*70)
     print()
 
-    # Load Program Coordinator
-    prog_coord_path = Path("leadership/program_coordinator.md")
-    prog_coord_def = AgentDefinition.from_file(prog_coord_path)
+    # Load Development Manager
+    dev_mgr_path = Path("leadership/development_manager.md")
+    dev_mgr_def = AgentDefinition.from_file(dev_mgr_path)
 
     # Set up tools with agent definition
-    tools = ToolRegistry.default(prog_coord_def)
+    tools = ToolRegistry.default(dev_mgr_def)
 
     # Add spawn_agent tool
     spawn_tool = SpawnAgentTool(
@@ -46,7 +46,7 @@ def main():
 
     # Create runtime
     runtime = AgentRuntime(
-        prog_coord_def,
+        dev_mgr_def,
         api_key=api_key,
         tools=tools
     )
@@ -57,7 +57,7 @@ def main():
         "project_name": "Ensemble UI Frontend Integration"
     }
 
-    print("🚀 Launching Program Coordinator...")
+    print("🚀 Launching Development Manager...")
     print("="*70)
     print()
 

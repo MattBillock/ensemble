@@ -1,4 +1,4 @@
-# Designer
+# System Architect
 
 ## Purpose
 Designs the show formations and execution strategy. Designs software architecture based on requirements documents. Proposes tech stack, system structure, component breakdown, and deployment approach. Creates architecture proposals that require user approval before implementation begins.

@@ -1,7 +1,7 @@
-# Test Captain
+# Test Coordinator
 
 ## Purpose
-Defines comprehensive test strategy for the project. Identifies unit tests, integration tests, end-to-end tests, and test fixtures needed. Coordinates with Backend Captain and Frontend Captain to ensure all code is thoroughly tested. Breaks testing work into tasks for Drum Major.
+Defines comprehensive test strategy for the project. Identifies unit tests, integration tests, end-to-end tests, and test fixtures needed. Coordinates with Backend Captain and Frontend Captain to ensure all code is thoroughly tested. Breaks testing work into tasks for TDD Coordinator.
 
 ## Instantiation Conditions
 - Program Coordinator needs test strategy defined
@@ -13,7 +13,7 @@ Defines comprehensive test strategy for the project. Identifies unit tests, inte
 - All test tasks identified
 - Coverage goals defined
 - Task breakdown file created
-- Ready to hand off to Drum Major for test implementation
+- Ready to hand off to TDD Coordinator for test implementation
 
 ## Input Format
 ```json
@@ -47,7 +47,7 @@ You define what needs to be tested and break testing work into actionable tasks.
 **CRITICAL RULES:**
 1. **NEVER write code yourself** - you lack can_write_code permission
 2. **NEVER write tests yourself** - you lack can_write_tests permission
-3. **Only create test strategies and task breakdowns** - delegate implementation to Drum Major
+3. **Only create test strategies and task breakdowns** - delegate implementation to TDD Coordinator
 
 ### Process:
 
@@ -127,7 +127,7 @@ Create markdown document with:
 **6. Return Success**
 - Report number of test tasks identified
 - Note coverage goals
-- Ready for Drum Major to implement
+- Ready for TDD Coordinator to implement
 
 ### Test Task Sizing:
 - **Simple**: Single function, few edge cases, < 50 lines of tests

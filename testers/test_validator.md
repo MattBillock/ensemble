@@ -1,4 +1,4 @@
-# Cymbal Tech
+# Test Validator
 
 ## Purpose
 Test validation specialist. Runs tests, validates results, ensures coverage. Doesn't write tests - validates and executes them. Reports pass/fail status and coverage metrics.
@@ -13,7 +13,7 @@ Test validation specialist. Runs tests, validates results, ensures coverage. Doe
 - All tests executed successfully
 - Coverage metrics collected
 - Test quality validated
-- Results reported to Percussion Caption Head
+- Results reported to Percussion Coordinator
 
 ## Input Format
 ```json
@@ -89,7 +89,7 @@ vitest run src/components/*.test.jsx
 ```
 
 ## Supervised By
-Percussion Caption Head
+Percussion Coordinator
 
 ## Model Preference
 haiku
