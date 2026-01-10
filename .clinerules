@@ -1,0 +1,125 @@
+# Ensemble Project Rules for Claude Code
+
+## Agent Naming and Paths
+
+**CRITICAL**: As of January 10, 2026, all agents use standard developer naming (NOT drum corps names).
+
+### Current Agent Paths (DO NOT use old names)
+- ❌ `leadership/program_coordinator` → ✅ `leadership/development_manager`
+- ❌ `leadership/designer` → ✅ `leadership/system_architect`
+- ❌ `leadership/drum_major` → ✅ `leadership/tdd_coordinator`
+- ❌ `caption_heads/*` → ✅ `coordinators/*`
+- ❌ `brass/*` → ✅ `developers/*`
+- ❌ `percussion/*` → ✅ `testers/*`
+- ❌ `guard/*` → ✅ `designers/*`
+
+**Authoritative Source**: Always check `AGENT_REGISTRY.md` for current agent paths.
+
+## Agent Architecture Rules
+
+### 1. Permission System
+- **Supervisors NEVER write code**: Leadership, Coordinators, and Leads have `can_write_code: false`
+- **Writers implement**: Developers and Test Writers have explicit permissions
+- **Enforcement**: WriteFileTool validates permissions at runtime
+- **Testing**: Run `source venv/bin/activate && python test_rogue_detection.py` after changes
+
+### 2. Spawn Patterns
+- Agents spawn other agents using exact paths: `spawn_agent("developers/frontend_developer", {...})`
+- If spawn fails, agents MUST return error (no fallback to writing code themselves)
+- See "Fail Fast Rules" in agent instructions for supervisor agents
+
+### 3. Agent File Structure
+All agent definition files (`.md`) must include:
+```markdown
+## Can Write Code
+true/false
+
+## Can Write Tests
+true/false
+```
+
+## Development Workflow
+
+### When Modifying Agents
+1. Read the agent file first (use Read tool)
+2. Update spawn paths if renaming agents
+3. Update permission fields if changing responsibilities
+4. Run rogue detection tests to verify
+5. Update AGENT_REGISTRY.md if adding/removing agents
+
+### When Adding New Agents
+1. Create agent definition file in appropriate directory
+2. Add `can_write_code` and `can_write_tests` fields
+3. Add spawn patterns to parent agents
+4. Update `AGENT_REGISTRY.md`
+5. Update `update_agent_permissions.py` if supervisor/lead
+6. Run tests
+
+### When Modifying Agent Runtime
+- Agent runtime code is in `src/runtime/agents/`
+- Key files:
+  - `definition.py` - Agent schema and loading
+  - `runtime.py` - Execution engine
+  - `state.py` - State management and persistence
+  - `tools.py` - Tool definitions including WriteFileTool
+
+## Testing
+
+### Rogue Detection Tests
+**Always run after permission changes**:
+```bash
+source venv/bin/activate
+python test_rogue_detection.py
+```
+
+Expected: 5/5 tests passing
+
+### Unit Tests
+```bash
+source venv/bin/activate
+pytest tests/
+```
+
+## Python Environment
+
+- Virtual environment: `venv/`
+- Activate: `source venv/bin/activate`
+- Python version: 3.11+
+- Key dependencies: anthropic, python-dotenv, fastapi, pydantic
+
+## Commit Guidelines
+
+- Use conventional commit messages
+- Include "Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+- Test before committing (especially rogue detection tests)
+- Keep commits focused and atomic
+
+## File Organization
+
+- Agent definitions: `leadership/`, `coordinators/`, `developers/`, `testers/`, `designers/`
+- Runtime system: `src/runtime/`
+- Build scripts: `*.py` (root level)
+- Documentation: `*.md` (root level)
+- Tests: `tests/`, `test_*.py`
+
+## Common Tasks
+
+### Running Agent Builds
+```bash
+source venv/bin/activate
+python build_milestone2.py  # Example build script
+```
+
+### Updating Agent Spawn Paths
+Use the pattern in `rename_agents.py` for bulk updates.
+
+### Viewing Agent Hierarchy
+See `AGENT_REGISTRY.md` for complete hierarchy diagram and spawn patterns.
+
+## Important Notes
+
+- **NEVER use old drum corps names** in new code
+- **ALWAYS check AGENT_REGISTRY.md** for current paths
+- **ALWAYS validate permissions** after modifying agents
+- **ALWAYS test after significant changes**
+- State files are in `src/field/*/` (can be deleted to start fresh)
