@@ -1,6 +1,8 @@
 # Ensemble Multi-Agent System - Comprehensive Review
 
 **Date**: January 10, 2026
+
+**NOTE**: This review was conducted before the January 10, 2026 naming refactor. Agent names have since been updated from drum corps terminology to standard developer names. See AGENT_REGISTRY.md for current paths.
 **Milestone**: Milestone 2 - Backend Integration
 **Reviewer**: Claude Sonnet 4.5
 

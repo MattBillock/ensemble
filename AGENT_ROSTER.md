@@ -2,6 +2,23 @@
 
 Complete hierarchy and role definitions for all agents in the Ensemble system.
 
+---
+
+**⚠️ DEPRECATED**: This document uses the old drum corps naming scheme and is kept for historical reference only.
+
+**For current agent paths and naming, see [AGENT_REGISTRY.md](AGENT_REGISTRY.md)**
+
+**Naming changes (January 10, 2026)**:
+- Program Coordinator → Development Manager
+- Designer → System Architect
+- Drum Major → TDD Coordinator
+- Caption Heads → Coordinators
+- Brass → Developers
+- Percussion → Testers
+- Guard → Designers
+
+---
+
 ## Hierarchy Overview
 
 ```

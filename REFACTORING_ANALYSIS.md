@@ -1,6 +1,8 @@
 # Ensemble Refactoring Analysis
 
 Generated: 2026-01-10
+
+**NOTE**: This analysis was conducted before the January 10, 2026 naming refactor. Agent paths have been updated to standard developer naming. See AGENT_REGISTRY.md for current paths.
 After: Multi-agent system successfully built React UI (Milestone 1 complete)
 Repo: https://github.com/MattBillock/ensemble
 

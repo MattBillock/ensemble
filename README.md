@@ -2,56 +2,49 @@
 
 **AI agent swarm for software development using Test-Driven Development**
 
-Ensemble is a hierarchical multi-agent system that builds software through coordinated collaboration, inspired by the structure and organization of a drum and bugle corps.
+Ensemble is a hierarchical multi-agent system that builds software through coordinated collaboration. Each agent has specific expertise and works together to deliver complete software solutions using Test-Driven Development methodology.
 
 ## Overview
 
-Ensemble uses specialized AI agents organized into a performance hierarchy. Each agent has specific expertise and works together to deliver complete software solutions using Test-Driven Development methodology.
+Ensemble uses specialized AI agents organized into a clear hierarchy with distinct responsibilities. Agents coordinate through a structured workflow to deliver high-quality code following TDD principles.
 
-### The Corps Structure
+### Agent Hierarchy
 
 **Leadership** - Strategic vision and coordination
-- **Executive Director** - System orchestrator (future)
-- **Program Coordinator** - Requirements analysis
-- **Designer** - Architecture design
-- **Drum Major** - Task orchestration and TDD workflow
+- **Executive Director** - System orchestrator and entry point
+- **Development Manager** - Drives implementation from requirements through delivery
+- **System Architect** - Defines system architecture and technical design
+- **TDD Coordinator** - Orchestrates test-driven development workflow
 
-**Brass** - Frontend development
-- **Trumpet** - Frontend code writer (future)
-- **Horn** - Component writer (future)
-- **Baritone** - Framework agent (future)
-- **Tuba** - API writer (future)
+**Coordinators** - Task breakdown and planning
+- **Backend Coordinator** - Breaks backend work into API, model, and service tasks
+- **Frontend Coordinator** - Breaks frontend into components, pages, and services
+- **Test Coordinator** - Defines comprehensive test strategy (unit, integration, e2e)
 
-**Percussion** - Backend development and testing
-- **Snare** - Test writer (RED phase)
-- **Tenor** - Integration test writer (future)
-- **Bass** - Backend code writer (GREEN phase)
-- **Cymbal** - Performance monitoring (future)
+**Developers** - Code implementation
+- **Frontend Lead** / **Frontend Developer** - React and UI development
+- **Backend Lead** / **Backend Developer** - Business logic and services
+- **API Lead** / **API Developer** - REST API and endpoints
+- **Component Lead** / **Component Developer** - Reusable component architecture
 
-**Pit** - Infrastructure and deployment
-- **Marimba** - Deployment agent (future)
-- **Vibes** - CI/CD agent (future)
-- **Synth** - Database agent (future)
+**Testers** - Test implementation
+- **Unit Test Lead** / **Unit Test Writer** - Unit tests and test fixtures
+- **Integration Test Lead** / **Integration Test Writer** - Integration and E2E tests
+- **Test Validator** - Validates test quality and coverage
 
-**Guard** - Visual and styling
-- **Flag** - Stylesheet writer (future)
-- **Rifle** - Component styling (future)
-- **Saber** - Animation agent (future)
-- **Dance** - Interaction/UX agent (future)
-
-**Support** - Assistance and optimization
-- **Scout** - File explorer (future)
-- **Visual Tech** - Refactor agent
+**Designers** - Styling and visual
+- **Style Lead** / **Style Developer** - CSS, Tailwind, and styling code
 
 ## Current Capabilities
 
 Ensemble currently supports:
-- ✅ Requirements analysis (Program Coordinator)
-- ✅ Architecture design (Designer)
-- ✅ Test-Driven Development workflow (Drum Major)
-- ✅ Test writing - RED phase (Snare)
-- ✅ Backend code writing - GREEN phase (Bass)
-- ✅ Code refactoring - REFACTOR phase (Visual Tech)
+- ✅ Requirements analysis (Development Manager)
+- ✅ Architecture design (System Architect)
+- ✅ Test-Driven Development workflow (TDD Coordinator)
+- ✅ Task breakdown and coordination (Coordinators)
+- ✅ Code writing with supervision (Leads spawn Developers)
+- ✅ Test writing with supervision (Test Leads spawn Writers)
+- ✅ Rogue agent prevention (permission system enforces delegation)
 
 ## Installation
 
@@ -76,21 +69,23 @@ cp .env.example .env
 
 ### Development Workflow
 
-The typical development workflow follows the "season" metaphor:
+The typical development workflow follows a structured hierarchy:
 
-1. **Charting** - Define requirements and architecture
-2. **Rehearsal** - Development with TDD
-3. **Performance** - Deployment
+1. **Executive Director** - Receives user vision, spawns Development Manager
+2. **Development Manager** - Breaks into milestones, spawns System Architect and Coordinators
+3. **System Architect** - Designs architecture
+4. **Coordinators** - Break work into detailed tasks
+5. **TDD Coordinator** - Implements using RED-GREEN-REFACTOR cycle
 
-### Example: Solving a Problem with TDD
+### Example: Building with TDD
 
 ```python
 from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-from src.runtime import AgentDefinition, AgentRuntime
-from src.runtime.tools import ToolRegistry, SpawnAgentTool, ReadFileTool, RunCommandTool
+from src.runtime.agents import AgentDefinition, AgentRuntime
+from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
 
 load_dotenv()
 
@@ -100,15 +95,20 @@ Build a function that calculates the factorial of a number.
 Handle edge cases like 0, 1, and negative numbers.
 """
 
-# Load the Drum Major (TDD orchestrator)
-drum_major = AgentDefinition.from_file("leadership/drum_major.md")
+# Load the TDD Coordinator
+tdd_coordinator = AgentDefinition.from_file("leadership/tdd_coordinator.md")
 
 # Set up tools
 tools = ToolRegistry.default()
-# ... configure tools
+spawn_tool = SpawnAgentTool(
+    agent_types_dir=Path("."),
+    api_key=os.getenv("ANTHROPIC_API_KEY"),
+    tools=tools
+)
+tools.register(spawn_tool)
 
 # Execute
-runtime = AgentRuntime(drum_major, api_key=os.getenv("ANTHROPIC_API_KEY"), tools=tools)
+runtime = AgentRuntime(tdd_coordinator, api_key=os.getenv("ANTHROPIC_API_KEY"), tools=tools)
 result = runtime.execute({
     "problem_description": problem,
     "output_directory": "rehearsals/factorial"
@@ -119,16 +119,15 @@ result = runtime.execute({
 
 ```
 ensemble/
-├── leadership/          # Strategic agents
-├── caption_heads/       # Domain orchestrators (future)
-├── brass/               # Frontend agents (future)
-├── percussion/          # Backend and testing agents
-├── pit/                 # Infrastructure agents (future)
-├── guard/               # Visual/styling agents (future)
-├── support/             # Support agents
+├── leadership/          # Strategic agents (Executive Director, Development Manager, etc.)
+├── coordinators/        # Task breakdown agents (Backend, Frontend, Test Coordinators)
+├── developers/          # Code writers and leads (Frontend, Backend, API, Component)
+├── testers/             # Test writers and leads (Unit, Integration, Test Validator)
+├── designers/           # Styling agents (Style Lead, Style Developer)
+├── support/             # Support agents (future)
 ├── src/
 │   ├── runtime/         # Agent runtime system
-│   ├── tools/           # Tool implementations
+│   │   └── agents/      # Agent definition, runtime, state management, tools
 │   └── field/           # Applications built by agents
 ├── rehearsals/          # Development projects
 ├── performances/        # Production deployments
@@ -140,45 +139,56 @@ ensemble/
 
 ### Test-Driven Development
 All code is built following the Red-Green-Refactor cycle:
-1. **RED** - Snare writes failing tests
-2. **GREEN** - Bass writes minimal code to pass tests
-3. **REFACTOR** - Visual Tech improves code quality
+1. **RED** - Unit Test Writer creates failing tests
+2. **GREEN** - Developers write minimal code to pass tests
+3. **REFACTOR** - Code improvements while maintaining test coverage
 
-### Hierarchical Coordination
-- Strategic decisions flow from leadership
-- Domain expertise handled by specialized techs
-- Caption heads coordinate within domains
-- Drum Major maintains tempo and workflow
+### Hierarchical Delegation
+- **Supervisors coordinate, never write code** - Leads and Coordinators delegate to writers
+- **Permission system prevents rogue agents** - Enforced at tool level (can_write_code, can_write_tests)
+- **Clear spawning patterns** - Each agent knows exactly which agents to spawn
+- **Fail-fast rules** - If spawn fails, agents stop and return error (no fallback to writing code)
 
 ### Eating Our Own Dogfood
 Ensemble is building itself. The UI and tooling are developed using the agent system.
 
+## Key Features
+
+### Rogue Agent Prevention
+- Supervisors (Leads, Coordinators, Leadership) have `can_write_code: false`
+- Writers (Developers, Test Writers) have explicit write permissions
+- WriteFileTool enforces permissions and detects violations
+- Test suite validates prevention system (5/5 tests passing)
+
+### Agent Registry
+See `AGENT_REGISTRY.md` for complete agent paths and spawning patterns.
+
+### State Persistence
+Agent execution state is checkpointed for crash recovery and resume capability.
+
 ## Roadmap
 
-### Phase 1: Core Infrastructure (Current)
+### ✅ Phase 1: Core Infrastructure (Complete)
 - [x] Requirements analysis
 - [x] Architecture design
-- [x] Basic TDD workflow
-- [ ] File exploration
-- [ ] Integration testing
+- [x] TDD workflow
+- [x] Permission system
+- [x] Agent naming refactor (drum corps → standard names)
+- [x] Coordinators for task breakdown
+- [x] Rogue agent prevention
 
-### Phase 2: Domain Specialization
-- [ ] Frontend agents (Trumpet, Horn, Baritone)
-- [ ] Specialized backend agents (Tuba for APIs, Synth for DB)
-- [ ] Visual/styling agents (Flag, Rifle, Saber, Dance)
-- [ ] Caption heads for domain orchestration
+### Phase 2: Enhanced Capabilities
+- [ ] Error recovery and retry logic
+- [ ] Enhanced TDD workflow validation
+- [ ] File exploration agents
+- [ ] Integration testing workflows
+- [ ] Performance monitoring
 
-### Phase 3: Full Orchestration
-- [ ] Executive Director (system-level orchestrator)
-- [ ] Deployment agents (Marimba, Vibes)
-- [ ] Performance monitoring (Cymbal)
-- [ ] Error recovery and resilience
-
-### Phase 4: Self-Improvement
+### Phase 3: Self-Improvement
 - [ ] Agent performance analytics
 - [ ] Token usage optimization
 - [ ] Automated agent refinement
-- [ ] Continuous deployment pipeline
+- [ ] Continuous improvement feedback loops
 
 ## Contributing
 
@@ -190,8 +200,8 @@ This project is currently in active development. Contributions welcome!
 
 ## Acknowledgments
 
-Built with Claude (Anthropic API) and inspired by the dedication, precision, and artistry of drum corps worldwide.
+Built with Claude (Anthropic API) and inspired by the principles of clear communication, hierarchical organization, and systematic development.
 
 ---
 
-*"In rehearsal, we build. In performance, we deliver."*
+*"Test first, code second, refactor always."*
