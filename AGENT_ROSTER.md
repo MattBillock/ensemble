@@ -51,7 +51,7 @@ Performers (optional - help when needed)
 ## Level 2: Domain Coordination (Caption Heads)
 
 ### Brass Caption Head
-**Status:** Future
+**Status:** ✅ Implemented (`caption_heads/brass_captain.md`)
 **Purpose:** Coordinates all code writing across the project
 **Responsibilities:**
 - Receives milestones from Program Coordinator
@@ -61,7 +61,7 @@ Performers (optional - help when needed)
 - Reports completion status
 
 ### Percussion Caption Head
-**Status:** Future
+**Status:** ✅ Implemented (`caption_heads/percussion_captain.md`)
 **Purpose:** Coordinates all testing across the project
 **Responsibilities:**
 - Receives milestones from Program Coordinator
@@ -71,7 +71,7 @@ Performers (optional - help when needed)
 - Reports completion status
 
 ### Guard Caption Head
-**Status:** Future
+**Status:** ✅ Implemented (`caption_heads/guard_captain.md`)
 **Purpose:** Coordinates all visual, styling, and UX work
 **Responsibilities:**
 - Receives milestones from Program Coordinator
@@ -81,7 +81,7 @@ Performers (optional - help when needed)
 - Reports completion status
 
 ### Pit Caption Head
-**Status:** Future
+**Status:** ✅ Implemented (`caption_heads/pit_captain.md`)
 **Purpose:** Coordinates all infrastructure and deployment work
 **Responsibilities:**
 - Receives milestones from Program Coordinator
@@ -511,20 +511,25 @@ Performers are additional instances instantiated by section leaders when needed.
 ## Current Implementation Status
 
 **✅ Implemented:**
+- Executive Director (project definition)
 - Program Coordinator (requirements analysis)
 - Designer (architecture design)
+- Brass Caption Head (code writing coordination)
+- Percussion Caption Head (testing coordination)
+- Guard Caption Head (visual/UX coordination)
+- Pit Caption Head (infrastructure coordination)
 - Drum Major (TDD task orchestration)
 - Snare (unit test writer)
 - Baritone (backend code writer)
 - Bass (performance test writer)
 - Visual Tech (refactoring)
-- Logistics Manager (codebase exploration and surveying)
+- Logistics Manager (codebase exploration)
 
 **🚧 Next Priority:**
-- Executive Director (project definition)
-- Caption Heads (all four)
 - Section Techs (starting with most critical domains)
+- Drill Writer (documentation agent)
 - Frontend section leaders (Trumpet, Horn)
+- Additional backend/API section leaders (Tuba)
 
 **📋 Future:**
 - All remaining section leaders
