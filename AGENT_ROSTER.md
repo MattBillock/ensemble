@@ -453,7 +453,7 @@ Performers (optional - help when needed)
 ## Logistics & Support Staff
 
 ### Logistics Manager
-**Status:** Future
+**Status:** ✅ Implemented (`support/logistics_manager.md`)
 **Role:** Coordinates transportation, equipment, and site surveying
 **Purpose:** File exploration and codebase surveying - gets the ensemble oriented in new codebases
 **Responsibilities:**
@@ -518,12 +518,13 @@ Performers are additional instances instantiated by section leaders when needed.
 - Baritone (backend code writer)
 - Bass (performance test writer)
 - Visual Tech (refactoring)
+- Logistics Manager (codebase exploration and surveying)
 
 **🚧 Next Priority:**
-- Logistics Manager (file explorer, codebase surveying)
 - Executive Director (project definition)
 - Caption Heads (all four)
 - Section Techs (starting with most critical domains)
+- Frontend section leaders (Trumpet, Horn)
 
 **📋 Future:**
 - All remaining section leaders
