@@ -482,6 +482,17 @@ Performers (optional - help when needed)
 - Provides recovery strategies
 - Helps agents when they get stuck
 
+### Drill Writer
+**Status:** ✅ Implemented (`support/drill_writer.md`)
+**Role:** Creates drill charts and documentation
+**Purpose:** Writes comprehensive documentation for all work
+**Responsibilities:**
+- Creates API documentation
+- Writes user guides
+- Documents architecture
+- Writes deployment guides
+- Creates README files and changelogs
+
 ### Logger
 **Status:** Future
 **Role:** Souvenir stand (records what happened)
@@ -510,7 +521,7 @@ Performers are additional instances instantiated by section leaders when needed.
 
 ## Current Implementation Status
 
-**✅ Implemented:**
+**✅ Implemented (17 agents):**
 - Executive Director (project definition)
 - Program Coordinator (requirements analysis)
 - Designer (architecture design)
@@ -527,12 +538,13 @@ Performers are additional instances instantiated by section leaders when needed.
 - Bass (performance test writer)
 - Visual Tech (refactoring)
 - Logistics Manager (codebase exploration)
+- Drill Writer (documentation)
 
 **🚧 Next Priority:**
-- Drill Writer (documentation agent)
 - Frontend section leaders (Trumpet, Horn)
 - Additional backend/API section leaders (Tuba)
 - Additional Section Techs (Tuba Tech, Horn Tech, etc.)
+- Integration test writer (Tenor)
 
 **📋 Future:**
 - All remaining section leaders
