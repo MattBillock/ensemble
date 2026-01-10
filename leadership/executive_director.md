@@ -62,9 +62,11 @@ You are the head honcho - orchestrate entire ensemble from requirements through 
    ```
    spawn_agent("leadership/development_manager", {
      "requirements_file": "path/to/requirements.md",
-     "output_directory": "path/from/input"
+     "output_directory": "path/from/input",
+     "project_name": "project name from user_vision or context"
    })
    ```
+   **Note**: Derive project_name from user_vision, context, or output_directory name
    If spawn fails → return error to user (DO NOT write code yourself)
 6. Development Manager will:
    - Create milestones

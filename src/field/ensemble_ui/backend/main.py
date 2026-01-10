@@ -1,20 +1,99 @@
 import asyncio
 import json
+import os
 from typing import Dict, Any
+from pathlib import Path
+from dotenv import load_dotenv
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+# Import Ensemble agent runtime
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.runtime.agents import AgentDefinition, AgentRuntime
+from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
+
+load_dotenv()
+
+class ProblemRequest(BaseModel):
+    problem: str
 
 class AgentOrchestrator:
     def __init__(self):
         self.active_agents: Dict[str, Any] = {}
-    
-    async def spawn_agent(self, agent_type: str):
-        # Placeholder for agent spawning logic
-        agent_id = f"{agent_type}_{len(self.active_agents) + 1}"
-        self.active_agents[agent_id] = {"type": agent_type, "status": "initializing"}
-        return agent_id
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY not found in environment")
+
+        # Get project root (3 levels up from backend/main.py)
+        self.project_root = Path(__file__).parent.parent.parent.parent
+
+    async def spawn_executive_director(self, problem_description: str):
+        """Spawn the Executive Director agent to handle the problem."""
+        agent_id = f"exec_dir_{len(self.active_agents) + 1}"
+
+        try:
+            # Load Executive Director
+            exec_dir_path = self.project_root / "leadership" / "executive_director.md"
+            exec_dir_def = AgentDefinition.from_file(exec_dir_path)
+
+            # Set up tools
+            tools = ToolRegistry.default(exec_dir_def)
+            spawn_tool = SpawnAgentTool(
+                agent_types_dir=self.project_root,
+                api_key=self.api_key,
+                tools=tools
+            )
+            tools.register(spawn_tool)
+
+            # Store agent info
+            self.active_agents[agent_id] = {
+                "type": "executive_director",
+                "status": "initializing",
+                "problem": problem_description
+            }
+
+            # Create runtime
+            runtime = AgentRuntime(
+                exec_dir_def,
+                api_key=self.api_key,
+                tools=tools
+            )
+
+            # Execute in background
+            input_data = {
+                "user_vision": problem_description,
+                "output_directory": str(self.project_root / "src" / "field" / "ensemble_ui" / "output"),
+                "context": "User submitted problem via web UI"
+            }
+
+            # Update status
+            self.active_agents[agent_id]["status"] = "running"
+
+            # Execute agent (this will block, so in production we'd run in background task)
+            result = runtime.execute(input_data)
+
+            # Update with result
+            self.active_agents[agent_id]["status"] = "completed"
+            self.active_agents[agent_id]["result"] = result
+
+            return agent_id, result
+
+        except Exception as e:
+            self.active_agents[agent_id] = {
+                "type": "executive_director",
+                "status": "error",
+                "error": str(e)
+            }
+            raise
 
     def get_agent_status(self, agent_id: str):
         return self.active_agents.get(agent_id, {"status": "not_found"})
@@ -33,13 +112,19 @@ app.add_middleware(
 orchestrator = AgentOrchestrator()
 
 @app.post("/api/generate-solution")
-async def generate_solution():
+async def generate_solution(request: ProblemRequest):
     """HTTP endpoint to trigger solution generation"""
     try:
-        agent_id = await orchestrator.spawn_agent("solution_generator")
-        return {"agent_id": agent_id, "status": "agent_spawned"}
+        # Spawn Executive Director with problem description
+        agent_id, result = await orchestrator.spawn_executive_director(request.problem)
+
+        return {
+            "agent_id": agent_id,
+            "status": "completed",
+            "result": result
+        }
     except Exception as e:
-        return {"error": str(e)}, 500
+        return {"error": str(e), "status": "error"}
 
 @app.websocket("/ws/agent-status")
 async def agent_status_ws(websocket: WebSocket):
