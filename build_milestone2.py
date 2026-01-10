@@ -33,8 +33,8 @@ def main():
     exec_dir_path = Path("leadership/executive_director.md")
     exec_dir_def = AgentDefinition.from_file(exec_dir_path)
 
-    # Set up tools
-    tools = ToolRegistry.default()
+    # Set up tools with agent definition for permission checking
+    tools = ToolRegistry.default(exec_dir_def)
 
     # Add spawn_agent tool
     spawn_tool = SpawnAgentTool(

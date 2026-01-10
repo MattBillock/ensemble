@@ -67,12 +67,41 @@ class StateManager:
             message: Message content (user or assistant)
         """
         self.state["iteration"] = iteration
+
+        # Convert content to serializable format
+        content = message.get("content", [])
+        serializable_content = self._make_serializable(content)
+
         self.state["conversation_history"].append({
             "iteration": iteration,
             "timestamp": datetime.now().isoformat(),
             "role": message.get("role"),
-            "content": message.get("content", [])
+            "content": serializable_content
         })
+
+    def _make_serializable(self, obj: Any) -> Any:
+        """
+        Convert Anthropic objects to JSON-serializable format.
+
+        Args:
+            obj: Object to convert (can be dict, list, or Anthropic object)
+
+        Returns:
+            JSON-serializable version of the object
+        """
+        if isinstance(obj, list):
+            return [self._make_serializable(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: self._make_serializable(v) for k, v in obj.items()}
+        elif hasattr(obj, 'model_dump'):
+            # Anthropic objects have model_dump() method
+            return obj.model_dump()
+        elif hasattr(obj, '__dict__'):
+            # Fallback for objects with __dict__
+            return {k: self._make_serializable(v) for k, v in obj.__dict__.items()}
+        else:
+            # Primitive types (str, int, bool, None)
+            return obj
 
     def record_tool_result(self, tool_name: str, inputs: Dict[str, Any], result: Dict[str, Any]) -> None:
         """

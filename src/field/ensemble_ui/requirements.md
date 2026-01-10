@@ -1,44 +1,37 @@
-# Ensemble UI Requirements
+# Ensemble UI - Milestone 2: Backend Integration
 
-## Vision
-Create a web-based user interface to demonstrate the Ensemble agent system's capabilities, making it accessible to non-technical users.
+## Project Overview
+- Frontend already completed with React ProblemInputForm
+- Goal: Implement FastAPI backend with WebSocket and agent execution
 
-## Core Features
-1. Problem Input
-- Simple text box for users to describe their problem/task
-- "Generate Solution" button to trigger agent system
+## Detailed Requirements
 
-2. Real-Time Updates
-- Show active agents
-- Display current phase of problem-solving
-- Live progress tracking
+### 1. Backend Server Structure
+- Create `backend/` directory
+- Implement `main.py` for FastAPI application
+- Set up project structure for modular development
 
-3. Results Display
-- Generated code files view
-- Test results summary
-- Overall accomplishment report
+### 2. WebSocket Endpoint (/ws/agent-status)
+- Real-time agent progress streaming
+- Broadcast:
+  * Current running agents
+  * Execution phase
+  * Intermediate and final results
+  * Error handling
 
-## Technical Specifications
-### Frontend
-- Technology: React (JavaScript)
-- Clean, simple design
-- Responsive layout
-- Real-time update capabilities
+### 3. HTTP Endpoint (/api/generate-solution)
+- Accept problem input
+- Trigger agent execution
+- Return execution results
+- Support error scenarios
 
-### Backend
-- Language: Python
-- Framework: FastAPI (chosen for lightweight, async capabilities)
-- Endpoint to trigger agent system
-- WebSocket support for real-time updates
+### 4. Frontend Integration
+- WebSocket connection from React
+- Real-time status updates UI
+- Error handling for backend communication
 
-## Non-Functional Requirements
-- Local development focus
-- Proof of concept (v1.0)
-- Minimal but functional design
-- Demonstrate core Ensemble system capabilities
-
-## Out of Scope
-- Advanced styling
-- Production deployment
-- Complex authentication
-- Multiple simultaneous sessions
+## Success Criteria
+- Backend server runs without errors
+- WebSocket streams agent status
+- HTTP endpoint triggers agent execution
+- Frontend can connect and display results

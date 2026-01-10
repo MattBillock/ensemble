@@ -20,6 +20,8 @@ class AgentDefinition:
         clarification_conditions: List[str],
         model_preference: str = "haiku",
         max_iterations: int = 10,
+        can_write_code: bool = False,
+        can_write_tests: bool = False,
     ):
         self.name = name
         self.purpose = purpose
@@ -31,6 +33,8 @@ class AgentDefinition:
         self.clarification_conditions = clarification_conditions
         self.model_preference = model_preference
         self.max_iterations = max_iterations
+        self.can_write_code = can_write_code
+        self.can_write_tests = can_write_tests
 
     def get_required_input_fields(self) -> Set[str]:
         """
@@ -99,6 +103,14 @@ class AgentDefinition:
         max_iterations_str = cls._extract_metadata(content, "Max Iterations", "10")
         max_iterations = int(max_iterations_str)
 
+        # Extract code writing policy (default to False for safety)
+        can_write_code_str = cls._extract_metadata(content, "Can Write Code", "false").lower()
+        can_write_code = can_write_code_str in ["true", "yes", "1"]
+
+        # Extract test writing policy (default to False for safety)
+        can_write_tests_str = cls._extract_metadata(content, "Can Write Tests", "false").lower()
+        can_write_tests = can_write_tests_str in ["true", "yes", "1"]
+
         return cls(
             name=name,
             purpose=purpose,
@@ -110,6 +122,8 @@ class AgentDefinition:
             clarification_conditions=clarification_conditions,
             model_preference=model_preference,
             max_iterations=max_iterations,
+            can_write_code=can_write_code,
+            can_write_tests=can_write_tests,
         )
 
     @staticmethod

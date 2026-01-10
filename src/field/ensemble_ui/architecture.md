@@ -1,138 +1,159 @@
-# Ensemble UI Architecture Proposal
+# Ensemble UI Backend - Architecture Proposal
 
-## Architecture Overview
-The Ensemble UI will be a web application demonstrating the Ensemble agent system's capabilities, designed as a lightweight, real-time problem-solving interface.
+## A) Architecture Overview
 
-### Architecture Pattern: Client-Server with WebSocket
-- **Frontend**: React Single Page Application (SPA)
-- **Backend**: FastAPI with WebSocket support
-- **Communication**: Async WebSocket for real-time updates
+### High-Level Design
+The Ensemble UI Backend will be a real-time agent orchestration system built with FastAPI, designed to support dynamic agent spawning and WebSocket-based status streaming.
 
-## Tech Stack
+### Architecture Pattern
+- **Architectural Style**: Event-Driven Microservice
+- **Communication Pattern**: WebSocket for real-time updates, HTTP for solution generation
+- **Core Pattern**: Reactive, non-blocking I/O for high concurrency
 
-### Frontend
-- **Language**: JavaScript (ES6+)
-- **Framework**: React
-- **State Management**: React Hooks / Context API
-- **Styling**: Tailwind CSS (lightweight, utility-first)
-- **Build Tool**: Vite (fast, modern bundler)
+## B) Tech Stack
 
-**Rationale**: 
-- React provides component-based architecture
-- Hooks enable simple state management
-- Tailwind offers rapid styling without heavy CSS
-- Vite ensures quick development experience
+### Core Technologies
+- **Web Framework**: FastAPI (Python)
+  - Rationale: 
+    * High performance
+    * Built-in WebSocket support
+    * Automatic API documentation
+    * Strong typing with Pydantic
+  - Alternatives Considered: 
+    * Flask (Less async support)
+    * Django (Too heavyweight)
 
-### Backend
-- **Language**: Python 3.9+
-- **Web Framework**: FastAPI
-- **WebSocket**: Starlette (built into FastAPI)
-- **Agent Integration**: Direct Python module imports
+- **WebSocket Library**: 
+  - Native FastAPI WebSocket implementation
+  - Fallback: `websockets` Python library
 
-**Rationale**:
-- FastAPI provides excellent async capabilities
-- Lightweight for proof-of-concept
-- Direct Python integration for agent system
-- WebSocket support for real-time updates
+- **Concurrency**: 
+  - `asyncio` for asynchronous programming
+  - `uvicorn` as ASGI server
 
-## System Components
+### Supporting Libraries
+- `pydantic`: Data validation
+- `starlette`: WebSocket and async primitives
+- `typing`: Type hinting and validation
 
-### Frontend Components
-1. **ProblemInputForm**
-   - Text input for problem description
-   - "Generate Solution" button
-   - Input validation
+## C) System Components
 
-2. **AgentStatusPanel**
-   - List of active agents
-   - Current problem-solving phase
-   - Progress indicators
+### 1. Web Server
+- **Responsibility**: Handle HTTP and WebSocket connections
+- **Features**:
+  * Agent solution generation endpoint
+  * WebSocket status streaming
+  * Request routing and validation
 
-3. **ResultsDisplay**
-   - Generated code files view
-   - Test result summary
-   - Overall accomplishment report
+### 2. Agent Orchestrator
+- **Responsibility**: Manage agent lifecycle
+- **Features**:
+  * Agent spawning
+  * Status tracking
+  * Result aggregation
 
-### Backend Components
-1. **WebSocket Handler**
-   - Manage real-time client connections
-   - Stream agent system progress
-   - Handle connection/disconnection events
+### 3. Status Broadcaster
+- **Responsibility**: Manage WebSocket connections
+- **Features**:
+  * Maintain active WebSocket connections
+  * Broadcast agent status updates
+  * Handle connection/disconnection events
 
-2. **Agent Execution Endpoint**
-   - Receive problem description
-   - Trigger Ensemble agent system
-   - Stream results back to frontend
-
-## File/Directory Structure
+## D) File/Directory Structure
 ```
-ensemble-ui/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ProblemInputForm.js
-│   │   │   ├── AgentStatusPanel.js
-│   │   │   └── ResultsDisplay.js
-│   │   ├── hooks/
-│   │   └── App.js
-│   └── vite.config.js
-├── backend/
-│   ├── main.py
-│   ├── websocket_handler.py
-│   └── agent_executor.py
-└── README.md
+backend/
+├── main.py                 # FastAPI application entry point
+├── agents/
+│   ├── __init__.py         # Agent management utilities
+│   └── orchestrator.py     # Agent spawning and tracking
+├── routes/
+│   ├── solution.py         # Solution generation endpoint
+│   └── websocket.py        # WebSocket handler
+├── models/
+│   ├── agent_status.py     # Pydantic models for status
+│   └── solution.py         # Solution generation models
+├── utils/
+│   └── websocket_manager.py # WebSocket connection management
+└── config.py               # Configuration settings
 ```
 
-## API Design
-### WebSocket Endpoints
-- `/ws/agent-status`: Stream agent progress
-- `/ws/solution-generation`: Real-time solution updates
+## E) WebSocket Protocol Design
+
+### Status Update Structure
+```python
+{
+    "agent_id": str,
+    "status": "pending" | "running" | "completed" | "error",
+    "progress": float,  # 0.0 to 1.0
+    "phase": str,       # Current execution phase
+    "result": Optional[dict],
+    "error": Optional[str]
+}
+```
+
+## F) API Endpoints
 
 ### HTTP Endpoints
-- `POST /generate-solution`: Trigger agent system
-  - Request: `{ problem_description: string }`
-  - Response: WebSocket connection for updates
+- `POST /api/generate-solution`
+  * Request payload: Solution generation parameters
+  * Returns: Solution generation job ID
 
-## Deployment Strategy
-- Local development focus
-- Docker Compose for local environment
-- Separate containers for frontend and backend
-- Development-only configuration
+### WebSocket Endpoint
+- `GET /ws/agent-status`
+  * Streams real-time agent status updates
+  * Supports multiple simultaneous connections
 
-## Testing Strategy
-### Frontend
-- Unit tests with React Testing Library
-- Component interaction tests
-- Mock WebSocket connections
+## G) Deployment Strategy
 
-### Backend
-- FastAPI test client
-- WebSocket connection tests
-- Integration tests with mock agent system
+### Local Development
+- Run with `uvicorn main:app --reload`
+- Uses default localhost configuration
 
-## Risks and Mitigations
-1. **WebSocket Reliability**
-   - Implement reconnection strategy
-   - Graceful error handling
-   - Timeout mechanisms
+### Production Deployment
+- Docker containerization
+- Gunicorn with Uvicorn workers
+- Potential Kubernetes for scaling
 
-2. **Performance with Large Problems**
-   - Implement progress chunking
-   - Cancelation mechanism
-   - Resource usage monitoring
+## H) Testing Strategy
 
-## Open Questions
-- Exact agent system integration method
-- Specific real-time update granularity
-- Error handling for agent execution failures
+### Unit Testing
+- pytest for comprehensive test coverage
+- Mock WebSocket and async behaviors
+- Test agent spawning logic
+- Validate data models
 
-## Alternatives Considered
-1. **GraphQL vs WebSockets**
-   - Chose WebSockets for real-time, low-overhead communication
-2. **Redux vs React Hooks**
-   - Chose Hooks for simplicity in small application
-3. **Flask vs FastAPI**
-   - Chose FastAPI for async capabilities and WebSocket support
+### Integration Testing
+- Simulate WebSocket connections
+- Test full solution generation flow
+- Verify error handling
 
-## Conclusion
-A lightweight, real-time web interface focusing on demonstrating the Ensemble agent system's core capabilities, with a clear separation of concerns and modern, performant technology choices.
+## I) Risks and Mitigations
+
+### Risk: WebSocket Connection Management
+- **Mitigation**: Implement robust connection tracking
+- Periodic health checks
+- Automatic reconnection strategies
+
+### Risk: Long-Running Agent Processes
+- **Mitigation**: 
+  * Timeout mechanisms
+  * Cancellation support
+  * Resource monitoring
+
+## J) Open Questions
+- Maximum concurrent agent limit?
+- WebSocket connection timeout strategy?
+- Error handling for agent execution failures?
+
+## K) Alternatives Considered
+1. REST-Only Architecture
+   - Pros: Simpler implementation
+   - Cons: Lacks real-time updates
+2. GraphQL with Subscriptions
+   - Pros: More flexible querying
+   - Cons: Increased complexity
+3. Server-Sent Events (SSE)
+   - Pros: Lighter than WebSockets
+   - Cons: Less interactive
+
+**Chosen Approach**: WebSocket-based real-time communication for maximum interactivity and low-latency updates.

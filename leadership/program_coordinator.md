@@ -121,3 +121,9 @@ haiku
 
 ## Max Iterations
 100
+
+## Can Write Code
+false
+
+## Can Write Tests
+false

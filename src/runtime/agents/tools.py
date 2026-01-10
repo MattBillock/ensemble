@@ -55,10 +55,66 @@ class WriteFileTool:
         "required": ["file_path", "content"]
     }
 
+    # Code file extensions that require can_write_code permission
+    CODE_EXTENSIONS = {
+        ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".cpp", ".c", ".h",
+        ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".cs", ".sql"
+    }
+
+    def __init__(self, agent_definition: Optional["AgentDefinition"] = None):
+        """Initialize with optional agent definition for permission checking."""
+        self.agent_definition = agent_definition
+
+    def _is_code_file(self, file_path: Path) -> bool:
+        """Check if file path is a code file."""
+        return file_path.suffix.lower() in self.CODE_EXTENSIONS
+
+    def _is_test_file(self, file_path: Path) -> bool:
+        """Check if file path is a test file."""
+        # Check file name patterns
+        name = file_path.name.lower()
+        if name.startswith("test_") or name.endswith("_test.py") or name.endswith(".test.js") or name.endswith(".spec.js") or name.endswith(".test.ts") or name.endswith(".spec.ts"):
+            return True
+
+        # Check if in test directory
+        parts = [p.lower() for p in file_path.parts]
+        if any(p in ["test", "tests", "__tests__", "spec", "specs"] for p in parts):
+            return True
+
+        return False
+
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Write content to a file."""
         file_path = Path(inputs["file_path"])
         content = inputs["content"]
+
+        # Check if agent has permission to write test files
+        if self._is_test_file(file_path):
+            if self.agent_definition and not self.agent_definition.can_write_tests:
+                error_msg = (
+                    f"ROGUE AGENT DETECTED: Agent '{self.agent_definition.name}' attempted to write "
+                    f"test file '{file_path}' but lacks can_write_tests permission. "
+                    f"This agent is a supervisor/coordinator and should delegate to test writers."
+                )
+                logger.error(error_msg)
+                return {
+                    "success": False,
+                    "error": error_msg
+                }
+
+        # Check if agent has permission to write code files (non-test code)
+        if self._is_code_file(file_path) and not self._is_test_file(file_path):
+            if self.agent_definition and not self.agent_definition.can_write_code:
+                error_msg = (
+                    f"ROGUE AGENT DETECTED: Agent '{self.agent_definition.name}' attempted to write "
+                    f"code file '{file_path}' but lacks can_write_code permission. "
+                    f"This agent is a supervisor/coordinator and should delegate to code writers."
+                )
+                logger.error(error_msg)
+                return {
+                    "success": False,
+                    "error": error_msg
+                }
 
         try:
             # Create parent directories if they don't exist
@@ -349,10 +405,15 @@ class ToolRegistry:
         return [tool.to_anthropic_format() for tool in self._tools.values()]
 
     @classmethod
-    def default(cls) -> "ToolRegistry":
-        """Create a registry with default tools."""
+    def default(cls, agent_definition: Optional["AgentDefinition"] = None) -> "ToolRegistry":
+        """
+        Create a registry with default tools.
+
+        Args:
+            agent_definition: Optional agent definition for permission checking
+        """
         registry = cls()
-        registry.register(WriteFileTool())
+        registry.register(WriteFileTool(agent_definition))
         registry.register(ReadFileTool())
         registry.register(RunCommandTool())
         return registry
