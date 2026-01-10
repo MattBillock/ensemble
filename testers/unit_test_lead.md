@@ -67,7 +67,11 @@ You're a unit testing expert supervising Snare. Guide comprehensive test creatio
 - Integration points (mock external dependencies)
 
 **3. Spawn Unit Test Writer to Write Tests (RED phase)**
-- spawn_agent("testers/unit_test_writer", {task_description, test_file, code_file})
+- spawn_agent("testers/unit_test_writer", {
+    "task_description": "detailed test requirements - what the code SHOULD do",
+    "test_file": "path from your input",
+    "code_file": "path from your input"
+  })
 - Provide clear test requirements based on what code SHOULD do
 - Specify scenarios to cover
 - Note which dependencies to mock

@@ -1,159 +1,170 @@
-# Ensemble UI Backend - Architecture Proposal
+# Ensemble UI Architecture Proposal
 
 ## A) Architecture Overview
 
-### High-Level Design
-The Ensemble UI Backend will be a real-time agent orchestration system built with FastAPI, designed to support dynamic agent spawning and WebSocket-based status streaming.
+### Architectural Pattern: Layered Microservices with Real-Time Communication
+- **Frontend Layer**: React-based UI for user interactions
+- **Backend Layer**: FastAPI microservice for agent management
+- **WebSocket Layer**: Real-time communication channel
+- **Agent Runtime Layer**: Existing Ensemble agent execution environment
 
-### Architecture Pattern
-- **Architectural Style**: Event-Driven Microservice
-- **Communication Pattern**: WebSocket for real-time updates, HTTP for solution generation
-- **Core Pattern**: Reactive, non-blocking I/O for high concurrency
+**Rationale**: 
+- Microservices allow independent scaling and development
+- Layered architecture ensures clear separation of concerns
+- WebSocket enables real-time updates without constant polling
+- Modular design supports future extensibility
 
-## B) Tech Stack
+## B) Tech Stack 
 
-### Core Technologies
-- **Web Framework**: FastAPI (Python)
-  - Rationale: 
-    * High performance
-    * Built-in WebSocket support
-    * Automatic API documentation
-    * Strong typing with Pydantic
-  - Alternatives Considered: 
-    * Flask (Less async support)
-    * Django (Too heavyweight)
+### Frontend
+- **Framework**: React 18
+  - Reasons: 
+    - Component-based architecture
+    - Strong performance
+    - Rich ecosystem
+  - Alternatives Considered: Vue.js, Angular (less flexible)
 
-- **WebSocket Library**: 
-  - Native FastAPI WebSocket implementation
-  - Fallback: `websockets` Python library
+- **Styling**: Tailwind CSS
+  - Reasons:
+    - Utility-first approach
+    - Rapid development
+    - Highly customizable
+  - Alternatives: Material UI, Bootstrap (more opinionated)
 
-- **Concurrency**: 
-  - `asyncio` for asynchronous programming
-  - `uvicorn` as ASGI server
+### Backend
+- **Language**: Python 3.11+
+  - Reasons:
+    - Strong typing
+    - Async support
+    - Rich scientific computing libraries
+  - Alternatives: Go, Node.js (less mature async support)
 
-### Supporting Libraries
-- `pydantic`: Data validation
-- `starlette`: WebSocket and async primitives
-- `typing`: Type hinting and validation
+- **Web Framework**: FastAPI
+  - Reasons:
+    - High performance
+    - Built-in WebSocket support
+    - Automatic API documentation
+  - Alternatives: Flask (less robust), Django (too heavy)
+
+### Communication
+- **WebSocket**: Native WebSocket / Socket.IO
+  - Reasons:
+    - Real-time bidirectional communication
+    - Low latency
+    - Supports fallback mechanisms
+  - Alternatives: Server-Sent Events (less robust)
 
 ## C) System Components
 
-### 1. Web Server
-- **Responsibility**: Handle HTTP and WebSocket connections
-- **Features**:
-  * Agent solution generation endpoint
-  * WebSocket status streaming
-  * Request routing and validation
+1. **Frontend Components**
+   - `ProblemSubmissionForm`: Problem input interface
+   - `AgentHierarchyViewer`: Dynamic agent status visualization
+   - `ExecutionStatusPanel`: Real-time execution tracking
+   - `ResultsDisplay`: Comprehensive result presentation
 
-### 2. Agent Orchestrator
-- **Responsibility**: Manage agent lifecycle
-- **Features**:
-  * Agent spawning
-  * Status tracking
-  * Result aggregation
-
-### 3. Status Broadcaster
-- **Responsibility**: Manage WebSocket connections
-- **Features**:
-  * Maintain active WebSocket connections
-  * Broadcast agent status updates
-  * Handle connection/disconnection events
+2. **Backend Components**
+   - `AgentSpawner`: Manages agent lifecycle
+   - `ExecutionTracker`: Monitors agent progress
+   - `WebSocketHandler`: Manages real-time communication
+   - `ErrorManager`: Centralizes error handling
 
 ## D) File/Directory Structure
 ```
-backend/
-├── main.py                 # FastAPI application entry point
-├── agents/
-│   ├── __init__.py         # Agent management utilities
-│   └── orchestrator.py     # Agent spawning and tracking
-├── routes/
-│   ├── solution.py         # Solution generation endpoint
-│   └── websocket.py        # WebSocket handler
-├── models/
-│   ├── agent_status.py     # Pydantic models for status
-│   └── solution.py         # Solution generation models
-├── utils/
-│   └── websocket_manager.py # WebSocket connection management
-└── config.py               # Configuration settings
+ensemble_ui/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── contexts/
+│   │   └── utils/
+├── backend/
+│   ├── agents/
+│   ├── api/
+│   ├── services/
+│   └── websockets/
+├── tests/
+│   ├── frontend/
+│   └── backend/
+└── config/
 ```
 
-## E) WebSocket Protocol Design
-
-### Status Update Structure
-```python
-{
-    "agent_id": str,
-    "status": "pending" | "running" | "completed" | "error",
-    "progress": float,  # 0.0 to 1.0
-    "phase": str,       # Current execution phase
-    "result": Optional[dict],
-    "error": Optional[str]
-}
+## E) Data Flow Diagram
+```
+User Input → Frontend Form 
+→ Backend API (AgentSpawner)
+→ Agent Runtime 
+→ WebSocket Updates 
+→ Frontend Status Display
 ```
 
-## F) API Endpoints
+## F) API Design
 
-### HTTP Endpoints
-- `POST /api/generate-solution`
-  * Request payload: Solution generation parameters
-  * Returns: Solution generation job ID
-
-### WebSocket Endpoint
-- `GET /ws/agent-status`
-  * Streams real-time agent status updates
-  * Supports multiple simultaneous connections
+### Problem Submission Endpoint
+- **URL**: `/api/problems`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "description": "string",
+    "complexity": "enum",
+    "resources": "object"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "problem_id": "string",
+    "status": "processing"
+  }
+  ```
 
 ## G) Deployment Strategy
-
-### Local Development
-- Run with `uvicorn main:app --reload`
-- Uses default localhost configuration
-
-### Production Deployment
-- Docker containerization
-- Gunicorn with Uvicorn workers
-- Potential Kubernetes for scaling
+- **Frontend**: Static hosting (Netlify/Vercel)
+- **Backend**: Containerized deployment (Docker)
+- **CI/CD**: GitHub Actions
+- **Environments**: 
+  - Development
+  - Staging
+  - Production
 
 ## H) Testing Strategy
+- **Frontend**:
+  - Jest for unit testing
+  - React Testing Library
+  - Cypress for E2E testing
 
-### Unit Testing
-- pytest for comprehensive test coverage
-- Mock WebSocket and async behaviors
-- Test agent spawning logic
-- Validate data models
+- **Backend**:
+  - pytest for unit/integration tests
+  - Mock WebSocket connections
+  - Coverage tracking
 
-### Integration Testing
-- Simulate WebSocket connections
-- Test full solution generation flow
-- Verify error handling
+## I) Alternatives Considered
+1. Monolithic Architecture
+   - Pro: Simpler initial setup
+   - Con: Less scalable
+   - **Chosen**: Microservices for flexibility
 
-## I) Risks and Mitigations
+2. gRPC vs WebSocket
+   - Pro (gRPC): Strong typing, efficient
+   - Con (gRPC): Less browser support
+   - **Chosen**: WebSocket for universal compatibility
 
-### Risk: WebSocket Connection Management
-- **Mitigation**: Implement robust connection tracking
-- Periodic health checks
-- Automatic reconnection strategies
+## J) Risks and Mitigations
+- **Long-Running Tasks**
+  - Risk: UI freezing
+  - Mitigation: Async processing, progress tracking
+  
+- **WebSocket Connection Loss**
+  - Risk: Disconnection during execution
+  - Mitigation: Reconnection logic, state preservation
 
-### Risk: Long-Running Agent Processes
-- **Mitigation**: 
-  * Timeout mechanisms
-  * Cancellation support
-  * Resource monitoring
+## K) Open Questions
+- Exact timeout strategy for agent execution
+- Granularity of real-time updates
+- Maximum concurrent agent spawning
 
-## J) Open Questions
-- Maximum concurrent agent limit?
-- WebSocket connection timeout strategy?
-- Error handling for agent execution failures?
-
-## K) Alternatives Considered
-1. REST-Only Architecture
-   - Pros: Simpler implementation
-   - Cons: Lacks real-time updates
-2. GraphQL with Subscriptions
-   - Pros: More flexible querying
-   - Cons: Increased complexity
-3. Server-Sent Events (SSE)
-   - Pros: Lighter than WebSockets
-   - Cons: Less interactive
-
-**Chosen Approach**: WebSocket-based real-time communication for maximum interactivity and low-latency updates.
+## Recommended Next Steps
+1. Validate architecture with stakeholders
+2. Create detailed component specs
+3. Set up initial project skeleton
+4. Implement CI/CD pipeline

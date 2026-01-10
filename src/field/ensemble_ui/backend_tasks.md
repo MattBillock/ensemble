@@ -1,44 +1,99 @@
-# Backend Tasks for Milestone 2: Backend Integration
+# Backend Tasks - Backend Setup and Core Agent Runtime Integration
 
-## Directory Structure Setup
-- [ ] Create `backend/` directory
-- [ ] Set up Python project structure
-- [ ] Configure project dependencies
-- [ ] Create virtual environment
+## Core Backend Setup Tasks
 
-## FastAPI Application
-- [ ] Install FastAPI and required dependencies
-- [ ] Create main application file
-- [ ] Configure application settings
-- [ ] Set up CORS and middleware
+### 1. Project Skeleton and Configuration
+- **Name**: Initialize Backend Project Structure
+- **Description**: Set up core backend project layout and configuration files
+- **Acceptance Criteria**:
+  - Poetry/virtual environment configured
+  - pytest configured
+  - Type checking with mypy
+  - Logging setup
+- **Dependencies**: None
+- **Complexity**: Simple
 
-## WebSocket Endpoint
-- [ ] Implement `/ws/agent-status` WebSocket endpoint
-- [ ] Design WebSocket message protocol
-- [ ] Create agent status streaming logic
-- [ ] Implement connection management
+### 2. FastAPI Base Application
+- **Name**: Create FastAPI Application Skeleton
+- **Description**: Set up main FastAPI application with core configurations
+- **Acceptance Criteria**:
+  - Base FastAPI app created
+  - CORS middleware configured
+  - Basic health check endpoint
+  - Swagger/OpenAPI documentation enabled
+- **Dependencies**: Project Skeleton
+- **Complexity**: Simple
 
-## Agent Execution Endpoint
-- [ ] Create `POST /api/generate-solution` endpoint
-- [ ] Design request/response models
-- [ ] Integrate agent spawning mechanism
-- [ ] Implement solution generation workflow
+### 3. WebSocket Handler Setup
+- **Name**: Implement WebSocket Communication Framework
+- **Description**: Create foundational WebSocket handling for real-time updates
+- **Acceptance Criteria**:
+  - WebSocket connection management
+  - Basic connection/disconnection tracking
+  - Message broadcast capabilities
+  - Error handling for WebSocket events
+- **Dependencies**: FastAPI Base Application
+- **Complexity**: Medium
 
-## Frontend Integration
-- [ ] Define WebSocket client connection strategy
-- [ ] Create WebSocket connection handler
-- [ ] Implement real-time status update parsing
-- [ ] Design error handling mechanisms
+### 4. Agent Runtime Integration
+- **Name**: Establish Agent Spawning Mechanism
+- **Description**: Implement backend logic to interface with existing Agent Runtime
+- **Acceptance Criteria**:
+  - Capability to spawn Executive Director agent
+  - Standardized agent initialization process
+  - Agent lifecycle management
+  - Error handling for agent spawn failures
+- **Dependencies**: WebSocket Handler
+- **Complexity**: Complex
 
-## Error Handling
-- [ ] Create custom exception classes
-- [ ] Implement global error handlers
-- [ ] Design error response models
-- [ ] Log error details for debugging
+### 5. Execution Tracking Service
+- **Name**: Create Agent Execution Monitoring
+- **Description**: Develop service to track and report agent execution status
+- **Acceptance Criteria**:
+  - Real-time status updates via WebSocket
+  - Track agent progress stages
+  - Capture and relay execution metrics
+  - Handle long-running task scenarios
+- **Dependencies**: Agent Runtime Integration
+- **Complexity**: Complex
 
-## Testing and Validation
-- [ ] Write unit tests for endpoints
-- [ ] Create integration tests
-- [ ] Test WebSocket connection scenarios
-- [ ] Validate error handling
-- [ ] Performance testing
+### 6. Error Management System
+- **Name**: Comprehensive Backend Error Handling
+- **Description**: Implement robust error detection, logging, and communication
+- **Acceptance Criteria**:
+  - Centralized error logging
+  - Meaningful error codes
+  - WebSocket error communication
+  - Graceful degradation strategies
+- **Dependencies**: WebSocket Handler, Agent Runtime Integration
+- **Complexity**: Medium
+
+## Testing and Infrastructure Tasks
+
+### 7. Backend Test Infrastructure
+- **Name**: Set Up Comprehensive Test Suite
+- **Description**: Configure testing environment and base test utilities
+- **Acceptance Criteria**:
+  - pytest configured with coverage
+  - Mock WebSocket connections
+  - Test fixtures for agent runtime
+  - CI pipeline integration
+- **Dependencies**: All Previous Backend Tasks
+- **Complexity**: Medium
+
+## Task Dependencies Visualization
+```
+1. Project Skeleton
+│
+├── 2. FastAPI Base App
+│   │
+│   ├── 3. WebSocket Handler
+│   │   │
+│   │   ├── 4. Agent Runtime Integration
+│   │   │   │
+│   │   │   ├── 5. Execution Tracking
+│   │   │   │   │
+│   │   │   │   └── 6. Error Management
+│   │   │   │       │
+│   │   │   │       └── 7. Backend Testing
+```

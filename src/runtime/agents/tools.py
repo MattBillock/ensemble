@@ -71,7 +71,12 @@ class WriteFileTool:
 
     def _is_test_file(self, file_path: Path) -> bool:
         """Check if file path is a test file."""
-        # Check file name patterns
+        # Only apply test file detection to actual code files
+        # This prevents false positives on documentation like "test_tasks.md"
+        if file_path.suffix.lower() not in self.CODE_EXTENSIONS:
+            return False
+
+        # Check file name patterns for code files
         name = file_path.name.lower()
         if name.startswith("test_") or name.endswith("_test.py") or name.endswith(".test.js") or name.endswith(".spec.js") or name.endswith(".test.ts") or name.endswith(".spec.ts"):
             return True

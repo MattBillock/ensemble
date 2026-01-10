@@ -50,28 +50,70 @@ def main():
     print("=" * 70)
     print()
 
-    result = runtime.execute(input_data)
+    try:
+        result = runtime.execute(input_data)
 
-    print()
-    print("=" * 70)
-    print("📊 EXECUTIVE DIRECTOR REPORT")
-    print("=" * 70)
-    print()
-    print(f"Status: {result.get('status')}")
-    print()
+        print()
+        print("=" * 70)
+        print("📊 EXECUTIVE DIRECTOR REPORT")
+        print("=" * 70)
+        print()
+        print(f"Status: {result.get('status', 'UNKNOWN')}")
 
-    if result.get('deliverables'):
-        print(f"📦 Deliverables ({len(result.get('deliverables'))}):")
-        for item in result['deliverables']:
-            print(f"  ✓ {item}")
+        if result.get('phase'):
+            print(f"Phase: {result.get('phase')}")
+        if result.get('project_name'):
+            print(f"Project: {result.get('project_name')}")
         print()
 
-    if result.get('message'):
-        print(f"💬 Message:")
-        print(result['message'])
+        if result.get('summary'):
+            print(f"📝 Summary:")
+            print(result['summary'])
+            print()
+
+        if result.get('deliverables'):
+            print(f"📦 Deliverables ({len(result.get('deliverables'))}):")
+            for item in result['deliverables']:
+                print(f"  ✓ {item}")
+            print()
+
+        if result.get('message'):
+            print(f"💬 Message:")
+            print(result['message'])
+            print()
+
+        if result.get('user_question'):
+            print(f"❓ Question:")
+            print(result['user_question'])
+            print()
+
+        print("=" * 70)
+
+        # Return appropriate exit code
+        status = result.get('status', 'unknown').lower()
+        if status == 'success':
+            print("✅ Pipeline completed successfully")
+            return 0
+        elif status == 'needs_user_input':
+            print("⏸️  Pipeline needs user input")
+            return 2
+        else:
+            print("⚠️  Pipeline completed with issues")
+            return 1
+
+    except Exception as e:
+        print()
+        print("=" * 70)
+        print("❌ PIPELINE EXECUTION ERROR")
+        print("=" * 70)
+        print(f"Error: {type(e).__name__}: {e}")
         print()
 
-    print("=" * 70)
+        import traceback
+        print("Traceback:")
+        traceback.print_exc()
+        print("=" * 70)
+        return 3
 
 if __name__ == "__main__":
     main()

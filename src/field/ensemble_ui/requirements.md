@@ -1,63 +1,39 @@
-# Ensemble UI Project Requirements
+# Ensemble UI Requirements
 
-## Project Overview
-Complete the Ensemble UI web application to provide a functional interface for submitting problems and monitoring agent execution in real-time.
+## Project Vision
+Complete a web application for submitting problems and monitoring agent execution in real-time, with full backend-frontend integration.
 
-## Key Objectives
-1. Integrate backend with Ensemble agent runtime
-2. Create responsive, informative frontend components
-3. Implement real-time agent status tracking
-4. Ensure robust error handling and testing
+## Core Objectives
+1. Enable problem submission via UI
+2. Spawn Executive Director agent from backend
+3. Provide real-time agent execution visibility
+4. Display agent hierarchy and status
+5. Show comprehensive results and handle errors gracefully
 
-## Detailed Requirements
+## Key Requirements
+- Backend Integration with Agent Runtime
+- Real-time Agent Status Display
+- Agent Hierarchy Visualization
+- Comprehensive Error Handling
+- Responsive, Professional UI
 
-### 1. Backend Integration
-- Import Ensemble agent runtime (AgentDefinition, AgentRuntime, ToolRegistry)
-- Update AgentOrchestrator to spawn Executive Director
-- Implement `/api/generate-solution` endpoint
-- Handle agent execution and status tracking
-- Graceful error management
-
-### 2. Frontend Components
-#### AgentStatusDisplay
-- Show agent type, status, and progress
-- Hierarchical agent spawning visualization
-- Color-coded status badges
-- Expandable information sections
-
-#### AgentHierarchy
-- Visual tree representation of spawned agents
-- Hierarchical display from Executive Director down
-- Interactive nodes with status indicators
-- Real-time updates
-
-#### App Component
-- Integrate status and hierarchy components
-- Improved results display
-- Enhanced loading and error states
-
-### 3. Testing
-- Backend import verification
-- AgentOrchestrator initialization tests
-- API endpoint testing
-- WebSocket connection validation
-
-## Technical Constraints
+## Technical Stack
 - Backend: Python 3.11+, FastAPI
 - Frontend: React 18, Tailwind CSS
-- Async agent execution
-- Use existing Ensemble agent runtime
+- WebSocket for real-time updates
 
 ## Success Criteria
-1. Seamless problem submission
-2. Real-time agent execution visibility
-3. Clear, informative user interface
-4. Robust error handling
-5. Comprehensive test coverage
+1. User can submit problem description
+2. Backend spawns Executive Director agent
+3. Agent execution tracked in real-time
+4. Agent hierarchy displays dynamically
+5. Results displayed clearly
+6. Errors handled professionally
+7. All tests pass
+8. Responsive, intuitive UI
 
-## Priority
-1. Backend Integration (CRITICAL)
-2. Agent Status Display (HIGH)
-3. Testing (HIGH)
-4. Agent Hierarchy (MEDIUM)
-5. Enhanced Results (MEDIUM)
+## Constraints
+- Use existing Ensemble agent runtime
+- Follow Test-Driven Development
+- Handle long-running tasks asynchronously
+- Maintain clean, modular architecture

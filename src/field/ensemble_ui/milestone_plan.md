@@ -1,28 +1,45 @@
-# Ensemble UI Backend - Milestone 2: Backend Integration
+# Ensemble UI Project Milestones
 
-## Milestone Objective
-Develop a robust FastAPI backend with WebSocket and HTTP endpoints to enable real-time agent orchestration.
+## Milestone 1: Backend Setup and Core Agent Runtime Integration
+- Objective: Set up backend infrastructure and integrate with existing agent runtime
+- Deliverables:
+  - FastAPI backend skeleton
+  - Agent runtime connection module
+  - Basic problem submission endpoint
+- Acceptance Criteria:
+  - Backend can receive problem descriptions
+  - Successful connection to agent runtime
+  - Initial unit tests passing
 
-## Deliverables
-1. Backend directory structure
-2. FastAPI main application
-3. WebSocket endpoint for agent status
-4. HTTP endpoint for agent execution
-5. Agent spawning integration
-6. Frontend WebSocket connection handler
-7. Error handling mechanisms
+## Milestone 2: Real-time Agent Execution Tracking
+- Objective: Implement WebSocket-based real-time agent status updates
+- Deliverables:
+  - WebSocket server implementation
+  - Agent status tracking mechanism
+  - Frontend WebSocket client
+- Acceptance Criteria:
+  - Live agent status updates
+  - Agent hierarchy visualization
+  - Real-time error propagation
 
-## Acceptance Criteria
-- Backend server runs on designated port
-- WebSocket connection can be established
-- Agents can be spawned and their status tracked
-- Frontend receives real-time updates
-- Comprehensive error handling implemented
+## Milestone 3: Complete UI and Error Handling
+- Objective: Develop comprehensive, responsive frontend with robust error management
+- Deliverables:
+  - React-based responsive UI
+  - Tailwind CSS styling
+  - Comprehensive error display and handling
+- Acceptance Criteria:
+  - Professional, intuitive UI
+  - Graceful error handling
+  - Responsive design across devices
 
-## Dependencies
-- Existing Ensemble agent framework
-- Frontend WebSocket client
-
-## Risks
-- Complex WebSocket state management
-- Potential performance bottlenecks with multiple agents
+## Milestone 4: Integration and Final Testing
+- Objective: Complete end-to-end integration and comprehensive testing
+- Deliverables:
+  - Full system integration
+  - Complete test suite
+  - Documentation
+- Acceptance Criteria:
+  - All components working together
+  - 100% test coverage
+  - Comprehensive system documentation
