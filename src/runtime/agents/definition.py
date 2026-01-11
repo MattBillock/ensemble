@@ -23,6 +23,7 @@ class AgentDefinition:
         can_write_code: bool = False,
         can_write_tests: bool = False,
         task_complexity: str = "routine",
+        category: str = "unknown",
     ):
         self.name = name
         self.purpose = purpose
@@ -37,6 +38,7 @@ class AgentDefinition:
         self.can_write_code = can_write_code
         self.can_write_tests = can_write_tests
         self.task_complexity = task_complexity
+        self.category = category
 
     def get_required_input_fields(self) -> Set[str]:
         """
@@ -86,6 +88,20 @@ class AgentDefinition:
         if not file_path.exists():
             raise FileNotFoundError(f"Agent definition file not found: {file_path}")
 
+        # Derive category from parent directory
+        category = "unknown"
+        valid_categories = ["leadership", "coordinators", "developers", "testers", "designers"]
+
+        # Check immediate parent directory
+        if file_path.parent.name in valid_categories:
+            category = file_path.parent.name
+        # Check if it's deeper in the path
+        else:
+            for part in file_path.parts:
+                if part in valid_categories:
+                    category = part
+                    break
+
         content = file_path.read_text()
 
         # Extract the name from the first H1 heading
@@ -134,6 +150,7 @@ class AgentDefinition:
             can_write_code=can_write_code,
             can_write_tests=can_write_tests,
             task_complexity=task_complexity,
+            category=category,
         )
 
     @staticmethod

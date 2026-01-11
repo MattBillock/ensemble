@@ -80,6 +80,9 @@ class AgentRuntime:
         self.spawned_agents_count = 0
         self.start_time = None
         self.model_used = None
+        # Token tracking for cost analysis
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
 
     def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -172,6 +175,15 @@ class AgentRuntime:
 
                 # Call Anthropic API
                 response = self.client.messages.create(**api_kwargs)
+
+                # Capture token usage from this iteration
+                if hasattr(response, 'usage'):
+                    self.total_input_tokens += response.usage.input_tokens
+                    self.total_output_tokens += response.usage.output_tokens
+                    logger.debug(f"Iteration {self.iteration_count}: "
+                               f"+{response.usage.input_tokens} input, "
+                               f"+{response.usage.output_tokens} output tokens "
+                               f"(total: {self.total_input_tokens + self.total_output_tokens})")
 
                 # Record iteration in state
                 if self.state_manager:
@@ -568,21 +580,8 @@ Remember to respond with valid JSON matching the expected output format.
             end_time = datetime.now()
             duration_ms = int((end_time - self.start_time).total_seconds() * 1000)
 
-            # Extract agent type from definition name
-            agent_type = "unknown"
-            if "/" in self.definition.name:
-                agent_type = self.definition.name.split("/")[0]
-            elif "_" in self.definition.name:
-                parts = self.definition.name.split("_")
-                # Try to identify type from name (e.g., backend_coordinator -> coordinator)
-                if "coordinator" in self.definition.name:
-                    agent_type = "coordinator"
-                elif "developer" in self.definition.name or "lead" in self.definition.name:
-                    agent_type = "developer"
-                elif "director" in self.definition.name or "manager" in self.definition.name:
-                    agent_type = "leadership"
-                elif "test" in self.definition.name:
-                    agent_type = "tester"
+            # Use agent category from definition (derived from file path)
+            agent_type = self.definition.category
 
             # Extract error type if failed
             error_type = None
@@ -624,7 +623,7 @@ Remember to respond with valid JSON matching the expected output format.
                 parent_agent_id=self.parent_agent_id,
                 spawned_agents_count=self.spawned_agents_count,
                 error_type=error_type,
-                tokens_used=None,  # TODO: Extract from Anthropic response
+                tokens_used=self.total_input_tokens + self.total_output_tokens,
                 task_description=task_description,
                 self_analysis=self_analysis,
                 performance_analysis=performance_analysis
