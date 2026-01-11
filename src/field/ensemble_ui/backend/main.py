@@ -27,6 +27,14 @@ class ProblemRequest(BaseModel):
     problem: str
     budget_tier: str = "balanced"  # full_firepower, balanced, economical
 
+class ModelOverrideRequest(BaseModel):
+    agent_name: str
+    model_id: str  # Specific Claude model ID to use
+
+class AgentFileUpdate(BaseModel):
+    agent_path: str  # Relative path like "leadership/executive_director.md"
+    content: str
+
 class AgentOrchestrator:
     def __init__(self):
         self.active_agents: Dict[str, Any] = {}
@@ -159,6 +167,103 @@ async def agent_status_ws(websocket: WebSocket):
     
     except WebSocketDisconnect:
         print("WebSocket disconnected")
+
+@app.get("/api/status")
+async def get_application_status():
+    """Get current application status and statistics"""
+    return {
+        "status": "running",
+        "active_agents": len(orchestrator.active_agents),
+        "agents": {
+            agent_id: {
+                "type": info.get("type"),
+                "status": info.get("status"),
+                "budget_tier": info.get("budget_tier", "balanced")
+            }
+            for agent_id, info in orchestrator.active_agents.items()
+        }
+    }
+
+@app.get("/api/available-models")
+async def get_available_models():
+    """Get list of available Claude models"""
+    from src.runtime.agents.model_selector import ModelSelector
+    return {
+        "tiers": ModelSelector.get_available_tiers(),
+        "complexities": ModelSelector.get_available_complexities(),
+        "tier_descriptions": {
+            tier: ModelSelector.get_tier_description(tier)
+            for tier in ModelSelector.get_available_tiers()
+        },
+        "cost_multipliers": {
+            tier: ModelSelector.estimate_cost_multiplier(tier)
+            for tier in ModelSelector.get_available_tiers()
+        }
+    }
+
+@app.get("/api/agents")
+async def list_agents():
+    """List all available agent definitions"""
+    agents = []
+    for directory in ["leadership", "coordinators", "developers", "testers", "designers"]:
+        agent_dir = orchestrator.project_root / directory
+        if agent_dir.exists():
+            for agent_file in agent_dir.glob("*.md"):
+                agents.append({
+                    "name": agent_file.stem,
+                    "path": f"{directory}/{agent_file.name}",
+                    "tier": directory
+                })
+    return {"agents": agents}
+
+@app.get("/api/agents/{agent_tier}/{agent_name}")
+async def get_agent_definition(agent_tier: str, agent_name: str):
+    """Get agent definition file content"""
+    agent_path = orchestrator.project_root / agent_tier / f"{agent_name}.md"
+    if not agent_path.exists():
+        return {"error": "Agent not found"}, 404
+
+    content = agent_path.read_text()
+    return {
+        "path": f"{agent_tier}/{agent_name}.md",
+        "content": content
+    }
+
+@app.post("/api/agents/update")
+async def update_agent_definition(update: AgentFileUpdate):
+    """Update an agent definition file"""
+    try:
+        agent_path = orchestrator.project_root / update.agent_path
+        if not agent_path.exists():
+            return {"error": "Agent file not found", "path": update.agent_path}, 404
+
+        # Backup current version
+        backup_path = agent_path.with_suffix(".md.backup")
+        agent_path.rename(backup_path)
+
+        try:
+            # Write new content
+            agent_path.write_text(update.content)
+
+            # Validate by trying to load it
+            from src.runtime.agents import AgentDefinition
+            AgentDefinition.from_file(agent_path)
+
+            return {
+                "success": True,
+                "message": f"Updated {update.agent_path}",
+                "backup": str(backup_path)
+            }
+        except Exception as e:
+            # Restore backup on failure
+            backup_path.rename(agent_path)
+            return {
+                "error": f"Failed to update agent: {str(e)}",
+                "backup_restored": True
+            }, 400
+
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
