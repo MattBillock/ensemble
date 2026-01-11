@@ -2,6 +2,7 @@
 import json
 import logging
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 from anthropic import Anthropic
 from pathlib import Path
@@ -10,6 +11,8 @@ from .definition import AgentDefinition
 from .tools import ToolRegistry
 from .state import StateManager
 from .model_selector import ModelSelector
+from .metrics import AgentMetricsTracker
+from .activity_tracker import AgentActivityTracker
 
 # Set up structured logging
 logging.basicConfig(
@@ -22,12 +25,24 @@ logger = logging.getLogger(__name__)
 class AgentRuntime:
     """Runtime for executing an agent based on its definition."""
 
-    # Model mapping from friendly names to API model IDs
-    MODEL_MAP = {
-        "haiku": "claude-3-5-haiku-20241022",
-        "sonnet": "claude-3-5-sonnet-20241022",
-        "opus": "claude-opus-4-20241229"
-    }
+    # Shared metrics tracker across all runtimes
+    _metrics_tracker = None
+    # Shared activity tracker across all runtimes
+    _activity_tracker = None
+
+    @classmethod
+    def get_metrics_tracker(cls) -> AgentMetricsTracker:
+        """Get or create the shared metrics tracker."""
+        if cls._metrics_tracker is None:
+            cls._metrics_tracker = AgentMetricsTracker()
+        return cls._metrics_tracker
+
+    @classmethod
+    def get_activity_tracker(cls) -> AgentActivityTracker:
+        """Get or create the shared activity tracker."""
+        if cls._activity_tracker is None:
+            cls._activity_tracker = AgentActivityTracker()
+        return cls._activity_tracker
 
     def __init__(
         self,
@@ -35,7 +50,10 @@ class AgentRuntime:
         api_key: str,
         tools: Optional[ToolRegistry] = None,
         state_file: Optional[Path] = None,
-        budget_tier: str = "balanced"
+        budget_tier: str = "balanced",
+        agent_id: Optional[str] = None,
+        request_id: Optional[str] = None,
+        parent_agent_id: Optional[str] = None
     ):
         """
         Initialize agent runtime.
@@ -46,6 +64,9 @@ class AgentRuntime:
             tools: Optional tool registry for agent capabilities
             state_file: Optional path to state file for persistence/resume
             budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
+            agent_id: Optional agent ID for metrics tracking
+            request_id: Optional request ID for tracing
+            parent_agent_id: Optional parent agent ID for hierarchy tracking
         """
         self.definition = definition
         self.client = Anthropic(api_key=api_key)
@@ -53,6 +74,12 @@ class AgentRuntime:
         self.iteration_count = 0
         self.state_manager = StateManager(state_file) if state_file else None
         self.budget_tier = budget_tier
+        self.agent_id = agent_id or f"{definition.name}_{datetime.now().timestamp()}"
+        self.request_id = request_id or "unknown"
+        self.parent_agent_id = parent_agent_id
+        self.spawned_agents_count = 0
+        self.start_time = None
+        self.model_used = None
 
     def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -67,20 +94,11 @@ class AgentRuntime:
         Raises:
             ValueError: If input doesn't match expected format
         """
+        # Record start time for metrics
+        self.start_time = datetime.now()
+
         # Validate input
         self._validate_input(input_data)
-
-        # Initialize or resume state
-        if self.state_manager:
-            if self.state_manager.can_resume():
-                logger.info("Resuming from previous state")
-                resume_info = self.state_manager.get_resume_info()
-                self.iteration_count = resume_info["iteration"]
-                # For now, we'll start fresh but log the resume
-                # Full resume with conversation history would need message reconstruction
-                logger.info(f"Previous execution had {resume_info['spawned_agents_count']} spawned agents")
-            else:
-                self.state_manager.init_execution(self.definition.name, input_data)
 
         # Build prompts
         system_prompt = self._build_system_prompt()
@@ -93,8 +111,33 @@ class AgentRuntime:
             agent_name=self.definition.name
         )
 
+        # Store model for metrics
+        self.model_used = model
+
         logger.info(f"Executing agent: {self.definition.name}")
         logger.info(f"Using model: {model} (tier={self.budget_tier}, complexity={self.definition.task_complexity})")
+
+        # Record agent start in activity tracker
+        activity_tracker = self.get_activity_tracker()
+        activity_tracker.record_agent_started(
+            agent_id=self.agent_id,
+            agent_name=self.definition.name,
+            agent_type=getattr(self.definition, 'agent_type', 'unknown'),
+            request_id=self.request_id,
+            parent_agent_id=self.parent_agent_id,
+            input_data=input_data,
+            model=model
+        )
+
+        # Initialize or resume state
+        if self.state_manager:
+            if self.state_manager.can_resume():
+                logger.info("Resuming from previous state")
+                resume_info = self.state_manager.get_resume_info()
+                self.iteration_count = resume_info["iteration"]
+                logger.info(f"Previous execution had {resume_info['spawned_agents_count']} spawned agents")
+            else:
+                self.state_manager.init_execution(self.definition.name, input_data)
 
         # Initialize conversation
         messages = [{"role": "user", "content": user_prompt}]
@@ -117,6 +160,15 @@ class AgentRuntime:
             while self.iteration_count < self.definition.max_iterations:
                 self.iteration_count += 1
                 logger.info(f"Iteration {self.iteration_count}/{self.definition.max_iterations}")
+
+                # Record iteration start
+                activity_tracker.record_iteration_started(
+                    agent_id=self.agent_id,
+                    agent_name=self.definition.name,
+                    request_id=self.request_id,
+                    iteration=self.iteration_count,
+                    max_iterations=self.definition.max_iterations
+                )
 
                 # Call Anthropic API
                 response = self.client.messages.create(**api_kwargs)
@@ -156,12 +208,45 @@ class AgentRuntime:
             if self.state_manager and response_data:
                 self.state_manager.mark_completed(response_data)
 
+            # Record agent completion in activity tracker
+            activity_tracker.record_agent_completed(
+                agent_id=self.agent_id,
+                agent_name=self.definition.name,
+                request_id=self.request_id,
+                result=response_data
+            )
+
+            # Record metrics on success
+            self._record_execution_metrics(
+                success=True,
+                response_data=response_data,
+                input_data=input_data
+            )
+
             return response_data
 
         except Exception as e:
+            import traceback
             # Mark as failed on exception
             if self.state_manager:
                 self.state_manager.mark_failed(str(e))
+
+            # Record agent failure in activity tracker
+            activity_tracker.record_agent_failed(
+                agent_id=self.agent_id,
+                agent_name=self.definition.name,
+                request_id=self.request_id,
+                error=str(e),
+                traceback=traceback.format_exc()
+            )
+
+            # Record metrics on failure
+            self._record_execution_metrics(
+                success=False,
+                error=e,
+                input_data=input_data
+            )
+
             raise
 
     def _validate_input(self, input_data: Dict[str, Any]) -> None:
@@ -313,6 +398,9 @@ Remember to respond with valid JSON matching the expected output format.
         Returns:
             Updated messages list with tool results
         """
+        # Get activity tracker
+        activity_tracker = self.get_activity_tracker()
+
         # Add assistant's response to messages
         assistant_content = []
         tool_results = []
@@ -320,6 +408,17 @@ Remember to respond with valid JSON matching the expected output format.
         for content_block in response.content:
             if content_block.type == "tool_use":
                 logger.info(f"Executing tool: {content_block.name}")
+
+                # Record tool use started
+                activity_tracker.record_tool_use(
+                    agent_id=self.agent_id,
+                    agent_name=self.definition.name,
+                    request_id=self.request_id,
+                    iteration=self.iteration_count,
+                    tool_name=content_block.name,
+                    tool_inputs=content_block.input,
+                    status="started"
+                )
 
                 # Add tool use to assistant content
                 assistant_content.append({
@@ -335,12 +434,45 @@ Remember to respond with valid JSON matching the expected output format.
                     try:
                         result = tool.execute(content_block.input)
                         logger.info(f"Tool {content_block.name} executed successfully")
+
+                        # Record tool use completed
+                        activity_tracker.record_tool_use(
+                            agent_id=self.agent_id,
+                            agent_name=self.definition.name,
+                            request_id=self.request_id,
+                            iteration=self.iteration_count,
+                            tool_name=content_block.name,
+                            tool_inputs=content_block.input,
+                            status="completed"
+                        )
                     except Exception as e:
                         logger.error(f"Tool {content_block.name} failed: {e}")
                         result = {"success": False, "error": str(e)}
+
+                        # Record tool use failed
+                        activity_tracker.record_tool_use(
+                            agent_id=self.agent_id,
+                            agent_name=self.definition.name,
+                            request_id=self.request_id,
+                            iteration=self.iteration_count,
+                            tool_name=content_block.name,
+                            tool_inputs=content_block.input,
+                            status="failed"
+                        )
                 else:
                     logger.error(f"Unknown tool: {content_block.name}")
                     result = {"success": False, "error": f"Unknown tool: {content_block.name}"}
+
+                    # Record tool use failed
+                    activity_tracker.record_tool_use(
+                        agent_id=self.agent_id,
+                        agent_name=self.definition.name,
+                        request_id=self.request_id,
+                        iteration=self.iteration_count,
+                        tool_name=content_block.name,
+                        tool_inputs=content_block.input,
+                        status="failed"
+                    )
 
                 # Record tool result in state
                 if self.state_manager:
@@ -411,4 +543,96 @@ Remember to respond with valid JSON matching the expected output format.
         # If no text found, return empty
         logger.warning("No text content found in response")
         return {}
+
+    def _record_execution_metrics(
+        self,
+        success: bool,
+        response_data: Optional[Dict[str, Any]] = None,
+        error: Optional[Exception] = None,
+        input_data: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Record execution metrics to the metrics tracker.
+
+        Args:
+            success: Whether execution succeeded
+            response_data: Agent response data if successful
+            error: Exception if failed
+            input_data: Input data provided to agent
+        """
+        if not self.start_time:
+            logger.warning("Cannot record metrics: start_time not set")
+            return
+
+        try:
+            end_time = datetime.now()
+            duration_ms = int((end_time - self.start_time).total_seconds() * 1000)
+
+            # Extract agent type from definition name
+            agent_type = "unknown"
+            if "/" in self.definition.name:
+                agent_type = self.definition.name.split("/")[0]
+            elif "_" in self.definition.name:
+                parts = self.definition.name.split("_")
+                # Try to identify type from name (e.g., backend_coordinator -> coordinator)
+                if "coordinator" in self.definition.name:
+                    agent_type = "coordinator"
+                elif "developer" in self.definition.name or "lead" in self.definition.name:
+                    agent_type = "developer"
+                elif "director" in self.definition.name or "manager" in self.definition.name:
+                    agent_type = "leadership"
+                elif "test" in self.definition.name:
+                    agent_type = "tester"
+
+            # Extract error type if failed
+            error_type = None
+            if error:
+                error_type = type(error).__name__
+
+            # Extract task description
+            task_description = None
+            if input_data:
+                # Try common field names for task description
+                for key in ["problem_description", "task", "user_vision", "milestone"]:
+                    if key in input_data:
+                        desc = str(input_data[key])
+                        task_description = desc[:200] if len(desc) > 200 else desc
+                        break
+
+            # Extract self-analysis and performance analysis from response
+            self_analysis = None
+            performance_analysis = None
+            if response_data:
+                self_analysis = response_data.get("self_analysis")
+                performance_analysis = response_data.get("performance_analysis")
+
+            # Get metrics tracker and record execution
+            metrics = self.get_metrics_tracker()
+            metrics.record_execution(
+                agent_id=self.agent_id,
+                agent_type=agent_type,
+                agent_name=self.definition.name,
+                model_used=self.model_used or "unknown",
+                task_complexity=self.definition.task_complexity,
+                budget_tier=self.budget_tier,
+                success=success,
+                duration_ms=duration_ms,
+                iterations=self.iteration_count,
+                created_at=self.start_time.isoformat(),
+                completed_at=end_time.isoformat(),
+                request_id=self.request_id,
+                parent_agent_id=self.parent_agent_id,
+                spawned_agents_count=self.spawned_agents_count,
+                error_type=error_type,
+                tokens_used=None,  # TODO: Extract from Anthropic response
+                task_description=task_description,
+                self_analysis=self_analysis,
+                performance_analysis=performance_analysis
+            )
+
+            logger.info(f"Recorded metrics for {self.definition.name}: success={success}, duration={duration_ms}ms")
+
+        except Exception as e:
+            logger.error(f"Failed to record metrics: {e}")
+            # Don't re-raise - metrics recording should not break execution
 

@@ -1,136 +1,121 @@
-# Ensemble System Improvements - Milestone Plan
+# Ensemble UI Enhancements - Milestone Plan
 
-## Project: ensemble_system_improvements
-
-## Overview
-Implement the top 3 improvements to the Ensemble agent system: real-time progress streaming, automatic error recovery, and performance analytics.
+## Project Overview
+**Project**: ensemble-ui-enhancements  
+**Timeline**: 3 Milestones  
+**Goal**: Enhance Ensemble UI with 6 key features for better UX
 
 ---
 
-## Milestone 1: Real-Time Agent Progress Streaming
-**Objective**: Provide users with granular, real-time visibility into agent execution.
+## Milestone 1: Core UI Improvements (Features 1-3)
+**Objective**: Implement foundational improvements to agent hierarchy and completed items management
 
 **Deliverables**:
-1. Enhanced `AgentRuntime` with progress event emission
-2. Event bus/callback system for progress notifications
-3. Updated WebSocket handler for streaming progress events
-4. Progress tracking for spawned agent execution
-5. Tool execution progress tracking
-6. Frontend integration (if applicable)
-7. Unit tests for progress tracking
-8. Documentation updates
+1. Agent Hierarchy Question Links (Feature 1)
+   - Update AgentHierarchyTree component with question links
+   - Implement scroll/navigation to questions
+   - Add visual indicators for linked hierarchies
+   
+2. Completed Items Section (Feature 2)
+   - Create CompletedItemsSection component
+   - Implement collapsible/hideable functionality
+   - Auto-move completed items from active view
+   - Add count badge
+   
+3. Two-Word Subject Summaries (Feature 3)
+   - Create summary generation utility function
+   - Integrate summaries into hierarchy display
+   - Ensure prominent display for quick scanning
 
 **Acceptance Criteria**:
-- Users can see which agent is active at any moment
-- Tool invocations appear in real-time via WebSocket
-- Spawn events visible with parent-child relationships
-- WebSocket clients receive updates < 500ms after events
-- Performance overhead < 5%
-- All existing tests pass
+- ✅ Clicking hierarchy item navigates to associated question
+- ✅ Completed items appear in separate collapsible section
+- ✅ Each hierarchy displays clear 2-word summary
+- ✅ All existing functionality works unchanged
+- ✅ Unit tests pass for new components
 
-**Dependencies**: None (first milestone)
-
-**Estimated Duration**: 2-3 days
+**Dependencies**: None
 
 ---
 
-## Milestone 2: Automatic Error Recovery & Context Preservation
-**Objective**: Enable automatic recovery from failures with full context preservation.
+## Milestone 2: Layout & Collapsible Sections (Features 4-5)
+**Objective**: Improve layout proportions and add collapsible functionality
 
 **Deliverables**:
-1. Complete `StateManager` resume functionality (message reconstruction)
-2. Retry logic with exponential backoff
-3. Context preservation for spawned agents
-4. Automatic checkpoint validation and rollback
-5. Error classification system (retryable vs. fatal)
-6. Tool execution result preservation across retries
-7. Integration tests for recovery scenarios
-8. Documentation for error recovery behavior
+1. Layout Improvements (Feature 4)
+   - Adjust Bootstrap grid: Problem description wider, activity feed narrower
+   - Increase textarea rows for problem description (6-8 rows)
+   - Update CSS for responsive design
+   - Test on multiple screen sizes
+   
+2. Collapsible Sections (Feature 5)
+   - Make Current Agent Tasks collapsible
+   - Make Activity Feed collapsible
+   - Add chevron icons for expand/collapse state
+   - Preserve collapse state during re-renders
+   - Smooth transitions
 
 **Acceptance Criteria**:
-- Agents resume from last checkpoint after crashes
-- Transient API errors trigger automatic retry
-- Failed spawns preserve parent agent state
-- Context includes conversation history, tool results, spawn data
-- Recovery success rate > 80% for retryable errors
-- Zero token waste on successful recovery
-- All existing tests pass
+- ✅ Problem description visibly larger and more usable
+- ✅ Activity feed narrower but still functional
+- ✅ Current Tasks and Activity Feed collapse/expand smoothly
+- ✅ Collapse state preserved during updates
+- ✅ Responsive design maintained
+- ✅ Unit tests pass
 
-**Dependencies**: Milestone 1 (uses progress tracking for monitoring)
-
-**Estimated Duration**: 3-4 days
+**Dependencies**: Milestone 1 complete
 
 ---
 
-## Milestone 3: Agent Performance Analytics & Adaptive Optimization
-**Objective**: Track agent performance metrics and enable adaptive model selection.
+## Milestone 3: Metrics Pane & Final Integration (Feature 6)
+**Objective**: Add metrics visibility and complete final integration testing
 
 **Deliverables**:
-1. New `AgentAnalytics` module for metrics tracking
-2. Metrics collection per agent instance (tokens, time, success rate, iterations, tools)
-3. Aggregate metrics by agent type and model tier
-4. Analytics dashboard API endpoint
-5. Adaptive model selection algorithm
-6. Performance comparison reports
-7. Metrics export (JSON, CSV)
-8. Analytics unit and integration tests
-9. Analytics documentation and usage guide
+1. Metrics Pane Component (Feature 6)
+   - Create MetricsPane.jsx component
+   - Display model usage counts (Haiku, Sonnet, Opus)
+   - Display code delta metrics (lines added/removed, files changed)
+   - Implement real-time polling
+   - Add/extend API endpoint in services/api.js
+   
+2. Final Integration
+   - Place metrics pane in optimal location
+   - Integration testing of all 6 features
+   - Performance testing
+   - Update documentation
+
+3. Testing & Documentation
+   - Comprehensive unit tests for all new components
+   - Integration tests for feature interactions
+   - Update README with new features
+   - Verify no regressions
 
 **Acceptance Criteria**:
-- All agent executions tracked with complete metrics
-- Analytics API returns per-agent and aggregate statistics
-- Adaptive model selection improves success rate by 15%+
-- Token usage optimization reduces costs by 10%+
-- Reports identify underperforming agents
-- Metrics persist across system restarts
-- All existing tests pass
+- ✅ Metrics pane displays real-time model and code metrics
+- ✅ All 6 features work together seamlessly
+- ✅ No performance degradation
+- ✅ All tests pass (unit + integration)
+- ✅ Documentation complete
+- ✅ No regressions in existing functionality
 
-**Dependencies**: Milestone 1 and 2 (uses data from progress tracking and error recovery)
-
-**Estimated Duration**: 2-3 days
+**Dependencies**: Milestone 2 complete
 
 ---
 
-## Milestone 4: Testing, Documentation & Integration
-**Objective**: Ensure all improvements are tested, documented, and integrated.
+## Risk Management
 
-**Deliverables**:
-1. Comprehensive test suite for all new features
-2. Performance benchmarks (before/after)
-3. Updated README with new features
-4. Implementation guide for new capabilities
-5. API documentation for new endpoints
-6. User guide for progress monitoring and analytics
-7. Integration verification across all improvements
+**Risks**:
+1. **Backend metrics not available**: Mitigation - Use mock data with clear note
+2. **Layout changes break responsive design**: Mitigation - Test on multiple screen sizes
+3. **State management complexity**: Mitigation - Keep collapse states simple, local to components
 
-**Acceptance Criteria**:
-- Test coverage > 80% for new code
-- All existing tests pass
-- Performance benchmarks show improvements
-- Documentation complete and accurate
-- Zero breaking changes to agent definitions
-- System backward compatible with existing state files
-
-**Dependencies**: Milestones 1, 2, and 3
-
-**Estimated Duration**: 1-2 days
+**Critical Path**: Milestone 1 → Milestone 2 → Milestone 3 (sequential)
 
 ---
-
-## Total Project Timeline
-**Estimated Duration**: 8-12 days
-
-## Technical Constraints
-1. Maintain backward compatibility with existing agent definitions
-2. Do not break permission system (can_write_code, can_write_tests)
-3. Do not increase API costs by more than 10%
-4. Support concurrent agent execution
-5. Preserve existing state file format (extend, don't replace)
 
 ## Success Metrics
-- Real-time progress visible to users ✅
-- Error recovery succeeds > 80% for retryable failures ✅
-- Performance metrics tracked for all agents ✅
-- All existing tests continue to pass ✅
-- Documentation updated ✅
-- Zero breaking changes ✅
+- All 6 features implemented per requirements
+- Zero regressions in existing functionality
+- UI remains responsive (no lag)
+- Test coverage >80% for new code
+- Clean, maintainable code ready for production

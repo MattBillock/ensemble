@@ -1,182 +1,364 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ProblemInputForm from './components/ProblemInputForm';
-import AgentStatusPane from './components/AgentStatusPane';
-import AgentSummaryPane from './components/AgentSummaryPane';
-import FileViewerPane from './components/FileViewerPane';
-import { generateSolution, connectWebSocket, getApplicationStatus } from './services/api';
+import { Container, Row, Col, Card, Form, Button, Badge, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
+import {
+  generateSolution,
+  getApplicationStatus,
+  getRecentActivities,
+  getAgentHierarchy,
+  getAllAgentStates,
+  getPendingQuestions,
+  answerQuestion,
+  getGeneratedFiles
+} from './services/api';
+import ActivityFeed from './components/ActivityFeed';
+import AgentHierarchyTree from './components/AgentHierarchyTree';
+import PendingQuestions from './components/PendingQuestions';
+import GeneratedFiles from './components/GeneratedFiles';
 
 function App() {
-  const [problemDescription, setProblemDescription] = useState(null);
-  const [budgetTier, setBudgetTier] = useState(null);
-  const [agentStatus, setAgentStatus] = useState(null);
-  const [appStatus, setAppStatus] = useState({ status: 'connecting', active_agents: 0 });
-  const [isLoading, setIsLoading] = useState(false);
+  const [problemInput, setProblemInput] = useState('');
+  const [budgetTier, setBudgetTier] = useState('balanced');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null);
-  const wsRef = useRef(null);
 
-  useEffect(() => {
-    // Listen for agent resume events from ChatInterface
-    const handleAgentResume = (event) => {
-      const { task, budgetTier } = event.detail;
-      handleProblemSubmit(task, budgetTier);
-    };
+  // Activity state
+  const [activities, setActivities] = useState([]);
+  const [hierarchy, setHierarchy] = useState({});
+  const [agentStates, setAgentStates] = useState({});
+  const [questions, setQuestions] = useState({});
+  const [generatedFiles, setGeneratedFiles] = useState([]);
+  const [appStatus, setAppStatus] = useState({ status: 'connecting', active_agents: 0 });
 
-    window.addEventListener('spawn-agent-task', handleAgentResume);
+  // Polling configuration
+  const [pollInterval, setPollInterval] = useState(1000); // 1 second default
+  const [isPaused, setIsPaused] = useState(false);
 
-    // Connect WebSocket with auto-reconnect
-    const connectWS = () => {
-      wsRef.current = connectWebSocket(
-        (data) => {
-          setAgentStatus(data);
-          setError(null);
-        },
-        (error) => {
-          console.log('WebSocket disconnected, will retry on next status poll');
-          if (wsRef.current) {
-            wsRef.current = null;
-          }
-        }
-      );
-    };
+  const pollTimerRef = useRef(null);
 
-    connectWS();
-
-    // Poll application status and reconnect WebSocket if needed
-    const statusInterval = setInterval(async () => {
-      try {
-        const status = await getApplicationStatus();
-        setAppStatus(status);
-
-        // Reconnect WebSocket if it's disconnected
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('🔄 Reconnecting WebSocket...');
-          connectWS();
-        }
-      } catch (err) {
-        console.error('Failed to fetch app status:', err);
-        setAppStatus({ status: 'error', active_agents: 0 });
-      }
-    }, 2000);
-
-    // Cleanup on unmount
-    return () => {
-      window.removeEventListener('spawn-agent-task', handleAgentResume);
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      clearInterval(statusInterval);
-    };
-  }, []);
-
-  const handleProblemSubmit = async (description, tier) => {
-    setProblemDescription(description);
-    setBudgetTier(tier);
-    setIsLoading(true);
-    setError(null);
-    setResult(null);
+  // Fetch all activity data
+  const fetchActivityData = async () => {
+    if (isPaused) return;
 
     try {
-      const response = await generateSolution(description, tier);
-      console.log('Solution generation started:', response);
-      setResult(response);
+      const [activitiesRes, hierarchyRes, statesRes, questionsRes, filesRes, statusRes] = await Promise.all([
+        getRecentActivities({ limit: 200 }),
+        getAgentHierarchy(),
+        getAllAgentStates(),
+        getPendingQuestions(),
+        getGeneratedFiles({ limit: 100 }),
+        getApplicationStatus()
+      ]);
 
-      // Request status for this agent
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ agent_id: response.agent_id }));
+      setActivities(activitiesRes.activities || []);
+      setHierarchy(hierarchyRes.hierarchy || {});
+      setAgentStates(statesRes.agent_states || {});
+      setQuestions(questionsRes.questions || {});
+      setGeneratedFiles(filesRes.files || []);
+      setAppStatus(statusRes);
+    } catch (err) {
+      console.error('Failed to fetch activity data:', err);
+    }
+  };
+
+  // Set up polling
+  useEffect(() => {
+    // Initial fetch
+    fetchActivityData();
+
+    // Set up polling
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
+
+    pollTimerRef.current = setInterval(fetchActivityData, pollInterval);
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
       }
+    };
+  }, [pollInterval, isPaused]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await generateSolution(problemInput, budgetTier);
+      console.log('Solution generation started:', response);
     } catch (err) {
       setError('Failed to start solution generation');
       console.error(err);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  const handleAnswerQuestion = async (questionId, answer) => {
+    await answerQuestion(questionId, answer);
+    // Refresh questions immediately
+    const questionsRes = await getPendingQuestions();
+    setQuestions(questionsRes.questions || {});
+  };
+
+  const runningAgents = Object.values(agentStates).filter(s => s.status === 'running').length;
+  const completedAgents = Object.values(agentStates).filter(s => s.status === 'completed').length;
+  const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed').length;
+
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col overflow-hidden">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-white/10 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🤖</div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                Ensemble AI
-              </h1>
-              <p className="text-blue-300 text-xs">Collaborative Multi-Agent System</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <div className={`w-2 h-2 rounded-full ${appStatus.status === 'running' ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-gray-400'}`}></div>
-              <span className="font-medium text-white text-xs">{appStatus.status === 'running' ? 'Online' : 'Connecting'}</span>
-            </div>
-            <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <span className="font-medium text-white text-xs">{appStatus.active_agents} Agent{appStatus.active_agents !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
-        </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#1a1d29' }}>
+      {/* Header */}
+      <div style={{
+        backgroundColor: '#242836',
+        borderBottom: '1px solid #3a3f52',
+        padding: '12px 0'
+      }}>
+        <Container fluid>
+          <Row>
+            <Col>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <h4 style={{ margin: 0, color: '#e4e6eb' }}>🎭 Ensemble AI</h4>
+                  <Badge bg={appStatus.status === 'running' ? 'success' : 'secondary'}>
+                    {appStatus.status === 'running' ? 'Online' : 'Connecting...'}
+                  </Badge>
+                  <Badge bg="warning" text="dark">{runningAgents} Running</Badge>
+                  <Badge bg="success">{completedAgents} Completed</Badge>
+                  {failedAgents > 0 && <Badge bg="danger">{failedAgents} Failed</Badge>}
+                </div>
+
+                {/* Poll interval control */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>Update Interval:</span>
+                  <ButtonGroup size="sm">
+                    <Button
+                      variant={pollInterval === 500 ? 'primary' : 'outline-secondary'}
+                      onClick={() => setPollInterval(500)}
+                    >
+                      500ms
+                    </Button>
+                    <Button
+                      variant={pollInterval === 1000 ? 'primary' : 'outline-secondary'}
+                      onClick={() => setPollInterval(1000)}
+                    >
+                      1s
+                    </Button>
+                    <Button
+                      variant={pollInterval === 2000 ? 'primary' : 'outline-secondary'}
+                      onClick={() => setPollInterval(2000)}
+                    >
+                      2s
+                    </Button>
+                  </ButtonGroup>
+                  <Button
+                    variant={isPaused ? 'warning' : 'outline-secondary'}
+                    size="sm"
+                    onClick={() => setIsPaused(!isPaused)}
+                  >
+                    {isPaused ? '▶ Resume' : '⏸ Pause'}
+                  </Button>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Container>
       </div>
 
-      {/* 4-Pane Layout (2x2 Grid) */}
-      <div className="flex-1 grid grid-cols-2 gap-0 overflow-hidden">
-        {/* Top-Left: Agent Status & Conversation */}
-        <div className="border-r border-b border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
-          <AgentStatusPane agentStatus={agentStatus} />
-        </div>
+      <Container fluid style={{ padding: '16px' }}>
+        <Row style={{ height: 'calc(100vh - 80px)' }}>
+          {/* Left Column - Input & Questions */}
+          <Col md={3} style={{ height: '100%', overflowY: 'auto' }}>
+            {/* Input Form */}
+            <Card bg="dark" text="light" className="mb-3">
+              <Card.Header>
+                <h6 className="mb-0">New Task</h6>
+              </Card.Header>
+              <Card.Body>
+                <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3">
+                    <Form.Label style={{ fontSize: '13px' }}>Problem Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={4}
+                      value={problemInput}
+                      onChange={(e) => setProblemInput(e.target.value)}
+                      placeholder="Describe what you want to build..."
+                      style={{
+                        backgroundColor: '#1a1d29',
+                        color: '#e4e6eb',
+                        border: '1px solid #3a3f52',
+                        fontSize: '13px'
+                      }}
+                    />
+                  </Form.Group>
 
-        {/* Top-Right: Agent Summary */}
-        <div className="border-b border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
-          <AgentSummaryPane agentStatus={agentStatus} />
-        </div>
+                  <Form.Group className="mb-3">
+                    <Form.Label style={{ fontSize: '13px' }}>Budget Tier</Form.Label>
+                    <Form.Select
+                      value={budgetTier}
+                      onChange={(e) => setBudgetTier(e.target.value)}
+                      style={{
+                        backgroundColor: '#1a1d29',
+                        color: '#e4e6eb',
+                        border: '1px solid #3a3f52',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <option value="economical">Economical (Haiku)</option>
+                      <option value="balanced">Balanced (Sonnet)</option>
+                      <option value="full_firepower">Full Power (Opus)</option>
+                    </Form.Select>
+                  </Form.Group>
 
-        {/* Bottom-Left: Input Area */}
-        <div className="border-r border-white/10 bg-white/5 backdrop-blur-sm flex flex-col overflow-hidden">
-          <div className="flex-shrink-0 border-b border-white/10 p-4">
-            <h3 className="font-semibold text-white">New Task</h3>
-            <p className="text-xs text-gray-400">Describe what you want the agents to build</p>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border-l-4 border-red-500 text-red-200 rounded-lg">
-                <div className="flex items-start">
-                  <span className="text-xl mr-2">⚠️</span>
-                  <div>
-                    <p className="font-semibold text-white">Error</p>
-                    <p className="text-sm">{error}</p>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    disabled={isSubmitting || !problemInput}
+                    style={{ width: '100%' }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Starting...
+                      </>
+                    ) : (
+                      '🚀 Start Task'
+                    )}
+                  </Button>
+
+                  {error && (
+                    <Alert variant="danger" className="mt-3 mb-0" style={{ fontSize: '12px' }}>
+                      {error}
+                    </Alert>
+                  )}
+                </Form>
+              </Card.Body>
+            </Card>
+
+            {/* Pending Questions */}
+            <PendingQuestions questions={questions} onAnswer={handleAnswerQuestion} />
+
+            {/* Agent Hierarchy */}
+            <Card bg="dark" text="light">
+              <Card.Header>
+                <h6 className="mb-0">
+                  Agent Hierarchy
+                  <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
+                    {Object.keys(hierarchy).length} agents
+                  </Badge>
+                </h6>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
+                <AgentHierarchyTree hierarchy={hierarchy} />
+              </Card.Body>
+            </Card>
+          </Col>
+
+          {/* Middle Column - Activity Feed */}
+          <Col md={5} style={{ height: '100%', overflowY: 'auto' }}>
+            <Card bg="dark" text="light" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Card.Header>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h6 className="mb-0">
+                    Activity Feed
+                    <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
+                      {activities.length} activities
+                    </Badge>
+                  </h6>
+                  <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                    {isPaused ? '⏸ Paused' : `🔄 Updates every ${pollInterval}ms`}
+                  </span>
+                </div>
+              </Card.Header>
+              <Card.Body style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                <ActivityFeed activities={activities} />
+              </Card.Body>
+            </Card>
+          </Col>
+
+          {/* Right Column - Agent States & Generated Files */}
+          <Col md={4} style={{ height: '100%', overflowY: 'auto' }}>
+            {/* Current Agent Tasks */}
+            <Card bg="dark" text="light" className="mb-3">
+              <Card.Header>
+                <h6 className="mb-0">
+                  Current Agent Tasks
+                  <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '10px' }}>
+                    {runningAgents} active
+                  </Badge>
+                </h6>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
+                {Object.keys(agentStates).length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
+                    No agents running. Start a task to see agent activity here.
                   </div>
-                </div>
-              </div>
-            )}
+                ) : (
+                  Object.entries(agentStates).map(([agentId, state]) => (
+                    <div
+                      key={agentId}
+                      style={{
+                        marginBottom: '12px',
+                        padding: '12px',
+                        backgroundColor: '#1a1d29',
+                        borderRadius: '4px',
+                        border: '1px solid #3a3f52'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong style={{ fontSize: '13px' }}>{agentId}</strong>
+                        <Badge
+                          bg={
+                            state.status === 'running' ? 'warning' :
+                            state.status === 'completed' ? 'success' :
+                            state.status === 'failed' ? 'danger' :
+                            state.status === 'awaiting_user_input' ? 'info' :
+                            'secondary'
+                          }
+                          style={{ fontSize: '10px' }}
+                        >
+                          {state.status}
+                        </Badge>
+                      </div>
 
-            {isLoading && (
-              <div className="mb-4 p-3 bg-blue-500/20 border-l-4 border-blue-400 text-blue-200 rounded-lg">
-                <div className="flex items-center">
-                  <div className="animate-spin h-5 w-5 mr-2 border-2 border-blue-400 border-t-transparent rounded-full"></div>
-                  <span className="font-medium">Starting agent execution...</span>
-                </div>
-              </div>
-            )}
+                      <div style={{ fontSize: '12px', color: '#e4e6eb', marginBottom: '6px' }}>
+                        {state.current_task}
+                      </div>
 
-            {result && (
-              <div className="mb-4 p-4 bg-green-500/20 border-l-4 border-green-400 rounded-lg">
-                <p className="text-sm font-semibold text-green-200 mb-1">✅ Agent Launched</p>
-                <p className="text-xs text-green-300">Agent ID: {result.agent_id}</p>
-                <p className="text-xs text-green-300">Status: {result.status}</p>
-              </div>
-            )}
-          </div>
-          <div className="flex-shrink-0 border-t border-white/10 p-4">
-            <ProblemInputForm onProblemSubmit={handleProblemSubmit} />
-          </div>
-        </div>
+                      {state.current_iteration > 0 && (
+                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                          Iteration: {state.current_iteration}
+                          {state.max_iterations && ` / ${state.max_iterations}`}
+                        </div>
+                      )}
 
-        {/* Bottom-Right: File Viewer */}
-        <div className="bg-white/5 backdrop-blur-sm overflow-hidden">
-          <FileViewerPane agentStatus={agentStatus} />
-        </div>
-      </div>
+                      <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '6px' }}>
+                        Started: {new Date(state.started_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </Card.Body>
+            </Card>
+
+            {/* Generated Files */}
+            <Card bg="dark" text="light">
+              <Card.Header>
+                <h6 className="mb-0">
+                  Generated Files
+                  <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>
+                    {generatedFiles.length} files
+                  </Badge>
+                </h6>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '600px', overflowY: 'auto', padding: '12px' }}>
+                <GeneratedFiles files={generatedFiles} />
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     </div>
   );
 }

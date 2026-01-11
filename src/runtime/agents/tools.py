@@ -276,6 +276,205 @@ class RunCommandTool:
         }
 
 
+class GitCommitTool:
+    """Tool for committing changes to git repository."""
+
+    name = "git_commit"
+    description = "Commit changes to the git repository with a descriptive message"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "Commit message describing the changes"
+            },
+            "files": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional list of specific files to commit. If not provided, commits all modified files."
+            }
+        },
+        "required": ["message"]
+    }
+
+    def __init__(self, working_directory: Optional[Path] = None, agent_id: Optional[str] = None, request_id: Optional[str] = None):
+        """
+        Initialize git commit tool.
+
+        Args:
+            working_directory: Git repository root directory
+            agent_id: ID of the agent using this tool (for activity tracking)
+            request_id: Request ID for tracking (for activity tracking)
+        """
+        self.working_directory = working_directory or Path.cwd()
+        self.agent_id = agent_id
+        self.request_id = request_id
+
+    def _validate_commit_message(self, message: str) -> tuple[bool, Optional[str]]:
+        """Validate commit message format."""
+        if not message or len(message.strip()) == 0:
+            return False, "Commit message cannot be empty"
+
+        if len(message) < 10:
+            return False, "Commit message should be at least 10 characters long"
+
+        # Check for common bad patterns
+        bad_patterns = ["wip", "temp", "test commit", "asdf", "fix"]
+        if message.lower().strip() in bad_patterns:
+            return False, f"Please provide a more descriptive commit message than '{message}'"
+
+        return True, None
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Commit changes to git repository."""
+        message = inputs["message"]
+        files = inputs.get("files", [])
+
+        # Validate commit message
+        is_valid, error = self._validate_commit_message(message)
+        if not is_valid:
+            logger.warning(f"Invalid commit message: {error}")
+            return {
+                "success": False,
+                "error": error
+            }
+
+        try:
+            logger.info(f"Committing changes to git: {message}")
+
+            # Stage files
+            if files:
+                # Add specific files
+                for file_path in files:
+                    add_result = subprocess.run(
+                        ["git", "add", file_path],
+                        cwd=self.working_directory,
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if add_result.returncode != 0:
+                        logger.warning(f"Failed to stage file {file_path}: {add_result.stderr}")
+            else:
+                # Add all modified and untracked files
+                add_result = subprocess.run(
+                    ["git", "add", "-A"],
+                    cwd=self.working_directory,
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if add_result.returncode != 0:
+                    logger.error(f"Failed to stage files: {add_result.stderr}")
+                    return {
+                        "success": False,
+                        "error": f"Failed to stage files: {add_result.stderr}"
+                    }
+
+            # Check if there are any changes to commit
+            status_result = subprocess.run(
+                ["git", "diff", "--cached", "--quiet"],
+                cwd=self.working_directory,
+                capture_output=True,
+                timeout=5
+            )
+
+            if status_result.returncode == 0:
+                # No changes staged
+                logger.info("No changes to commit")
+                return {
+                    "success": True,
+                    "message": "No changes to commit",
+                    "commit_hash": None
+                }
+
+            # Commit changes
+            commit_result = subprocess.run(
+                ["git", "commit", "-m", message],
+                cwd=self.working_directory,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if commit_result.returncode != 0:
+                logger.error(f"Failed to commit: {commit_result.stderr}")
+                return {
+                    "success": False,
+                    "error": f"Failed to commit: {commit_result.stderr}"
+                }
+
+            # Get commit hash
+            hash_result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=self.working_directory,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            commit_hash = hash_result.stdout.strip() if hash_result.returncode == 0 else "unknown"
+
+            # Get list of committed files
+            files_result = subprocess.run(
+                ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
+                cwd=self.working_directory,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            committed_files = files_result.stdout.strip().split('\n') if files_result.returncode == 0 else []
+
+            # Record in activity tracker if agent_id is available
+            if self.agent_id and self.request_id:
+                try:
+                    from .runtime import AgentRuntime
+                    activity_tracker = AgentRuntime.get_activity_tracker()
+
+                    # Get agent name from somewhere, or use agent_id as fallback
+                    agent_name = self.agent_id  # Could be improved by passing agent_name
+
+                    activity_tracker.record_git_commit(
+                        agent_id=self.agent_id,
+                        agent_name=agent_name,
+                        request_id=self.request_id,
+                        commit_hash=commit_hash,
+                        commit_message=message,
+                        files=committed_files
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record git commit in activity tracker: {e}")
+
+            logger.info(f"Successfully committed changes: {commit_hash}")
+            return {
+                "success": True,
+                "message": "Changes committed successfully",
+                "commit_hash": commit_hash,
+                "files": committed_files,
+                "commit_output": commit_result.stdout
+            }
+
+        except subprocess.TimeoutExpired:
+            logger.error("Git command timed out")
+            return {
+                "success": False,
+                "error": "Git command timed out"
+            }
+        except Exception as e:
+            logger.error(f"Failed to commit changes: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def to_anthropic_format(self) -> Dict[str, Any]:
+        """Convert to Anthropic API format."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": self.input_schema
+        }
+
+
 class SpawnAgentTool:
     """Tool for spawning and executing other agents."""
 
@@ -301,7 +500,9 @@ class SpawnAgentTool:
         agent_types_dir: Path,
         api_key: str,
         tools: Optional["ToolRegistry"] = None,
-        budget_tier: str = "balanced"
+        budget_tier: str = "balanced",
+        parent_agent_id: Optional[str] = None,
+        request_id: Optional[str] = None
     ):
         """
         Initialize spawn agent tool.
@@ -311,11 +512,15 @@ class SpawnAgentTool:
             api_key: Anthropic API key for spawned agents
             tools: Optional tool registry to provide to spawned agents
             budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
+            parent_agent_id: ID of the agent spawning this tool (for metrics)
+            request_id: Request ID for tracing (for metrics)
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
         self.tools = tools
         self.budget_tier = budget_tier
+        self.parent_agent_id = parent_agent_id
+        self.request_id = request_id or "unknown"
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
@@ -349,16 +554,26 @@ class SpawnAgentTool:
                     "error": error_msg
                 }
 
-            # Create runtime for the agent with budget tier
+            # Generate unique agent_id for spawned agent
+            import time
+            spawned_agent_id = f"{agent_type}_{int(time.time()*1000)}"
+
+            # Create runtime for the agent with budget tier and metrics parameters
             runtime = AgentRuntime(
                 agent_definition,
                 api_key=self.api_key,
                 tools=self.tools,
-                budget_tier=self.budget_tier
+                budget_tier=self.budget_tier,
+                agent_id=spawned_agent_id,
+                request_id=self.request_id,
+                parent_agent_id=self.parent_agent_id
             )
 
             # Execute the agent
             result = runtime.execute(input_data)
+
+            # Increment parent's spawned agents count (if parent runtime exists)
+            # This would need to be tracked differently in a real implementation
 
             logger.info(f"Agent {agent_type} completed successfully")
 
@@ -425,4 +640,5 @@ class ToolRegistry:
         registry.register(WriteFileTool(agent_definition))
         registry.register(ReadFileTool())
         registry.register(RunCommandTool())
+        registry.register(GitCommitTool())  # Add git commit capability
         return registry
