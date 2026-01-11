@@ -15,7 +15,7 @@ cd src/field/ensemble_ui/backend
 python main.py
 ```
 
-Backend starts on http://localhost:8000
+Backend starts on http://localhost:8001 (8000 reserved for Firestorm)
 
 ### Step 2: Start Frontend (Terminal 2)
 ```bash
