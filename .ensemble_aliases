@@ -1,0 +1,45 @@
+# Ensemble Development Aliases
+# Add to your ~/.zshrc or ~/.bashrc:
+# source ~/Development/ai_exploration/ensemble/.ensemble_aliases
+
+# Quick navigation
+alias ens='cd ~/Development/ai_exploration/ensemble'
+alias ensvenv='cd ~/Development/ai_exploration/ensemble && source venv/bin/activate'
+
+# Agent pipeline operations
+alias ens-ui='ensvenv && python complete_ui_pipeline.py'
+alias ens-cli='ensvenv && python cli_pipeline.py'
+alias ens-exec='ensvenv && python spawn_executive_director.py'
+
+# Testing & validation
+alias ens-test='ensvenv && pytest -v'
+alias ens-test-cov='ensvenv && pytest --cov=src --cov-report=term-missing'
+alias ens-rogue='ensvenv && python test_rogue_detection.py'
+
+# Agent management
+alias ens-list='find leadership coordinators developers testers designers -name "*.md" -type f'
+alias ens-check='grep -r "drum\|corps\|brass\|percussion" --include="*.md" leadership/ coordinators/ developers/ testers/ designers/ | wc -l'
+
+# Git workflow
+alias ens-status='git status -sb'
+alias ens-push='git push origin main'
+alias ens-pull='git pull origin main'
+alias ens-sync='git add -A && git commit -m "checkpoint" && git push origin main'
+
+# Logging & monitoring
+alias ens-logs='tail -f *.log'
+alias ens-errors='grep -i error *.log'
+
+# Documentation
+alias ens-docs='open README.md ARCHITECTURE.md AGENT_REGISTRY.md'
+alias ens-review='cat COMPREHENSIVE_SYSTEM_REVIEW.md'
+
+# Quick agent spawning (future)
+alias ens-spawn='function _ens_spawn() { echo "Spawning agent for: $1"; python spawn_agent.py "$1"; }; _ens_spawn'
+
+# Performance monitoring (future)
+alias ens-perf='python scripts/analyze_performance.py'
+alias ens-cost='python scripts/estimate_cost.py'
+
+# Cleanup
+alias ens-clean='find . -name "*.pyc" -delete && find . -name "__pycache__" -delete && find . -name "*.log" -delete'
