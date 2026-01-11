@@ -198,6 +198,18 @@ function App() {
                       </pre>
                     </div>
                   )}
+                  {agentInfo.logs && agentInfo.logs.length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                      <p className="font-semibold text-blue-800">Execution Log:</p>
+                      <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+                        {agentInfo.logs.map((log, idx) => (
+                          <div key={idx} className="text-xs text-blue-900 font-mono">
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
