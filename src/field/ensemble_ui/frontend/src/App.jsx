@@ -84,31 +84,38 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header with Status */}
-        <div className="mb-8 text-center">
-          <div className="inline-block mb-4">
-            <div className="text-6xl mb-2">🤖</div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent mb-2">
-              Ensemble AI
-            </h1>
-            <p className="text-blue-200 text-sm">Collaborative Agent System</p>
-          </div>
-          <div className="flex justify-center items-center gap-4 text-sm">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <div className={`w-3 h-3 rounded-full ${appStatus.status === 'running' ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-gray-400'}`}></div>
-              <span className="font-medium text-white">{appStatus.status === 'running' ? 'System Online' : 'Connecting...'}</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-white/10 px-4 py-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">🤖</div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                  Ensemble AI
+                </h1>
+                <p className="text-blue-300 text-xs">Collaborative Agent System</p>
+              </div>
             </div>
-            <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <span className="font-medium text-white">{appStatus.active_agents} Active Agent{appStatus.active_agents !== 1 ? 's' : ''}</span>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                <div className={`w-2 h-2 rounded-full ${appStatus.status === 'running' ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-gray-400'}`}></div>
+                <span className="font-medium text-white text-xs">{appStatus.status === 'running' ? 'Online' : 'Connecting'}</span>
+              </div>
+              <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                <span className="font-medium text-white text-xs">{appStatus.active_agents} Agent{appStatus.active_agents !== 1 ? 's' : ''}</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <ProblemInputForm onProblemSubmit={handleProblemSubmit} />
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {error && (
+          {error && (
           <div className="mt-6 p-4 bg-red-500/20 border-l-4 border-red-500 text-red-200 rounded-lg shadow-lg backdrop-blur-sm">
             <div className="flex items-start">
               <span className="text-2xl mr-3">⚠️</span>
@@ -169,13 +176,25 @@ function App() {
             {Object.entries(agentStatus.agents).map(([agentId, agentInfo]) => (
               <div key={agentId} className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-white">{agentId}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-white">{agentId}</h3>
+                    {agentInfo.status === 'running' && (
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      </div>
+                    )}
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
                     agentInfo.status === 'completed' ? 'bg-green-500/30 text-green-200 border border-green-400/50' :
                     agentInfo.status === 'error' ? 'bg-red-500/30 text-red-200 border border-red-400/50' :
                     agentInfo.status === 'running' ? 'bg-blue-500/30 text-blue-200 border border-blue-400/50' :
                     'bg-yellow-500/30 text-yellow-200 border border-yellow-400/50'
                   }`}>
+                    {agentInfo.status === 'running' && '⚙️'}
+                    {agentInfo.status === 'completed' && '✅'}
+                    {agentInfo.status === 'error' && '❌'}
                     {agentInfo.status}
                   </span>
                 </div>
@@ -230,6 +249,14 @@ function App() {
             ))}
           </div>
         )}
+        </div>
+      </div>
+
+      {/* Fixed Input Panel - like AIM */}
+      <div className="sticky bottom-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-white/10 px-4 py-4">
+        <div className="max-w-6xl mx-auto">
+          <ProblemInputForm onProblemSubmit={handleProblemSubmit} />
+        </div>
       </div>
     </div>
   );
