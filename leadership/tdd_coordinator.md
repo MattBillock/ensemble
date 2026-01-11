@@ -161,3 +161,6 @@ false
 
 ## Can Write Tests
 false
+
+## Task Complexity
+strategic

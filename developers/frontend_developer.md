@@ -142,3 +142,6 @@ true
 
 ## Can Write Tests
 false
+
+## Task Complexity
+creative

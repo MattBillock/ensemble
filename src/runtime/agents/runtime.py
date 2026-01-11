@@ -9,6 +9,7 @@ from pathlib import Path
 from .definition import AgentDefinition
 from .tools import ToolRegistry
 from .state import StateManager
+from .model_selector import ModelSelector
 
 # Set up structured logging
 logging.basicConfig(
@@ -33,7 +34,8 @@ class AgentRuntime:
         definition: AgentDefinition,
         api_key: str,
         tools: Optional[ToolRegistry] = None,
-        state_file: Optional[Path] = None
+        state_file: Optional[Path] = None,
+        budget_tier: str = "balanced"
     ):
         """
         Initialize agent runtime.
@@ -43,12 +45,14 @@ class AgentRuntime:
             api_key: Anthropic API key
             tools: Optional tool registry for agent capabilities
             state_file: Optional path to state file for persistence/resume
+            budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
         """
         self.definition = definition
         self.client = Anthropic(api_key=api_key)
         self.tools = tools
         self.iteration_count = 0
         self.state_manager = StateManager(state_file) if state_file else None
+        self.budget_tier = budget_tier
 
     def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -82,11 +86,15 @@ class AgentRuntime:
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(input_data)
 
-        # Get model ID
-        model = self.MODEL_MAP.get(self.definition.model_preference, self.MODEL_MAP["haiku"])
+        # Select model using ModelSelector based on budget tier and task complexity
+        model = ModelSelector.select_model(
+            budget_tier=self.budget_tier,
+            task_complexity=self.definition.task_complexity,
+            agent_name=self.definition.name
+        )
 
         logger.info(f"Executing agent: {self.definition.name}")
-        logger.info(f"Using model: {model}")
+        logger.info(f"Using model: {model} (tier={self.budget_tier}, complexity={self.definition.task_complexity})")
 
         # Initialize conversation
         messages = [{"role": "user", "content": user_prompt}]

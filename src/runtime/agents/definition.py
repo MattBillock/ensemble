@@ -22,6 +22,7 @@ class AgentDefinition:
         max_iterations: int = 10,
         can_write_code: bool = False,
         can_write_tests: bool = False,
+        task_complexity: str = "routine",
     ):
         self.name = name
         self.purpose = purpose
@@ -35,6 +36,7 @@ class AgentDefinition:
         self.max_iterations = max_iterations
         self.can_write_code = can_write_code
         self.can_write_tests = can_write_tests
+        self.task_complexity = task_complexity
 
     def get_required_input_fields(self) -> Set[str]:
         """
@@ -111,6 +113,13 @@ class AgentDefinition:
         can_write_tests_str = cls._extract_metadata(content, "Can Write Tests", "false").lower()
         can_write_tests = can_write_tests_str in ["true", "yes", "1"]
 
+        # Extract task complexity (default to routine)
+        task_complexity = cls._extract_metadata(content, "Task Complexity", "routine").lower()
+        # Validate task complexity
+        valid_complexities = ["strategic", "creative", "routine"]
+        if task_complexity not in valid_complexities:
+            task_complexity = "routine"
+
         return cls(
             name=name,
             purpose=purpose,
@@ -124,6 +133,7 @@ class AgentDefinition:
             max_iterations=max_iterations,
             can_write_code=can_write_code,
             can_write_tests=can_write_tests,
+            task_complexity=task_complexity,
         )
 
     @staticmethod

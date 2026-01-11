@@ -182,23 +182,64 @@ python milestone_2_pipeline.py  # Working on frontend
 - Google Gemini for multimodal tasks
 - Local Llama for simple tasks (cost savings)
 
+### 17. Knowledge Repository Agent (HIGH PRIORITY)
+**Concept**: Dedicated agent responsible for maintaining project context, architecture documentation, and responding to knowledge queries
+**Role**:
+- Maintains centralized knowledge base of project architecture
+- Understands and documents design decisions
+- Answers questions from other agents about project structure
+- Tracks dependencies and relationships between components
+- Maintains architectural decision records (ADRs)
+
+**Benefits**:
+- Continuous project context throughout development lifecycle
+- Reduces redundant architectural questions
+- Improves consistency across agent decisions
+- Single source of truth for "why" questions
+- Better onboarding for new agents/humans joining project
+
+**Implementation**:
+- Persistent vector database for documentation embeddings
+- Integration with code analysis tools
+- Automatic ADR generation from architectural decisions
+- Query interface for other agents via `knowledge_query` tool
+- Regular sync with codebase to update context
+
+**Example Workflow**:
+```python
+# Backend Developer asks knowledge agent before implementing
+response = knowledge_query(
+    "What authentication pattern are we using for API endpoints?"
+)
+# Knowledge Agent responds with: "JWT-based auth, see auth/middleware.py and ADR-003"
+
+# After architectural decision, update knowledge base
+record_decision(
+    topic="API Authentication",
+    decision="Use JWT with refresh tokens",
+    rationale="Better security, stateless, scales horizontally",
+    alternatives_considered=["Session-based", "OAuth2"],
+    file_path="docs/architecture/ADR-003-api-auth.md"
+)
+```
+
 ## Infrastructure
 
-### 17. Docker-Based Agent Execution (MEDIUM PRIORITY)
+### 18. Docker-Based Agent Execution (MEDIUM PRIORITY)
 **Benefits**:
 - Isolated environments per agent
 - Reproducible builds
 - Easy deployment
 - Security isolation
 
-### 18. Distributed Agent Execution (ADVANCED)
+### 19. Distributed Agent Execution (ADVANCED)
 **Concept**: Run agents on different machines/cloud instances
 **Benefits**:
 - True parallelization
 - Scale to many simultaneous agents
 - Fault tolerance
 
-### 19. State Persistence & Recovery (HIGH PRIORITY)
+### 20. State Persistence & Recovery (HIGH PRIORITY)
 **Features**:
 - Save pipeline state every N iterations
 - Resume from last checkpoint on failure
@@ -207,14 +248,14 @@ python milestone_2_pipeline.py  # Working on frontend
 
 ## Security & Compliance
 
-### 20. Secrets Management (HIGH PRIORITY)
+### 21. Secrets Management (HIGH PRIORITY)
 **Features**:
 - Agents never see raw API keys
 - Secrets stored in secure vault
 - Audit log of secret access
 - Rotation of credentials
 
-### 21. Audit Trail (MEDIUM PRIORITY)
+### 22. Audit Trail (MEDIUM PRIORITY)
 **Track**:
 - Every file written
 - Every command executed
