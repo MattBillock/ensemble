@@ -264,27 +264,49 @@ class AgentOrchestrator:
         if (agent_info.get("status") == "completed" and
             agent_info.get("result", {}).get("status") == "needs_user_input"):
 
-            agent_info["logs"].append(f"🔄 Creating follow-up task with your input...")
+            agent_info["logs"].append(f"🔄 Creating follow-up task with full conversation context...")
 
             # Get the original problem and build conversation context
             problem = agent_info.get("problem", "")
             budget_tier = agent_info.get("budget_tier", "balanced")
 
-            # Build full conversation context
-            conversation_history = "\n".join([
-                f"{msg['sender']}: {msg['message']}"
-                for msg in agent_info.get("messages", [])
-            ])
+            # Get previous result summary
+            prev_result = agent_info.get("result", {})
+            prev_summary = prev_result.get("summary", "")
+            prev_question = prev_result.get("user_question", "")
 
-            # Create updated task with full context
-            updated_task = f"""Original Request: {problem}
+            # Build COMPLETE conversation history with timestamps
+            conversation_history = []
+            for msg in agent_info.get("messages", []):
+                timestamp = msg.get("timestamp", "")
+                sender = msg.get("sender", "unknown")
+                content = msg.get("message", "")
+                conversation_history.append(f"[{timestamp}] {sender}: {content}")
 
-Previous Response: {agent_info.get('result', {}).get('user_question', 'Asked for clarification')}
+            # Create updated task with FULL context
+            updated_task = f"""# Task Continuation with Full Context
 
-User's Response:
-{message}
+## Original Request
+{problem}
 
-Please proceed with the implementation based on the user's clarification."""
+## Previous Agent Analysis
+{prev_summary if prev_summary else 'Agent analyzed the request'}
+
+## Agent's Question
+{prev_question}
+
+## Complete Conversation History
+{chr(10).join(conversation_history)}
+
+## Instructions
+You now have the COMPLETE conversation history above. The user has provided all necessary clarifications. Please proceed with implementation WITHOUT asking for more clarification unless the requirements are genuinely contradictory.
+
+Use the conversation context to understand:
+- What the user wants (original request)
+- What was unclear (agent's question)
+- What the user clarified (conversation history)
+
+Proceed with confident implementation based on this full context."""
 
             # Mark this agent as "superseded"
             agent_info["logs"].append(f"✨ Launching new agent with your input...")
