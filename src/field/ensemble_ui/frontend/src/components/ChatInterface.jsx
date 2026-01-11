@@ -20,8 +20,20 @@ function ChatInterface({ agentId, messages = [] }) {
 
     setSending(true);
     try {
-      await sendMessageToAgent(agentId, newMessage);
+      const response = await sendMessageToAgent(agentId, newMessage);
       setNewMessage('');
+
+      // If backend says to spawn a new task, notify parent
+      if (response.spawn_new_task) {
+        console.log('Agent is resuming with new task:', response.task);
+        // Trigger new agent spawn via window event
+        window.dispatchEvent(new CustomEvent('spawn-agent-task', {
+          detail: {
+            task: response.task,
+            budgetTier: response.budget_tier
+          }
+        }));
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {

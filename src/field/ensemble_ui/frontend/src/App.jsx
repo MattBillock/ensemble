@@ -15,6 +15,14 @@ function App() {
   const wsRef = useRef(null);
 
   useEffect(() => {
+    // Listen for agent resume events from ChatInterface
+    const handleAgentResume = (event) => {
+      const { task, budgetTier } = event.detail;
+      handleProblemSubmit(task, budgetTier);
+    };
+
+    window.addEventListener('spawn-agent-task', handleAgentResume);
+
     // Connect WebSocket with auto-reconnect
     const connectWS = () => {
       wsRef.current = connectWebSocket(
@@ -53,6 +61,7 @@ function App() {
 
     // Cleanup on unmount
     return () => {
+      window.removeEventListener('spawn-agent-task', handleAgentResume);
       if (wsRef.current) {
         wsRef.current.close();
       }

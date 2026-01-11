@@ -239,24 +239,64 @@ class AgentOrchestrator:
         return self.active_agents.get(agent_id, {"status": "not_found"})
 
     def add_message_to_agent(self, agent_id: str, message: str, sender: str = "user"):
-        """Add a message to the agent's conversation history."""
+        """Add a message to the agent's conversation history and resume if needed."""
         if agent_id not in self.active_agents:
             return {"error": "Agent not found"}
 
-        if "messages" not in self.active_agents[agent_id]:
-            self.active_agents[agent_id]["messages"] = []
+        agent_info = self.active_agents[agent_id]
+
+        if "messages" not in agent_info:
+            agent_info["messages"] = []
 
         timestamp = __import__("datetime").datetime.now().isoformat()
-        self.active_agents[agent_id]["messages"].append({
+        agent_info["messages"].append({
             "sender": sender,
             "message": message,
             "timestamp": timestamp
         })
 
         # Also add to logs for visibility
-        if "logs" not in self.active_agents[agent_id]:
-            self.active_agents[agent_id]["logs"] = []
-        self.active_agents[agent_id]["logs"].append(f"💬 {sender}: {message}")
+        if "logs" not in agent_info:
+            agent_info["logs"] = []
+        agent_info["logs"].append(f"💬 {sender}: {message}")
+
+        # If agent was waiting for user input and is now completed, create follow-up task
+        if (agent_info.get("status") == "completed" and
+            agent_info.get("result", {}).get("status") == "needs_user_input"):
+
+            agent_info["logs"].append(f"🔄 Creating follow-up task with your input...")
+
+            # Get the original problem and build conversation context
+            problem = agent_info.get("problem", "")
+            budget_tier = agent_info.get("budget_tier", "balanced")
+
+            # Build full conversation context
+            conversation_history = "\n".join([
+                f"{msg['sender']}: {msg['message']}"
+                for msg in agent_info.get("messages", [])
+            ])
+
+            # Create updated task with full context
+            updated_task = f"""Original Request: {problem}
+
+Previous Response: {agent_info.get('result', {}).get('user_question', 'Asked for clarification')}
+
+User's Response:
+{message}
+
+Please proceed with the implementation based on the user's clarification."""
+
+            # Mark this agent as "superseded"
+            agent_info["logs"].append(f"✨ Launching new agent with your input...")
+
+            # This will be handled by returning a special flag
+            return {
+                "success": True,
+                "message": "Agent resumed",
+                "spawn_new_task": True,
+                "task": updated_task,
+                "budget_tier": budget_tier
+            }
 
         return {"success": True, "message": "Message added"}
 
