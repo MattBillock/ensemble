@@ -92,7 +92,7 @@ def test_supervisor_blocked_from_tests():
 
 
 def test_code_writer_allowed():
-    """Test that a code writer (Trumpet) CAN write code."""
+    """Test that a code writer (Frontend Developer) CAN write code."""
     print()
     print("=" * 70)
     print("🎺 TEST 3: Code Writer Allowed To Write Code")
@@ -134,7 +134,7 @@ def test_code_writer_allowed():
 
 
 def test_test_writer_allowed():
-    """Test that a test writer (Snare) CAN write tests."""
+    """Test that a test writer (Unit Test Writer) CAN write tests."""
     print()
     print("=" * 70)
     print("🥁 TEST 4: Test Writer Allowed To Write Tests")
@@ -176,7 +176,7 @@ def test_test_writer_allowed():
 
 
 def test_test_writer_blocked_from_code():
-    """Test that a test writer (Snare) CANNOT write production code."""
+    """Test that a test writer (Unit Test Writer) CANNOT write production code."""
     print()
     print("=" * 70)
     print("🚫 TEST 5: Test Writer Blocked From Writing Production Code")

@@ -70,13 +70,13 @@ You drive the show from concept through performance. Report to Executive Directo
       "milestone": "description of milestone 1",
       "architecture": "path/to/architecture.md",
       "requirements": "path/to/requirements.md",
-      "output_file": "path/to/brass_tasks.md"
+      "output_file": "path/to/developer_tasks.md"
     })
   - spawn_agent("coordinators/test_coordinator", {
       "milestone": "description of milestone 1",
       "architecture": "path/to/architecture.md",
       "requirements": "path/to/requirements.md",
-      "output_file": "path/to/percussion_tasks.md"
+      "output_file": "path/to/test_tasks.md"
     })
   - spawn_agent("coordinators/frontend_coordinator", {similar inputs})
 - Review each Coordinator's output for task breakdown

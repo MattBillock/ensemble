@@ -142,7 +142,7 @@ Result: Clean, tested component following TDD
 - Tests fail repeatedly and can't determine why
 
 ## Critical Rules
-- **ALWAYS spawn test tech BEFORE code tech** (percussion/snare_tech before brass/*_tech)
+- **ALWAYS spawn test writers BEFORE developers** (testers before developers)
 - **NEVER write or spawn code writers until tests exist**
 - **ALWAYS run tests after code** to verify they pass
 - **NEVER skip the RED phase** - tests must be written first
