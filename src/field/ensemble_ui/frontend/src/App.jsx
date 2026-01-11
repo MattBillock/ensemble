@@ -83,18 +83,24 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header with Status */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-center mb-4 text-gray-900">Ensemble Agent System</h1>
+        <div className="mb-8 text-center">
+          <div className="inline-block mb-4">
+            <div className="text-6xl mb-2">🤖</div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent mb-2">
+              Ensemble AI
+            </h1>
+            <p className="text-blue-200 text-sm">Collaborative Agent System</p>
+          </div>
           <div className="flex justify-center items-center gap-4 text-sm">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
-              <div className={`w-3 h-3 rounded-full ${appStatus.status === 'running' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-              <span className="font-medium">{appStatus.status === 'running' ? 'System Online' : 'Connecting...'}</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+              <div className={`w-3 h-3 rounded-full ${appStatus.status === 'running' ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-gray-400'}`}></div>
+              <span className="font-medium text-white">{appStatus.status === 'running' ? 'System Online' : 'Connecting...'}</span>
             </div>
-            <div className="px-4 py-2 bg-white rounded-full shadow-sm">
-              <span className="font-medium">{appStatus.active_agents} Active Agent{appStatus.active_agents !== 1 ? 's' : ''}</span>
+            <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+              <span className="font-medium text-white">{appStatus.active_agents} Active Agent{appStatus.active_agents !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </div>
@@ -102,11 +108,11 @@ function App() {
         <ProblemInputForm onProblemSubmit={handleProblemSubmit} />
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg shadow-sm">
+          <div className="mt-6 p-4 bg-red-500/20 border-l-4 border-red-500 text-red-200 rounded-lg shadow-lg backdrop-blur-sm">
             <div className="flex items-start">
               <span className="text-2xl mr-3">⚠️</span>
               <div>
-                <p className="font-semibold">Error</p>
+                <p className="font-semibold text-white">Error</p>
                 <p className="text-sm">{error}</p>
               </div>
             </div>
@@ -114,22 +120,22 @@ function App() {
         )}
 
         {isLoading && (
-          <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-lg shadow-sm">
+          <div className="mt-6 p-4 bg-blue-500/20 border-l-4 border-blue-400 text-blue-200 rounded-lg shadow-lg backdrop-blur-sm">
             <div className="flex items-center">
-              <div className="animate-spin h-6 w-6 mr-3 border-3 border-blue-600 border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-6 w-6 mr-3 border-3 border-blue-400 border-t-transparent rounded-full"></div>
               <span className="font-medium">Starting agent execution...</span>
             </div>
           </div>
         )}
 
         {result && (
-          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="mt-6 p-6 bg-white/10 backdrop-blur-md rounded-xl shadow-2xl border border-white/20">
             <div className="flex items-start justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Execution Started</h2>
+              <h2 className="text-2xl font-bold text-white">Execution Started</h2>
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                budgetTier === 'full_firepower' ? 'bg-purple-100 text-purple-800' :
-                budgetTier === 'economical' ? 'bg-green-100 text-green-800' :
-                'bg-blue-100 text-blue-800'
+                budgetTier === 'full_firepower' ? 'bg-purple-500/30 text-purple-200 border border-purple-400/50' :
+                budgetTier === 'economical' ? 'bg-green-500/30 text-green-200 border border-green-400/50' :
+                'bg-blue-500/30 text-blue-200 border border-blue-400/50'
               }`}>
                 {budgetTier === 'full_firepower' ? '🚀 Full Firepower' :
                  budgetTier === 'economical' ? '💰 Economical' :
@@ -138,18 +144,18 @@ function App() {
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-gray-600">Task</p>
-                <p className="text-gray-900">{problemDescription}</p>
+                <p className="text-sm font-semibold text-blue-300">Task</p>
+                <p className="text-white">{problemDescription}</p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-600">Agent ID</p>
-                <p className="text-sm font-mono text-gray-700">{result.agent_id}</p>
+                <p className="text-sm font-semibold text-blue-300">Agent ID</p>
+                <p className="text-sm font-mono text-gray-300">{result.agent_id}</p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-600">Status</p>
+                <p className="text-sm font-semibold text-blue-300">Status</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm capitalize">{result.status || 'running'}</span>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg shadow-yellow-400/50"></div>
+                  <span className="text-sm capitalize text-white">{result.status || 'running'}</span>
                 </div>
               </div>
             </div>
@@ -157,33 +163,33 @@ function App() {
         )}
 
         {agentStatus && agentStatus.agents && Object.keys(agentStatus.agents).length > 0 && (
-          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-200">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Agent Details</h2>
+          <div className="mt-6 p-6 bg-white/10 backdrop-blur-md rounded-xl shadow-2xl border border-white/20">
+            <h2 className="text-xl font-bold mb-4 text-white">Active Agents</h2>
             {Object.entries(agentStatus.agents).map(([agentId, agentInfo]) => (
-              <div key={agentId} className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div key={agentId} className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{agentId}</h3>
+                  <h3 className="font-semibold text-white">{agentId}</h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    agentInfo.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    agentInfo.status === 'error' ? 'bg-red-100 text-red-800' :
-                    agentInfo.status === 'running' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
+                    agentInfo.status === 'completed' ? 'bg-green-500/30 text-green-200 border border-green-400/50' :
+                    agentInfo.status === 'error' ? 'bg-red-500/30 text-red-200 border border-red-400/50' :
+                    agentInfo.status === 'running' ? 'bg-blue-500/30 text-blue-200 border border-blue-400/50' :
+                    'bg-yellow-500/30 text-yellow-200 border border-yellow-400/50'
                   }`}>
                     {agentInfo.status}
                   </span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div><span className="font-semibold">Type:</span> {agentInfo.type}</div>
-                  <div><span className="font-semibold">Budget:</span> {agentInfo.budget_tier}</div>
-                  {agentInfo.problem && <div><span className="font-semibold">Task:</span> {agentInfo.problem}</div>}
+                  <div className="text-gray-300"><span className="font-semibold text-blue-300">Type:</span> {agentInfo.type}</div>
+                  <div className="text-gray-300"><span className="font-semibold text-blue-300">Budget:</span> {agentInfo.budget_tier}</div>
+                  {agentInfo.problem && <div className="text-gray-300"><span className="font-semibold text-blue-300">Task:</span> {agentInfo.problem}</div>}
                   {agentInfo.error && (
-                    <div className="mt-3 p-3 bg-red-50 border-l-4 border-red-500 rounded">
-                      <p className="font-semibold text-red-800">Error:</p>
-                      <p className="text-red-700 mt-1">{agentInfo.error}</p>
+                    <div className="mt-3 p-3 bg-red-500/20 border-l-4 border-red-500 rounded backdrop-blur-sm">
+                      <p className="font-semibold text-red-200">Error:</p>
+                      <p className="text-red-300 mt-1">{agentInfo.error}</p>
                       {agentInfo.traceback && (
                         <details className="mt-2">
-                          <summary className="cursor-pointer text-red-600 text-xs">Show traceback</summary>
-                          <pre className="text-xs mt-2 overflow-auto max-h-48 bg-red-100 p-2 rounded">
+                          <summary className="cursor-pointer text-red-400 text-xs hover:text-red-300">Show traceback</summary>
+                          <pre className="text-xs mt-2 overflow-auto max-h-48 bg-black/30 p-2 rounded text-red-200">
                             {agentInfo.traceback}
                           </pre>
                         </details>
@@ -191,19 +197,19 @@ function App() {
                     </div>
                   )}
                   {agentInfo.result && (
-                    <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-500 rounded">
-                      <p className="font-semibold text-green-800">Result:</p>
-                      <pre className="text-xs mt-1 overflow-auto max-h-48">
+                    <div className="mt-3 p-3 bg-green-500/20 border-l-4 border-green-500 rounded backdrop-blur-sm">
+                      <p className="font-semibold text-green-200">Result:</p>
+                      <pre className="text-xs mt-1 overflow-auto max-h-48 text-green-100">
                         {JSON.stringify(agentInfo.result, null, 2)}
                       </pre>
                     </div>
                   )}
                   {agentInfo.logs && agentInfo.logs.length > 0 && (
-                    <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
-                      <p className="font-semibold text-blue-800">Execution Log:</p>
+                    <div className="mt-3 p-3 bg-blue-500/20 border-l-4 border-blue-500 rounded backdrop-blur-sm">
+                      <p className="font-semibold text-blue-200">Execution Log:</p>
                       <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
                         {agentInfo.logs.map((log, idx) => (
-                          <div key={idx} className="text-xs text-blue-900 font-mono">
+                          <div key={idx} className="text-xs text-blue-100 font-mono">
                             {log}
                           </div>
                         ))}
