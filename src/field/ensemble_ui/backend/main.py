@@ -43,18 +43,49 @@ class AgentOrchestrator:
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY not found in environment")
 
-        # Get project root (3 levels up from backend/main.py)
-        self.project_root = Path(__file__).parent.parent.parent.parent
+        # Get project root (4 levels up from backend/main.py to get to ensemble root)
+        # backend/main.py -> backend -> ensemble_ui -> field -> src -> ensemble
+        self.project_root = Path(__file__).parent.parent.parent.parent.parent
+        print(f"🔧 Project root: {self.project_root}")
+        print(f"🔧 Leadership path: {self.project_root / 'leadership'}")
+
+        # WebSocket connections for broadcasting updates
+        self.active_connections: list[WebSocket] = []
+
+    async def broadcast_status(self):
+        """Broadcast current status to all connected WebSocket clients."""
+        status = {
+            "active_agents": list(self.active_agents.keys()),
+            "agents": self.active_agents
+        }
+        # Remove connections that are closed
+        self.active_connections = [
+            ws for ws in self.active_connections
+            if ws.client_state.name == "CONNECTED"
+        ]
+        # Broadcast to all connected clients
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(status)
+            except:
+                pass
 
     def _execute_agent_background(self, agent_id: str, runtime, input_data):
         """Execute agent in background thread."""
         try:
             print(f"🚀 Starting agent execution for {agent_id}")
+
+            # Add log entry
+            if "logs" not in self.active_agents[agent_id]:
+                self.active_agents[agent_id]["logs"] = []
+            self.active_agents[agent_id]["logs"].append(f"🚀 Starting execution...")
+
             result = runtime.execute(input_data)
 
             # Update with result
             self.active_agents[agent_id]["status"] = "completed"
             self.active_agents[agent_id]["result"] = result
+            self.active_agents[agent_id]["logs"].append(f"✅ Completed successfully")
             print(f"✅ Agent {agent_id} completed successfully")
 
         except Exception as e:
@@ -65,6 +96,7 @@ class AgentOrchestrator:
             }
             self.active_agents[agent_id]["status"] = "error"
             self.active_agents[agent_id].update(error_details)
+            self.active_agents[agent_id]["logs"].append(f"❌ Error: {str(e)}")
             print(f"❌ Error in agent {agent_id}: {e}")
             print(traceback.format_exc())
 
@@ -184,27 +216,39 @@ async def generate_solution(request: ProblemRequest):
 async def agent_status_ws(websocket: WebSocket):
     """WebSocket endpoint for real-time agent status updates"""
     await websocket.accept()
+    orchestrator.active_connections.append(websocket)
+    print(f"✅ WebSocket connected. Total connections: {len(orchestrator.active_connections)}")
+
     try:
+        # Send initial status
+        await websocket.send_json({
+            "active_agents": list(orchestrator.active_agents.keys()),
+            "agents": orchestrator.active_agents
+        })
+
+        # Keep connection alive and send periodic updates
         while True:
-            # Receive possible agent_id request
-            data = await websocket.receive_text()
             try:
-                request = json.loads(data)
-                agent_id = request.get('agent_id')
-                
-                if agent_id:
-                    status = orchestrator.get_agent_status(agent_id)
-                    await websocket.send_json(status)
-                else:
-                    # Send all active agent statuses
-                    await websocket.send_json({
-                        "active_agents": list(orchestrator.active_agents.keys())
-                    })
-            except json.JSONDecodeError:
-                await websocket.send_json({"error": "Invalid JSON"})
-    
+                # Try to receive messages (with timeout)
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=2.0)
+            except asyncio.TimeoutError:
+                # Timeout is fine, just send status update
+                pass
+            except:
+                break
+
+            # Send current status
+            await websocket.send_json({
+                "active_agents": list(orchestrator.active_agents.keys()),
+                "agents": orchestrator.active_agents
+            })
+
     except WebSocketDisconnect:
-        print("WebSocket disconnected")
+        print(f"🔌 WebSocket disconnected")
+    finally:
+        if websocket in orchestrator.active_connections:
+            orchestrator.active_connections.remove(websocket)
+        print(f"Total connections: {len(orchestrator.active_connections)}")
 
 @app.get("/api/status")
 async def get_application_status():
