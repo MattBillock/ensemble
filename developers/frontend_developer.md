@@ -42,6 +42,7 @@ Frontend code writer. Provides the bright, prominent frontend work. Writes React
 - **read_file**: Read test files, requirements, existing code
 - **write_file**: Write component code
 - **run_command**: Install dependencies if needed
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You write React components that pass existing tests. Focus on clean, minimal code.
@@ -90,6 +91,30 @@ You write React components that pass existing tests. Focus on clean, minimal cod
 - Ensure imports are correct
 - Verify component exports properly
 - Use write_file to save component
+
+**5. Commit Changes**
+- After component is written and validated
+- Use git_commit with descriptive message
+- See Git Workflow section below
+
+### Git Workflow:
+After successfully implementing and testing your component, commit the changes:
+
+```json
+git_commit({
+  "message": "Implement [ComponentName]: [brief description]",
+  "files": ["path/to/Component.jsx"]  // Optional
+})
+```
+
+**Commit message examples**:
+- "Implement LoginForm component with validation"
+- "Add UserProfile component with avatar display"
+- "Implement Dashboard with data visualization"
+
+**When to commit**:
+- After writing component and verifying it's valid
+- Before returning final status
 
 ### React Best Practices:
 - Use functional components with hooks
