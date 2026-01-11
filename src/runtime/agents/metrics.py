@@ -114,6 +114,9 @@ class AgentMetricsTracker:
         spawned_agents_count: int = 0,
         error_type: Optional[str] = None,
         tokens_used: Optional[int] = None,
+        input_tokens: Optional[int] = None,
+        output_tokens: Optional[int] = None,
+        estimated_cost: Optional[float] = None,
         task_description: Optional[str] = None,
         self_analysis: Optional[str] = None,
         performance_analysis: Optional[str] = None
@@ -152,14 +155,16 @@ class AgentMetricsTracker:
                     agent_id, agent_type, agent_name, model_used,
                     task_complexity, budget_tier, success, error_type,
                     duration_ms, iterations, tokens_used,
+                    input_tokens, output_tokens, estimated_cost,
                     created_at, completed_at, request_id, parent_agent_id,
                     spawned_agents_count, task_description,
                     self_analysis, performance_analysis
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 agent_id, agent_type, agent_name, model_used,
                 task_complexity, budget_tier, success, error_type,
                 duration_ms, iterations, tokens_used,
+                input_tokens, output_tokens, estimated_cost,
                 created_at, completed_at, request_id, parent_agent_id,
                 spawned_agents_count, task_description,
                 self_analysis, performance_analysis

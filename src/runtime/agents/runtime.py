@@ -605,6 +605,14 @@ Remember to respond with valid JSON matching the expected output format.
                 self_analysis = response_data.get("self_analysis")
                 performance_analysis = response_data.get("performance_analysis")
 
+            # Calculate cost
+            from .cost_calculator import CostCalculator
+            estimated_cost = CostCalculator.calculate_cost(
+                model=self.model_used or "unknown",
+                input_tokens=self.total_input_tokens,
+                output_tokens=self.total_output_tokens
+            )
+
             # Get metrics tracker and record execution
             metrics = self.get_metrics_tracker()
             metrics.record_execution(
@@ -624,6 +632,9 @@ Remember to respond with valid JSON matching the expected output format.
                 spawned_agents_count=self.spawned_agents_count,
                 error_type=error_type,
                 tokens_used=self.total_input_tokens + self.total_output_tokens,
+                input_tokens=self.total_input_tokens,
+                output_tokens=self.total_output_tokens,
+                estimated_cost=estimated_cost,
                 task_description=task_description,
                 self_analysis=self_analysis,
                 performance_analysis=performance_analysis
