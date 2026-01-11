@@ -276,6 +276,210 @@ class RunCommandTool:
         }
 
 
+class ProjectTrackingTool:
+    """Tool for tracking project state and tasks."""
+
+    name = "project_tracking"
+    description = "Manage project state, tasks, and notes for the current project"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["create_project", "add_task", "update_task", "add_note", "get_summary", "get_next_tasks"],
+                "description": "Action to perform"
+            },
+            "project_id": {
+                "type": "string",
+                "description": "Project ID (not needed for create_project)"
+            },
+            "project_name": {
+                "type": "string",
+                "description": "Project name (for create_project)"
+            },
+            "description": {
+                "type": "string",
+                "description": "Description (for create_project or add_task)"
+            },
+            "task_id": {
+                "type": "string",
+                "description": "Task ID (for update_task)"
+            },
+            "status": {
+                "type": "string",
+                "enum": ["todo", "in_progress", "completed", "blocked", "cancelled"],
+                "description": "Task status (for update_task)"
+            },
+            "note": {
+                "type": "string",
+                "description": "Note text (for add_note or update_task)"
+            },
+            "assigned_to": {
+                "type": "string",
+                "description": "Agent type (for add_task)"
+            },
+            "category": {
+                "type": "string",
+                "enum": ["general", "decision", "milestone", "issue"],
+                "description": "Note category (for add_note)"
+            }
+        },
+        "required": ["action"]
+    }
+
+    def __init__(self, request_id: Optional[str] = None, output_directory: Optional[str] = None):
+        """
+        Initialize project tracking tool.
+
+        Args:
+            request_id: Current request ID
+            output_directory: Project output directory
+        """
+        self.request_id = request_id
+        self.output_directory = output_directory
+
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute project tracking action."""
+        from .project_tracker import ProjectTracker, TaskStatus
+
+        action = inputs["action"]
+        tracker = ProjectTracker()
+
+        try:
+            if action == "create_project":
+                if "project_name" not in inputs or "description" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_name and description required for create_project"
+                    }
+
+                project = tracker.create_project(
+                    project_name=inputs["project_name"],
+                    description=inputs["description"],
+                    request_id=self.request_id,
+                    output_directory=self.output_directory
+                )
+
+                return {
+                    "success": True,
+                    "project_id": project.project_id,
+                    "message": f"Created project: {project.project_name}",
+                    "summary": tracker.get_project_summary(project.project_id)
+                }
+
+            elif action == "add_task":
+                if "project_id" not in inputs or "description" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_id and description required for add_task"
+                    }
+
+                task_id = tracker.add_task(
+                    project_id=inputs["project_id"],
+                    description=inputs["description"],
+                    assigned_to=inputs.get("assigned_to")
+                )
+
+                return {
+                    "success": True,
+                    "task_id": task_id,
+                    "message": f"Added task: {inputs['description']}"
+                }
+
+            elif action == "update_task":
+                if "project_id" not in inputs or "task_id" not in inputs or "status" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_id, task_id, and status required for update_task"
+                    }
+
+                tracker.update_task_status(
+                    project_id=inputs["project_id"],
+                    task_id=inputs["task_id"],
+                    status=TaskStatus(inputs["status"]),
+                    note=inputs.get("note")
+                )
+
+                return {
+                    "success": True,
+                    "message": f"Updated task status to {inputs['status']}"
+                }
+
+            elif action == "add_note":
+                if "project_id" not in inputs or "note" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_id and note required for add_note"
+                    }
+
+                tracker.add_note(
+                    project_id=inputs["project_id"],
+                    note=inputs["note"],
+                    category=inputs.get("category", "general")
+                )
+
+                return {
+                    "success": True,
+                    "message": "Added note to project"
+                }
+
+            elif action == "get_summary":
+                if "project_id" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_id required for get_summary"
+                    }
+
+                summary = tracker.get_project_summary(inputs["project_id"])
+
+                return {
+                    "success": True,
+                    "summary": summary
+                }
+
+            elif action == "get_next_tasks":
+                if "project_id" not in inputs:
+                    return {
+                        "success": False,
+                        "error": "project_id required for get_next_tasks"
+                    }
+
+                next_tasks = tracker.get_next_tasks(inputs["project_id"])
+
+                return {
+                    "success": True,
+                    "next_tasks": [
+                        {
+                            "task_id": task.task_id,
+                            "description": task.description,
+                            "assigned_to": task.assigned_to
+                        }
+                        for task in next_tasks
+                    ]
+                }
+
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unknown action: {action}"
+                }
+
+        except Exception as e:
+            logger.error(f"Project tracking error: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def to_anthropic_format(self) -> Dict[str, Any]:
+        """Convert to Anthropic API format."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": self.input_schema
+        }
+
+
 class GitCommitTool:
     """Tool for committing changes to git repository."""
 
@@ -629,16 +833,19 @@ class ToolRegistry:
         return [tool.to_anthropic_format() for tool in self._tools.values()]
 
     @classmethod
-    def default(cls, agent_definition: Optional["AgentDefinition"] = None) -> "ToolRegistry":
+    def default(cls, agent_definition: Optional["AgentDefinition"] = None, request_id: Optional[str] = None, output_directory: Optional[str] = None) -> "ToolRegistry":
         """
         Create a registry with default tools.
 
         Args:
             agent_definition: Optional agent definition for permission checking
+            request_id: Optional request ID for project tracking
+            output_directory: Optional output directory for project tracking
         """
         registry = cls()
         registry.register(WriteFileTool(agent_definition))
         registry.register(ReadFileTool())
         registry.register(RunCommandTool())
         registry.register(GitCommitTool())  # Add git commit capability
+        registry.register(ProjectTrackingTool(request_id=request_id, output_directory=output_directory))  # Add project tracking
         return registry
