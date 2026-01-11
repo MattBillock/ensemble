@@ -13,24 +13,39 @@ function App() {
   const wsRef = useRef(null);
 
   useEffect(() => {
-    // Connect WebSocket on mount
-    wsRef.current = connectWebSocket(
-      (data) => {
-        setAgentStatus(data);
-      },
-      (error) => {
-        setError('WebSocket connection failed');
-        setAppStatus({ status: 'error', active_agents: 0 });
-      }
-    );
+    // Connect WebSocket with auto-reconnect
+    const connectWS = () => {
+      wsRef.current = connectWebSocket(
+        (data) => {
+          setAgentStatus(data);
+          setError(null); // Clear error on successful message
+        },
+        (error) => {
+          console.log('WebSocket disconnected, will retry on next status poll');
+          // Don't show error immediately - status polling will reconnect
+          if (wsRef.current) {
+            wsRef.current = null;
+          }
+        }
+      );
+    };
 
-    // Poll application status
+    connectWS();
+
+    // Poll application status and reconnect WebSocket if needed
     const statusInterval = setInterval(async () => {
       try {
         const status = await getApplicationStatus();
         setAppStatus(status);
+
+        // Reconnect WebSocket if it's disconnected
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log('🔄 Reconnecting WebSocket...');
+          connectWS();
+        }
       } catch (err) {
         console.error('Failed to fetch app status:', err);
+        setAppStatus({ status: 'error', active_agents: 0 });
       }
     }, 2000);
 

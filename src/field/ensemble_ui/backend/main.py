@@ -266,4 +266,20 @@ async def update_agent_definition(update: AgentFileUpdate):
         return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Development mode with auto-reload
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_dirs=[
+            str(Path(__file__).parent),  # Backend directory
+            str(Path(__file__).parent.parent.parent.parent / "src" / "runtime"),  # Runtime code
+            str(Path(__file__).parent.parent.parent.parent / "leadership"),  # Agent definitions
+            str(Path(__file__).parent.parent.parent.parent / "coordinators"),
+            str(Path(__file__).parent.parent.parent.parent / "developers"),
+            str(Path(__file__).parent.parent.parent.parent / "testers"),
+            str(Path(__file__).parent.parent.parent.parent / "designers"),
+        ],
+        reload_includes=["*.py", "*.md"],  # Watch Python and agent definition files
+    )

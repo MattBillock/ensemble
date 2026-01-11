@@ -39,7 +39,7 @@ export const connectWebSocket = (onMessage, onError) => {
   const ws = new WebSocket(`ws://localhost:8000/ws/agent-status`);
 
   ws.onopen = () => {
-    console.log('WebSocket connected');
+    console.log('✅ WebSocket connected');
   };
 
   ws.onmessage = (event) => {
@@ -52,12 +52,15 @@ export const connectWebSocket = (onMessage, onError) => {
   };
 
   ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    if (onError) onError(error);
+    console.error('❌ WebSocket error:', error);
+    // Don't call onError immediately - wait for close event
+    // This prevents premature error messages during backend restart
   };
 
   ws.onclose = () => {
-    console.log('WebSocket disconnected');
+    console.log('🔌 WebSocket disconnected - will reconnect on next message');
+    // Only call error handler on close, not on error event
+    if (onError) onError(new Error('WebSocket disconnected'));
   };
 
   return ws;
