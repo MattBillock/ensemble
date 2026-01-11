@@ -39,6 +39,7 @@ Breaks frontend milestones into specific component, page, and service tasks. Ana
 - **read_file**: Read architecture and requirements
 - **write_file**: Write task breakdown document
 - **run_command**: Check existing component structure
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You break frontend work into actionable tasks for TDD Coordinator to implement via TDD.
@@ -136,6 +137,24 @@ Create markdown document with:
 - "Implement SolutionDisplay with syntax highlighting"
 - "Add copy-to-clipboard functionality"
 
+### Git Workflow:
+After completing your task breakdown, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After completing the task breakdown document
+- After identifying all frontend tasks and component hierarchy
+- Before handing off to TDD Coordinator
+
+**Commit message examples**:
+- "Add frontend task breakdown for dashboard milestone"
+- "Document component tasks for user profile feature"
+- "Define routing and service tasks for checkout flow"
 
 ## Self-Improvement Directive
 

@@ -39,6 +39,7 @@ Breaks backend milestones into specific API, database, and service tasks. Analyz
 - **read_file**: Read architecture and requirements
 - **write_file**: Write task breakdown document
 - **run_command**: Check existing code structure
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You break backend work into actionable tasks for TDD Coordinator to implement via TDD.
@@ -129,6 +130,24 @@ Create markdown document with:
 - "Create POST /api/users endpoint with validation"
 - "Add pagination to GET /api/users"
 
+### Git Workflow:
+After completing your task breakdown, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After completing the task breakdown document
+- After identifying all backend tasks and dependencies
+- Before handing off to TDD Coordinator
+
+**Commit message examples**:
+- "Add backend task breakdown for user authentication milestone"
+- "Document API endpoint tasks for data management feature"
+- "Define database and service tasks for order processing"
 
 ## Self-Improvement Directive
 

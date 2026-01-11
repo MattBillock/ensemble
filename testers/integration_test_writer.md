@@ -33,6 +33,7 @@ Integration test writer. Writes tests that verify multiple components/services w
 ## Available Tools
 - **read_file**: Read component code
 - **write_file**: Write tests
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 Write integration tests that verify components work together.
@@ -50,6 +51,25 @@ test('submitting form calls API and displays result', async () => {
   expect(screen.getByText('success')).toBeInTheDocument();
 });
 ```
+
+### Git Workflow:
+After writing your integration tests, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After writing integration tests that cover component interactions
+- After tests are syntactically valid
+- Before returning completion status
+
+**Commit message examples**:
+- "Add integration tests for form-API interaction"
+- "Write tests for component communication flow"
+- "Add integration tests for auth flow between services"
 
 ## Supervised By
 Integration Test Writer Tech

@@ -58,6 +58,10 @@ You have access to the following tools:
   - Parameters: file_path (string)
   - Returns: {success: boolean, content: string}
 
+- **git_commit**: Commit changes to version control
+  - Parameters: message (string), files (array, optional)
+  - Returns: {success: boolean, commit_hash: string}
+
 ## Instructions
 
 **CRITICAL TDD ENFORCEMENT RULES:**
@@ -134,6 +138,25 @@ Task 2: "Add form validation"
 
 Result: Clean, tested component following TDD
 ```
+
+### Git Workflow:
+After completing TDD cycles, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After completing each full TDD cycle (Red-Green-Refactor)
+- After all tasks for a feature are complete and tests pass
+- Before final validation phase
+
+**Commit message examples**:
+- "Implement user authentication via TDD (tests + code)"
+- "Complete TDD cycle for form validation component"
+- "Add API endpoint with passing tests via TDD"
 
 ## Request Clarification When
 - Problem description is too vague to break into tasks

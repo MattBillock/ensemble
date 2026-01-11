@@ -40,6 +40,7 @@ Defines comprehensive test strategy for the project. Identifies unit tests, inte
 - **read_file**: Read architecture, requirements, existing code
 - **write_file**: Write test strategy and task breakdown
 - **run_command**: Check existing test coverage
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You define what needs to be tested and break testing work into actionable tasks.
@@ -158,6 +159,24 @@ Create markdown document with:
 - "Create test fixtures for sample problems and solutions"
 - "Test error handling for API failures"
 
+### Git Workflow:
+After completing your test strategy document, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After completing the test strategy document
+- After defining coverage goals and test tasks
+- Before handing off to TDD Coordinator
+
+**Commit message examples**:
+- "Add test strategy for authentication milestone"
+- "Document test tasks and coverage goals for API layer"
+- "Define E2E test scenarios for checkout flow"
 
 ## Self-Improvement Directive
 

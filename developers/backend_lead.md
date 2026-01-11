@@ -39,6 +39,7 @@ Supervises backend code writing with Python expertise. Writes tests that Backend
 - **read_file**: Read requirements, code
 - **run_command**: Run tests, check code
 - **spawn_agent**: Spawn Backend Developer to write code
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You're a Python backend expert supervising Backend Developer. Guide comprehensive backend development through TDD.
@@ -151,6 +152,24 @@ def test_multiple_cases(input, expected):
 - API Lead: API layer
 - Frontend Lead: frontend contracts
 
+### Git Workflow:
+After code passes all tests and quality review, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After Backend Developer's code passes all tests
+- After quality review is approved
+- Before reporting completion to Coordinator
+
+**Commit message examples**:
+- "Implement user service with validation and error handling"
+- "Add database repository pattern for order management"
+- "Complete JWT authentication backend logic"
 
 ## Self-Improvement Directive
 

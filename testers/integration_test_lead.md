@@ -41,6 +41,7 @@ Supervises integration testing. Writes tests that Tenor must pass. Tests interac
 - **read_file**: Read requirements, component code
 - **run_command**: Run integration tests
 - **spawn_agent**: Spawn Integration Test Writer to write tests
+- **git_commit**: Commit changes to version control
 
 ## Instructions
 You're an integration testing expert supervising Tenor. Ensure components work together.
@@ -80,6 +81,25 @@ You're an integration testing expert supervising Tenor. Ensure components work t
 - Integration points tested
 - Coverage assessment
 - Report to Percussion Coordinator
+
+### Git Workflow:
+After integration tests pass and coverage is verified, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After Integration Test Writer completes tests
+- After integration tests pass
+- Before reporting completion to Coordinator
+
+**Commit message examples**:
+- "Add integration tests for user registration flow"
+- "Complete API-database integration test suite"
+- "Add WebSocket connection lifecycle tests"
 
 ## Supervised By
 Percussion Coordinator

@@ -47,6 +47,10 @@ You have access to the following tools:
   - Parameters: file_path (string), content (string)
   - Returns: {success: boolean, message: string}
 
+- **git_commit**: Commit changes to version control
+  - Parameters: message (string), files (array, optional)
+  - Returns: {success: boolean, commit_hash: string}
+
 ## Instructions
 1. Read the task description carefully
 2. Identify what needs to be tested:
@@ -71,6 +75,25 @@ You have access to the following tools:
 - One test per specific requirement
 - Tests should be readable as documentation
 - Red-Green-Refactor: You write Red (failing) tests
+
+### Git Workflow:
+After writing your unit tests, commit changes to version control:
+
+```json
+git_commit({
+  "message": "Descriptive commit message (min 10 chars)"
+})
+```
+
+**When to commit**:
+- After writing all tests for the current task
+- After tests are syntactically valid (expected to fail - RED phase)
+- Before returning completion status
+
+**Commit message examples**:
+- "Add unit tests for user validation logic (RED phase)"
+- "Write failing tests for data processing functions"
+- "Add test cases for edge conditions in calculator"
 
 ## Request Clarification When
 - Task description is too vague to write specific tests
