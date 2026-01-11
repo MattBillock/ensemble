@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8001';  // Backend on 8001, Firestorm on 8000
 
 export const generateSolution = async (problemDescription, budgetTier = 'balanced') => {
   try {
@@ -36,7 +36,7 @@ export const getApplicationStatus = async () => {
 };
 
 export const connectWebSocket = (onMessage, onError) => {
-  const ws = new WebSocket(`ws://localhost:8000/ws/agent-status`);
+  const ws = new WebSocket(`ws://localhost:8001/ws/agent-status`);  // Backend on 8001
 
   ws.onopen = () => {
     console.log('✅ WebSocket connected');

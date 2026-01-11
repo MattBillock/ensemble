@@ -270,7 +270,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,  # Using 8001 to not conflict with other apps
         reload=True,
         reload_dirs=[
             str(Path(__file__).parent),  # Backend directory
