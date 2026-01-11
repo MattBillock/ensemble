@@ -119,20 +119,32 @@ result = runtime.execute({
 
 ```
 ensemble/
-├── leadership/          # Strategic agents (Executive Director, Development Manager, etc.)
-├── coordinators/        # Task breakdown agents (Backend, Frontend, Test Coordinators)
-├── developers/          # Code writers and leads (Frontend, Backend, API, Component)
-├── testers/             # Test writers and leads (Unit, Integration, Test Validator)
-├── designers/           # Styling agents (Style Lead, Style Developer)
-├── support/             # Support agents (future)
-├── src/
-│   ├── runtime/         # Agent runtime system
-│   │   └── agents/      # Agent definition, runtime, state management, tools
-│   └── field/           # Applications built by agents
-├── rehearsals/          # Development projects
-├── performances/        # Production deployments
-├── charts/              # Generated documentation
-└── tests/               # Test suite
+├── README.md, QUICKSTART.md, requirements.md  # Core documentation
+│
+├── Agent Definitions (Markdown agent specs)
+│   ├── leadership/          # Strategic agents (Executive Director, Development Manager, etc.)
+│   ├── coordinators/        # Task breakdown agents (Backend, Frontend, Test Coordinators)
+│   ├── developers/          # Code writers and leads (Frontend, Backend, etc.)
+│   ├── testers/             # Test writers and leads (Unit, Integration)
+│   └── designers/           # Styling agents (Style Developer)
+│
+├── Source Code
+│   └── src/
+│       ├── runtime/agents/      # Agent runtime, tools, activity tracking, metrics
+│       └── field/ensemble_ui/   # Web UI for monitoring agent execution
+│           ├── backend/         # FastAPI server (port 8001)
+│           └── frontend/        # React UI (port 5173)
+│
+├── Documentation
+│   ├── docs/current/        # Active documentation (diagnostic reports, reviews)
+│   └── docs/archive/        # Historical documentation and milestone records
+│
+├── Scripts
+│   ├── scripts/deployment/  # start_backend.sh, start_frontend.sh, run_ensemble_ui.sh
+│   ├── scripts/development/ # Test scripts and development utilities
+│   └── scripts/deprecated/  # Old scripts kept for reference
+│
+└── logs/                # Execution logs
 ```
 
 ## Development Philosophy
@@ -161,7 +173,7 @@ Ensemble is building itself. The UI and tooling are developed using the agent sy
 - Test suite validates prevention system (5/5 tests passing)
 
 ### Agent Registry
-See `AGENT_REGISTRY.md` for complete agent paths and spawning patterns.
+See `docs/current/AGENT_REGISTRY.md` for complete agent paths and spawning patterns.
 
 ### State Persistence
 Agent execution state is checkpointed for crash recovery and resume capability.
