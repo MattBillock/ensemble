@@ -156,14 +156,51 @@ function App() {
           </div>
         )}
 
-        {agentStatus && (
+        {agentStatus && agentStatus.agents && Object.keys(agentStatus.agents).length > 0 && (
           <div className="mt-6 p-6 bg-white rounded-lg shadow-lg border border-gray-200">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Real-Time Agent Status</h2>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <pre className="text-xs text-gray-800 whitespace-pre-wrap overflow-auto max-h-96">
-                {JSON.stringify(agentStatus, null, 2)}
-              </pre>
-            </div>
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Agent Details</h2>
+            {Object.entries(agentStatus.agents).map(([agentId, agentInfo]) => (
+              <div key={agentId} className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-900">{agentId}</h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    agentInfo.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    agentInfo.status === 'error' ? 'bg-red-100 text-red-800' :
+                    agentInfo.status === 'running' ? 'bg-blue-100 text-blue-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {agentInfo.status}
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div><span className="font-semibold">Type:</span> {agentInfo.type}</div>
+                  <div><span className="font-semibold">Budget:</span> {agentInfo.budget_tier}</div>
+                  {agentInfo.problem && <div><span className="font-semibold">Task:</span> {agentInfo.problem}</div>}
+                  {agentInfo.error && (
+                    <div className="mt-3 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                      <p className="font-semibold text-red-800">Error:</p>
+                      <p className="text-red-700 mt-1">{agentInfo.error}</p>
+                      {agentInfo.traceback && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-red-600 text-xs">Show traceback</summary>
+                          <pre className="text-xs mt-2 overflow-auto max-h-48 bg-red-100 p-2 rounded">
+                            {agentInfo.traceback}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                  {agentInfo.result && (
+                    <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-500 rounded">
+                      <p className="font-semibold text-green-800">Result:</p>
+                      <pre className="text-xs mt-1 overflow-auto max-h-48">
+                        {JSON.stringify(agentInfo.result, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

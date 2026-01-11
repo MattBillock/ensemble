@@ -4,9 +4,10 @@ import os
 from typing import Dict, Any
 from pathlib import Path
 from dotenv import load_dotenv
+import threading
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -45,6 +46,28 @@ class AgentOrchestrator:
         # Get project root (3 levels up from backend/main.py)
         self.project_root = Path(__file__).parent.parent.parent.parent
 
+    def _execute_agent_background(self, agent_id: str, runtime, input_data):
+        """Execute agent in background thread."""
+        try:
+            print(f"🚀 Starting agent execution for {agent_id}")
+            result = runtime.execute(input_data)
+
+            # Update with result
+            self.active_agents[agent_id]["status"] = "completed"
+            self.active_agents[agent_id]["result"] = result
+            print(f"✅ Agent {agent_id} completed successfully")
+
+        except Exception as e:
+            import traceback
+            error_details = {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
+            self.active_agents[agent_id]["status"] = "error"
+            self.active_agents[agent_id].update(error_details)
+            print(f"❌ Error in agent {agent_id}: {e}")
+            print(traceback.format_exc())
+
     async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced"):
         """Spawn the Executive Director agent to handle the problem."""
         agent_id = f"exec_dir_{len(self.active_agents) + 1}"
@@ -64,6 +87,10 @@ class AgentOrchestrator:
             )
             tools.register(spawn_tool)
 
+            # Ensure output directory exists
+            output_dir = self.project_root / "src" / "field" / "ensemble_ui" / "output"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
             # Store agent info
             self.active_agents[agent_id] = {
                 "type": "executive_director",
@@ -80,32 +107,43 @@ class AgentOrchestrator:
                 budget_tier=budget_tier
             )
 
-            # Execute in background
+            # Prepare input data
             input_data = {
                 "user_vision": problem_description,
-                "output_directory": str(self.project_root / "src" / "field" / "ensemble_ui" / "output"),
+                "output_directory": str(output_dir),
                 "context": "User submitted problem via web UI"
             }
 
-            # Update status
+            # Update status to running
             self.active_agents[agent_id]["status"] = "running"
 
-            # Execute agent (this will block, so in production we'd run in background task)
-            result = runtime.execute(input_data)
+            # Execute agent in background thread
+            thread = threading.Thread(
+                target=self._execute_agent_background,
+                args=(agent_id, runtime, input_data),
+                daemon=True
+            )
+            thread.start()
 
-            # Update with result
-            self.active_agents[agent_id]["status"] = "completed"
-            self.active_agents[agent_id]["result"] = result
-
-            return agent_id, result
+            return agent_id, {"status": "running", "agent_id": agent_id}
 
         except Exception as e:
+            import traceback
+            error_details = {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
             self.active_agents[agent_id] = {
                 "type": "executive_director",
                 "status": "error",
-                "error": str(e)
+                "problem": problem_description,
+                "budget_tier": budget_tier,
+                **error_details
             }
-            raise
+            # Log the error
+            print(f"❌ Error spawning executive director: {e}")
+            print(traceback.format_exc())
+            return agent_id, {"status": "error", **error_details}
 
     def get_agent_status(self, agent_id: str):
         return self.active_agents.get(agent_id, {"status": "not_found"})
