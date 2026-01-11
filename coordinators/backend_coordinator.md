@@ -35,6 +35,50 @@ Breaks backend milestones into specific API, database, and service tasks. Analyz
 }
 ```
 
+## Output Format (Compact - For Agent Communication)
+**IMPORTANT**: When your output will be consumed by another agent (not a human), use this COMPACT format to save tokens:
+
+```json
+{
+  "status": "success",
+  "tasks_identified": 5,
+  "task_file": "path/to/tasks.md"
+}
+```
+
+**Compact Output Rules**:
+- **OMIT**: message, summary, recommendations, rationale, self_analysis
+- **INCLUDE ONLY**: status, essential data fields (tasks_identified, task_file, dependencies if present), errors
+- **In task breakdown file**: Use concise descriptions, no explanations
+- **No verbose summaries**: Other agents don't need to know your reasoning
+
+**Example Task Breakdown (Compact)**:
+```markdown
+# Backend Tasks
+
+## Task: auth-service
+- Desc: User auth with bcrypt + JWT
+- Output: auth_service.py
+- Deps: none
+
+## Task: db-models
+- Desc: SQLAlchemy models: User, Session
+- Output: models.py
+- Deps: auth-service
+```
+
+NOT this (too verbose for agents):
+```markdown
+# Backend Tasks
+
+## Task: auth-service
+- Description: Implement comprehensive user authentication service with bcrypt password hashing and JWT token generation
+- Rationale: Authentication is foundational to the system - all other services depend on it
+- Expected Output: auth_service.py with full UserAuth class implementation
+- Estimated Complexity: Medium
+- Notes: Consider adding refresh token support for better UX
+```
+
 ## Available Tools
 - **read_file**: Read architecture and requirements
 - **write_file**: Write task breakdown document
