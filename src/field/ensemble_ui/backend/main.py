@@ -25,6 +25,7 @@ load_dotenv()
 
 class ProblemRequest(BaseModel):
     problem: str
+    budget_tier: str = "balanced"  # full_firepower, balanced, economical
 
 class AgentOrchestrator:
     def __init__(self):
@@ -36,7 +37,7 @@ class AgentOrchestrator:
         # Get project root (3 levels up from backend/main.py)
         self.project_root = Path(__file__).parent.parent.parent.parent
 
-    async def spawn_executive_director(self, problem_description: str):
+    async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced"):
         """Spawn the Executive Director agent to handle the problem."""
         agent_id = f"exec_dir_{len(self.active_agents) + 1}"
 
@@ -50,7 +51,8 @@ class AgentOrchestrator:
             spawn_tool = SpawnAgentTool(
                 agent_types_dir=self.project_root,
                 api_key=self.api_key,
-                tools=tools
+                tools=tools,
+                budget_tier=budget_tier  # Pass budget tier to spawned agents
             )
             tools.register(spawn_tool)
 
@@ -58,14 +60,16 @@ class AgentOrchestrator:
             self.active_agents[agent_id] = {
                 "type": "executive_director",
                 "status": "initializing",
-                "problem": problem_description
+                "problem": problem_description,
+                "budget_tier": budget_tier
             }
 
-            # Create runtime
+            # Create runtime with budget tier
             runtime = AgentRuntime(
                 exec_dir_def,
                 api_key=self.api_key,
-                tools=tools
+                tools=tools,
+                budget_tier=budget_tier
             )
 
             # Execute in background
@@ -115,13 +119,17 @@ orchestrator = AgentOrchestrator()
 async def generate_solution(request: ProblemRequest):
     """HTTP endpoint to trigger solution generation"""
     try:
-        # Spawn Executive Director with problem description
-        agent_id, result = await orchestrator.spawn_executive_director(request.problem)
+        # Spawn Executive Director with problem description and budget tier
+        agent_id, result = await orchestrator.spawn_executive_director(
+            request.problem,
+            budget_tier=request.budget_tier
+        )
 
         return {
             "agent_id": agent_id,
             "status": "completed",
-            "result": result
+            "result": result,
+            "budget_tier": request.budget_tier
         }
     except Exception as e:
         return {"error": str(e), "status": "error"}

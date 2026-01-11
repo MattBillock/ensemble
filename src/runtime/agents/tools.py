@@ -300,7 +300,8 @@ class SpawnAgentTool:
         self,
         agent_types_dir: Path,
         api_key: str,
-        tools: Optional["ToolRegistry"] = None
+        tools: Optional["ToolRegistry"] = None,
+        budget_tier: str = "balanced"
     ):
         """
         Initialize spawn agent tool.
@@ -309,10 +310,12 @@ class SpawnAgentTool:
             agent_types_dir: Directory containing agent type definitions
             api_key: Anthropic API key for spawned agents
             tools: Optional tool registry to provide to spawned agents
+            budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
         self.tools = tools
+        self.budget_tier = budget_tier
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
@@ -346,11 +349,12 @@ class SpawnAgentTool:
                     "error": error_msg
                 }
 
-            # Create runtime for the agent
+            # Create runtime for the agent with budget tier
             runtime = AgentRuntime(
                 agent_definition,
                 api_key=self.api_key,
-                tools=self.tools
+                tools=self.tools,
+                budget_tier=self.budget_tier
             )
 
             # Execute the agent
