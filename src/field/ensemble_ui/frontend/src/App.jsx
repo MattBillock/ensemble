@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ProblemInputForm from './components/ProblemInputForm';
 import ChatInterface from './components/ChatInterface';
+import FileDisplay from './components/FileDisplay';
 import { generateSolution, connectWebSocket, getApplicationStatus } from './services/api';
 
 function App() {
@@ -235,6 +236,11 @@ function App() {
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {/* Generated Files */}
+                  {agentInfo.generated_files && agentInfo.generated_files.length > 0 && (
+                    <FileDisplay files={agentInfo.generated_files} />
                   )}
 
                   {/* Chat Interface - show for running or completed agents */}

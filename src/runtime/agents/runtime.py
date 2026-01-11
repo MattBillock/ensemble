@@ -384,10 +384,29 @@ Remember to respond with valid JSON matching the expected output format.
         # Find text content in response
         for content_block in response.content:
             if hasattr(content_block, 'type') and content_block.type == "text":
-                return self._extract_json_from_response(content_block.text)
+                try:
+                    return self._extract_json_from_response(content_block.text)
+                except ValueError:
+                    # If JSON parsing fails, return the text as a conversational response
+                    logger.info("Agent response is conversational (not JSON), wrapping in success response")
+                    return {
+                        "status": "completed",
+                        "response_type": "conversational",
+                        "message": content_block.text,
+                        "agent": self.definition.name
+                    }
             elif hasattr(content_block, 'text'):
                 # Fallback for mock objects
-                return self._extract_json_from_response(content_block.text)
+                try:
+                    return self._extract_json_from_response(content_block.text)
+                except ValueError:
+                    logger.info("Agent response is conversational (not JSON), wrapping in success response")
+                    return {
+                        "status": "completed",
+                        "response_type": "conversational",
+                        "message": content_block.text,
+                        "agent": self.definition.name
+                    }
 
         # If no text found, return empty
         logger.warning("No text content found in response")

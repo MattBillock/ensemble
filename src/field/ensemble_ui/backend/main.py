@@ -74,6 +74,42 @@ class AgentOrchestrator:
             except:
                 pass
 
+    def _scan_output_files(self, output_dir: Path, before_snapshot: set) -> list:
+        """Scan output directory for new files created during execution."""
+        try:
+            if not output_dir.exists():
+                return []
+
+            current_files = set()
+            for file_path in output_dir.rglob('*'):
+                if file_path.is_file():
+                    current_files.add(str(file_path))
+
+            new_files = current_files - before_snapshot
+
+            files_list = []
+            for file_path_str in new_files:
+                file_path = Path(file_path_str)
+                try:
+                    # Read file content (limit to reasonable size)
+                    content = file_path.read_text(encoding='utf-8')
+                    if len(content) > 50000:  # Limit to 50KB for display
+                        content = content[:50000] + "\n... (truncated)"
+
+                    files_list.append({
+                        "path": str(file_path.relative_to(self.project_root)),
+                        "filename": file_path.name,
+                        "content": content,
+                        "size": file_path.stat().st_size
+                    })
+                except Exception as e:
+                    print(f"Could not read file {file_path}: {e}")
+
+            return files_list
+        except Exception as e:
+            print(f"Error scanning output files: {e}")
+            return []
+
     def _execute_agent_background(self, agent_id: str, runtime, input_data):
         """Execute agent in background thread."""
         try:
@@ -84,13 +120,30 @@ class AgentOrchestrator:
                 self.active_agents[agent_id]["logs"] = []
             self.active_agents[agent_id]["logs"].append(f"🚀 Starting execution...")
 
+            # Snapshot files before execution
+            output_dir = self.project_root / "src" / "field" / "ensemble_ui" / "output"
+            before_files = set()
+            if output_dir.exists():
+                for file_path in output_dir.rglob('*'):
+                    if file_path.is_file():
+                        before_files.add(str(file_path))
+
             result = runtime.execute(input_data)
+
+            # Scan for new files
+            generated_files = self._scan_output_files(output_dir, before_files)
 
             # Update with result
             self.active_agents[agent_id]["status"] = "completed"
             self.active_agents[agent_id]["result"] = result
+            self.active_agents[agent_id]["generated_files"] = generated_files
+
+            if generated_files:
+                file_count = len(generated_files)
+                self.active_agents[agent_id]["logs"].append(f"📁 Generated {file_count} file(s)")
+
             self.active_agents[agent_id]["logs"].append(f"✅ Completed successfully")
-            print(f"✅ Agent {agent_id} completed successfully")
+            print(f"✅ Agent {agent_id} completed successfully ({len(generated_files)} files generated)")
 
         except Exception as e:
             import traceback
