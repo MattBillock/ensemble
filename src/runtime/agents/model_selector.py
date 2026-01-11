@@ -6,19 +6,20 @@ class ModelSelector:
     """Select appropriate LLM model based on budget tier and task complexity."""
 
     # Model tier mappings: budget_tier -> task_complexity -> model_id
+    # Updated January 2025 with current Claude model IDs
     TIER_MAPPING: Dict[str, Dict[str, str]] = {
         "full_firepower": {
             "strategic": "claude-opus-4-5-20251101",
-            "creative": "claude-3-5-sonnet-20241022",
-            "routine": "claude-3-5-sonnet-20241022",
+            "creative": "claude-sonnet-4-5-20250929",
+            "routine": "claude-sonnet-4-5-20250929",
         },
         "balanced": {
-            "strategic": "claude-3-5-sonnet-20241022",
-            "creative": "claude-3-5-sonnet-20241022",
+            "strategic": "claude-sonnet-4-5-20250929",
+            "creative": "claude-sonnet-4-5-20250929",
             "routine": "claude-3-5-haiku-20241022",
         },
         "economical": {
-            "strategic": "claude-3-5-sonnet-20241022",  # Can't compromise on strategic
+            "strategic": "claude-sonnet-4-5-20250929",  # Can't compromise on strategic
             "creative": "claude-3-5-haiku-20241022",
             "routine": "claude-3-5-haiku-20241022",
         },
@@ -54,7 +55,7 @@ class ModelSelector:
 
         Examples:
             >>> ModelSelector.select_model("balanced", "strategic")
-            'claude-3-5-sonnet-20241022'
+            'claude-sonnet-4-5-20250929'
 
             >>> ModelSelector.select_model("full_firepower", "strategic")
             'claude-opus-4-5-20251101'
