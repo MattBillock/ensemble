@@ -33,6 +33,18 @@ function App() {
   const [pollInterval, setPollInterval] = useState(1000); // 1 second default
   const [isPaused, setIsPaused] = useState(false);
 
+  // Filter state
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [activityFilter, setActivityFilter] = useState('all'); // all, spawned, completed, tool_use, error
+  const [agentTypeFilter, setAgentTypeFilter] = useState('all'); // all, leadership, coordinators, developers, testers
+
+  // Collapse state
+  const [sectionsCollapsed, setSectionsCollapsed] = useState({
+    hierarchy: false,
+    agents: false,
+    files: false
+  });
+
   const pollTimerRef = useRef(null);
 
   // Fetch all activity data
@@ -105,6 +117,26 @@ function App() {
   const runningAgents = Object.values(agentStates).filter(s => s.status === 'running').length;
   const completedAgents = Object.values(agentStates).filter(s => s.status === 'completed').length;
   const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed').length;
+
+  // Filter agents based on hideCompleted
+  const filteredAgentStates = Object.entries(agentStates).filter(([_, state]) => {
+    if (hideCompleted && state.status === 'completed') return false;
+    return true;
+  });
+
+  // Filter activities based on activity filter
+  const filteredActivities = activities.filter(activity => {
+    if (activityFilter === 'all') return true;
+    return activity.activity_type === activityFilter;
+  });
+
+  // Toggle collapse state
+  const toggleSection = (section) => {
+    setSectionsCollapsed(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#1a1d29' }}>
@@ -241,17 +273,27 @@ function App() {
 
             {/* Agent Hierarchy */}
             <Card bg="dark" text="light">
-              <Card.Header>
-                <h6 className="mb-0">
-                  Agent Hierarchy
-                  <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
-                    {Object.keys(hierarchy).length} agents
-                  </Badge>
-                </h6>
+              <Card.Header
+                style={{ cursor: 'pointer' }}
+                onClick={() => toggleSection('hierarchy')}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ marginRight: '8px' }}>
+                      {sectionsCollapsed.hierarchy ? '▶' : '▼'}
+                    </span>
+                    <span style={{ fontSize: '14px' }}>Agent Hierarchy</span>
+                    <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
+                      {Object.keys(hierarchy).length} agents
+                    </Badge>
+                  </div>
+                </div>
               </Card.Header>
-              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
-                <AgentHierarchyTree hierarchy={hierarchy} />
-              </Card.Body>
+              {!sectionsCollapsed.hierarchy && (
+                <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
+                  <AgentHierarchyTree hierarchy={hierarchy} />
+                </Card.Body>
+              )}
             </Card>
           </Col>
 
@@ -259,20 +301,41 @@ function App() {
           <Col md={5} style={{ height: '100%', overflowY: 'auto' }}>
             <Card bg="dark" text="light" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Card.Header>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h6 className="mb-0">
-                    Activity Feed
-                    <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
-                      {activities.length} activities
-                    </Badge>
-                  </h6>
-                  <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                    {isPaused ? '⏸ Paused' : `🔄 Updates every ${pollInterval}ms`}
-                  </span>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <h6 className="mb-0">
+                      Activity Feed
+                      <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
+                        {filteredActivities.length} / {activities.length} activities
+                      </Badge>
+                    </h6>
+                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                      {isPaused ? '⏸ Paused' : `🔄 Updates every ${pollInterval}ms`}
+                    </span>
+                  </div>
+                  {/* Activity Filter */}
+                  <Form.Select
+                    size="sm"
+                    value={activityFilter}
+                    onChange={(e) => setActivityFilter(e.target.value)}
+                    style={{
+                      backgroundColor: '#1a1d29',
+                      color: '#e4e6eb',
+                      border: '1px solid #3a3f52',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <option value="all">All Activities</option>
+                    <option value="agent_spawned">Agent Spawned</option>
+                    <option value="agent_completed">Agent Completed</option>
+                    <option value="tool_use">Tool Use</option>
+                    <option value="iteration_started">Iteration Started</option>
+                    <option value="error">Errors</option>
+                  </Form.Select>
                 </div>
               </Card.Header>
               <Card.Body style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-                <ActivityFeed activities={activities} />
+                <ActivityFeed activities={filteredActivities} />
               </Card.Body>
             </Card>
           </Col>
@@ -281,21 +344,54 @@ function App() {
           <Col md={4} style={{ height: '100%', overflowY: 'auto' }}>
             {/* Current Agent Tasks */}
             <Card bg="dark" text="light" className="mb-3">
-              <Card.Header>
-                <h6 className="mb-0">
-                  Current Agent Tasks
-                  <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '10px' }}>
-                    {runningAgents} active
-                  </Badge>
-                </h6>
-              </Card.Header>
-              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
-                {Object.keys(agentStates).length === 0 ? (
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
-                    No agents running. Start a task to see agent activity here.
+              <Card.Header
+                style={{ cursor: 'pointer' }}
+                onClick={() => toggleSection('agents')}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ marginRight: '8px' }}>
+                      {sectionsCollapsed.agents ? '▶' : '▼'}
+                    </span>
+                    <span style={{ fontSize: '14px' }}>Agent Tasks</span>
+                    <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '10px' }}>
+                      {runningAgents} active
+                    </Badge>
+                    <Badge bg="success" className="ms-1" style={{ fontSize: '10px' }}>
+                      {completedAgents} done
+                    </Badge>
+                    {failedAgents > 0 && (
+                      <Badge bg="danger" className="ms-1" style={{ fontSize: '10px' }}>
+                        {failedAgents} failed
+                      </Badge>
+                    )}
                   </div>
-                ) : (
-                  Object.entries(agentStates).map(([agentId, state]) => (
+                </div>
+                {!sectionsCollapsed.agents && (
+                  <Form.Check
+                    type="switch"
+                    label="Hide completed"
+                    checked={hideCompleted}
+                    onChange={(e) => { e.stopPropagation(); setHideCompleted(!hideCompleted); }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      fontSize: '12px',
+                      color: '#9ca3af',
+                      cursor: 'pointer'
+                    }}
+                  />
+                )}
+              </Card.Header>
+              {!sectionsCollapsed.agents && (
+                <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
+                  {filteredAgentStates.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
+                      {hideCompleted && Object.keys(agentStates).length > 0 ?
+                        'All agents completed (toggle filter to see them)' :
+                        'No agents running. Start a task to see agent activity here.'}
+                    </div>
+                  ) : (
+                    filteredAgentStates.map(([agentId, state]) => (
                     <div
                       key={agentId}
                       style={{
@@ -322,19 +418,38 @@ function App() {
                         </Badge>
                       </div>
 
-                      <div style={{ fontSize: '12px', color: '#e4e6eb', marginBottom: '6px' }}>
-                        {state.current_task}
+                      <div style={{ fontSize: '12px', color: '#e4e6eb', marginBottom: '8px' }}>
+                        {state.current_task || 'Working...'}
                       </div>
 
-                      {state.current_iteration > 0 && (
-                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                          Iteration: {state.current_iteration}
-                          {state.max_iterations && ` / ${state.max_iterations}`}
+                      {state.current_iteration > 0 && state.max_iterations > 0 && (
+                        <div style={{ marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
+                            <span>Progress</span>
+                            <span>{state.current_iteration} / {state.max_iterations}</span>
+                          </div>
+                          <div style={{
+                            width: '100%',
+                            height: '4px',
+                            backgroundColor: '#3a3f52',
+                            borderRadius: '2px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${(state.current_iteration / state.max_iterations) * 100}%`,
+                              height: '100%',
+                              backgroundColor: state.status === 'completed' ? '#10b981' : '#fbbf24',
+                              transition: 'width 0.3s ease'
+                            }} />
+                          </div>
                         </div>
                       )}
 
                       <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '6px' }}>
                         Started: {new Date(state.started_at).toLocaleTimeString()}
+                        {state.status === 'completed' && state.completed_at && (
+                          <span> • Completed: {new Date(state.completed_at).toLocaleTimeString()}</span>
+                        )}
                       </div>
                     </div>
                   ))
@@ -344,17 +459,27 @@ function App() {
 
             {/* Generated Files */}
             <Card bg="dark" text="light">
-              <Card.Header>
-                <h6 className="mb-0">
-                  Generated Files
-                  <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>
-                    {generatedFiles.length} files
-                  </Badge>
-                </h6>
+              <Card.Header
+                style={{ cursor: 'pointer' }}
+                onClick={() => toggleSection('files')}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ marginRight: '8px' }}>
+                      {sectionsCollapsed.files ? '▶' : '▼'}
+                    </span>
+                    <span style={{ fontSize: '14px' }}>Generated Files</span>
+                    <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>
+                      {generatedFiles.length} files
+                    </Badge>
+                  </div>
+                </div>
               </Card.Header>
-              <Card.Body style={{ maxHeight: '600px', overflowY: 'auto', padding: '12px' }}>
-                <GeneratedFiles files={generatedFiles} />
-              </Card.Body>
+              {!sectionsCollapsed.files && (
+                <Card.Body style={{ maxHeight: '600px', overflowY: 'auto', padding: '12px' }}>
+                  <GeneratedFiles files={generatedFiles} />
+                </Card.Body>
+              )}
             </Card>
           </Col>
         </Row>
