@@ -36,6 +36,10 @@ class AgentFileUpdate(BaseModel):
     agent_path: str  # Relative path like "leadership/executive_director.md"
     content: str
 
+class AgentMessage(BaseModel):
+    agent_id: str
+    message: str
+
 class AgentOrchestrator:
     def __init__(self):
         self.active_agents: Dict[str, Any] = {}
@@ -128,7 +132,8 @@ class AgentOrchestrator:
                 "type": "executive_director",
                 "status": "initializing",
                 "problem": problem_description,
-                "budget_tier": budget_tier
+                "budget_tier": budget_tier,
+                "messages": []  # Conversation history
             }
 
             # Create runtime with budget tier
@@ -179,6 +184,28 @@ class AgentOrchestrator:
 
     def get_agent_status(self, agent_id: str):
         return self.active_agents.get(agent_id, {"status": "not_found"})
+
+    def add_message_to_agent(self, agent_id: str, message: str, sender: str = "user"):
+        """Add a message to the agent's conversation history."""
+        if agent_id not in self.active_agents:
+            return {"error": "Agent not found"}
+
+        if "messages" not in self.active_agents[agent_id]:
+            self.active_agents[agent_id]["messages"] = []
+
+        timestamp = __import__("datetime").datetime.now().isoformat()
+        self.active_agents[agent_id]["messages"].append({
+            "sender": sender,
+            "message": message,
+            "timestamp": timestamp
+        })
+
+        # Also add to logs for visibility
+        if "logs" not in self.active_agents[agent_id]:
+            self.active_agents[agent_id]["logs"] = []
+        self.active_agents[agent_id]["logs"].append(f"💬 {sender}: {message}")
+
+        return {"success": True, "message": "Message added"}
 
 app = FastAPI(title="Ensemble UI Backend")
 
@@ -310,6 +337,14 @@ async def get_agent_definition(agent_tier: str, agent_name: str):
         "path": f"{agent_tier}/{agent_name}.md",
         "content": content
     }
+
+@app.post("/api/agents/{agent_id}/message")
+async def send_message_to_agent(agent_id: str, message: AgentMessage):
+    """Send a message to a running agent"""
+    result = orchestrator.add_message_to_agent(agent_id, message.message)
+    if "error" in result:
+        return {"error": result["error"]}, 404
+    return result
 
 @app.post("/api/agents/update")
 async def update_agent_definition(update: AgentFileUpdate):

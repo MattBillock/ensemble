@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ProblemInputForm from './components/ProblemInputForm';
+import ChatInterface from './components/ChatInterface';
 import { generateSolution, connectWebSocket, getApplicationStatus } from './services/api';
 
 function App() {
@@ -215,6 +216,14 @@ function App() {
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {/* Chat Interface - show for running or completed agents */}
+                  {(agentInfo.status === 'running' || agentInfo.status === 'completed') && (
+                    <ChatInterface
+                      agentId={agentId}
+                      messages={agentInfo.messages || []}
+                    />
                   )}
                 </div>
               </div>

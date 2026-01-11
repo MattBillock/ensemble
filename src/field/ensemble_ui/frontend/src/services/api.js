@@ -35,6 +35,25 @@ export const getApplicationStatus = async () => {
   }
 };
 
+export const sendMessageToAgent = async (agentId, message) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_id: agentId,
+        message: message
+      }),
+    });
+
+    if (!response.ok) throw new Error('Failed to send message');
+    return await response.json();
+  } catch (error) {
+    console.error('Send message error:', error);
+    throw error;
+  }
+};
+
 export const connectWebSocket = (onMessage, onError) => {
   const ws = new WebSocket(`ws://localhost:8001/ws/agent-status`);  // Backend on 8001
 
