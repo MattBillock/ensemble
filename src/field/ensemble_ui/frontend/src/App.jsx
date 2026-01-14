@@ -15,9 +15,10 @@ import AgentHierarchyTree from './components/AgentHierarchyTree';
 import PendingQuestions from './components/PendingQuestions';
 import GeneratedFiles from './components/GeneratedFiles';
 import MetricsDashboard from './components/MetricsDashboard';
+import PipelineTreeView from './components/PipelineTreeView';
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main' or 'metrics'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', or 'pipeline'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -172,6 +173,12 @@ function App() {
                       🎭 Activity
                     </Button>
                     <Button
+                      variant={currentView === 'pipeline' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('pipeline')}
+                    >
+                      🌳 Pipeline
+                    </Button>
+                    <Button
                       variant={currentView === 'metrics' ? 'primary' : 'outline-secondary'}
                       onClick={() => setCurrentView('metrics')}
                     >
@@ -217,6 +224,10 @@ function App() {
       {/* Conditional rendering based on current view */}
       {currentView === 'metrics' ? (
         <MetricsDashboard />
+      ) : currentView === 'pipeline' ? (
+        <Container fluid style={{ height: 'calc(100vh - 80px)', padding: '16px' }}>
+          <PipelineTreeView />
+        </Container>
       ) : (
         <>
         <Container fluid style={{ padding: '16px' }}>
