@@ -1,132 +1,198 @@
-# Requirements Document: Agent Human-Readable Identifier System
+# Executive Director Management Dashboard - Requirements
 
-## Vision
-Implement a system that assigns each spawned agent instance a unique, human-readable identifier composed of three randomly selected names from a curated list of 1,000 fantasy-inspired, whimsical, child-friendly names.
+## Project Vision
+Create a web-based management dashboard for monitoring and controlling Executive Director agent tasks with comprehensive controls and hierarchical agent management.
 
 ## Objectives
-1. Generate or curate a list of 1,000 fantasy-inspired, whimsical, child-friendly names
-2. Create a mechanism to assign unique identifiers to agent instances
-3. Ensure identifiers are composed of three randomly selected names from the list
-4. Guarantee uniqueness per agent instance
-5. Make identifiers easily accessible and usable throughout the agent lifecycle
+1. Provide real-time visibility into Executive Director task execution
+2. Enable full lifecycle control (start, pause, stop, cancel, delete) of tasks
+3. Display task summaries and detailed reports
+4. Enforce safe agent hierarchy termination (children before parents)
+5. Support multiple concurrent director tasks
 
 ## Scope
 
 ### In Scope
-- Generation/curation of 1,000 fantasy-inspired whimsical child-friendly names
-- Name list storage and management
-- Identifier generation logic (selecting 3 random names)
-- Uniqueness guarantee mechanism (tracking assigned identifiers)
-- Integration with agent spawning system
-- Identifier persistence during agent lifecycle
-- Identifier display in logs, UI, and tracking systems
+- **Dashboard UI Components**:
+  - Task list view showing all Executive Director tasks
+  - Individual task cards with status indicators
+  - Control buttons: Start, Pause, Stop, Cancel, Delete
+  - Quick summary section showing task objectives
+  - Detailed report view for task execution details
+  - Child agent tree visualization
+
+- **Task Management**:
+  - Real-time task status updates
+  - Task lifecycle management (create, start, pause, resume, stop, cancel, delete)
+  - Hierarchical agent tracking (director → spawned child agents)
+  - Safe termination enforcement (block parent kill if children active)
+
+- **Data & Reporting**:
+  - Task metadata (name, status, start time, duration)
+  - Quick summary of task objectives
+  - Execution logs and reports
+  - Child agent status tracking
+  - Error handling and display
+
+- **Backend API**:
+  - RESTful endpoints for CRUD operations
+  - WebSocket support for real-time updates
+  - Task state management
+  - Agent hierarchy validation
 
 ### Out of Scope
-- Modifying existing agent functionality beyond identifier assignment
-- Complex naming algorithms (keep it simple: 3 random names)
-- User customization of name lists (v1 uses fixed list)
-- Name localization/internationalization
-- Agent identity persistence across system restarts (identifiers regenerated on restart)
+- Multi-user authentication (single admin user assumed)
+- Task scheduling/cron functionality
+- Historical analytics/charting
+- Agent performance metrics beyond basic status
+- Configuration management UI
+- Other agent types (focus on Executive Director only)
 
-## Features
+## User Stories
 
-### F1: Name List Generation
-- **Description**: Create a curated list of 1,000 unique fantasy-inspired, whimsical, child-friendly names
-- **Acceptance Criteria**:
-  - Exactly 1,000 unique names
-  - Names are fantasy-inspired (e.g., "Sparkle", "Moonbeam", "Whisper", "Zephyr")
-  - Names are whimsical and child-friendly (no dark/scary names)
-  - Names stored in easily accessible format (JSON or Python data structure)
+### Core Functionality
+1. As an administrator, I want to see all Executive Director tasks in a dashboard so I can monitor their status at a glance
+2. As an administrator, I want to start a task so it begins execution
+3. As an administrator, I want to pause a running task so I can temporarily suspend it
+4. As an administrator, I want to stop a task so it terminates gracefully
+5. As an administrator, I want to cancel a task so it aborts immediately
+6. As an administrator, I want to delete a completed/stopped task to clean up the dashboard
+7. As an administrator, I want to see a quick summary of each task so I understand what it's doing
+8. As an administrator, I want to view detailed reports for a task so I can review its execution
 
-### F2: Identifier Generation
-- **Description**: Generate unique identifiers by combining three randomly selected names
-- **Acceptance Criteria**:
-  - Selects 3 names randomly from the 1,000-name list
-  - Combines names with appropriate separator (e.g., "Sparkle-Moonbeam-Zephyr")
-  - Identifiers are human-readable and pronounceable
-  - Generation is fast (< 1ms per identifier)
+### Hierarchical Management
+9. As an administrator, I want to see which child agents a director has spawned so I understand the execution hierarchy
+10. As an administrator, I want the system to prevent me from killing a director while it has active children so I don't create orphaned processes
+11. As an administrator, I want to kill all child agents before terminating the director so cleanup happens safely
 
-### F3: Uniqueness Guarantee
-- **Description**: Ensure no two agent instances receive the same identifier during a session
-- **Acceptance Criteria**:
-  - Tracks all assigned identifiers in memory
-  - Regenerates identifier if collision detected (though probability is extremely low)
-  - Works across multiple concurrent agent spawns
-  - Clears tracking on system restart (acceptable per scope)
+### Real-time Updates
+12. As an administrator, I want to see live status updates as tasks progress without refreshing the page
+13. As an administrator, I want to be notified when tasks complete or encounter errors
 
-### F4: Agent Integration
-- **Description**: Integrate identifier system with agent spawning mechanism
-- **Acceptance Criteria**:
-  - Every spawned agent receives an identifier automatically
-  - Identifier is accessible via agent properties (e.g., `agent.identifier`)
-  - Identifier is included in agent logs and output
-  - Identifier is visible in project tracking and UI
-  - No breaking changes to existing agent spawn interface
+## Technical Requirements
 
-## Users
-- **Primary**: Ensemble system (automatic assignment during agent spawning)
-- **Secondary**: Developers debugging agent interactions
-- **Tertiary**: End users viewing agent activity in UI
+### Frontend
+- **Framework**: React 18+ with hooks
+- **Styling**: Modern CSS framework (Tailwind CSS or Material-UI)
+- **State Management**: React Context API or Redux for task state
+- **Real-time**: WebSocket client for live updates
+- **Responsive**: Desktop-first design (dashboard use case)
+
+### Backend
+- **Runtime**: Node.js 18+ with Express
+- **WebSocket**: Socket.io for real-time communication
+- **Data Storage**: In-memory store with JSON file persistence (simple, no DB required)
+- **API Design**: RESTful with proper HTTP methods
+
+### API Endpoints
+- `GET /api/tasks` - List all director tasks
+- `GET /api/tasks/:id` - Get task details
+- `POST /api/tasks` - Create new task
+- `POST /api/tasks/:id/start` - Start task
+- `POST /api/tasks/:id/pause` - Pause task
+- `POST /api/tasks/:id/stop` - Stop task gracefully
+- `POST /api/tasks/:id/cancel` - Cancel task immediately
+- `DELETE /api/tasks/:id` - Delete task (only if stopped/completed)
+- `GET /api/tasks/:id/report` - Get task execution report
+- `GET /api/tasks/:id/children` - Get child agents
+
+### Data Model
+
+```javascript
+Task {
+  id: string (UUID)
+  name: string
+  type: "executive_director"
+  status: "idle" | "running" | "paused" | "completed" | "failed" | "cancelled"
+  summary: string (quick objective description)
+  report: string (detailed execution log)
+  createdAt: timestamp
+  startedAt: timestamp | null
+  completedAt: timestamp | null
+  duration: number (seconds)
+  childAgents: ChildAgent[]
+  error: string | null
+}
+
+ChildAgent {
+  id: string
+  type: string (agent type)
+  status: "running" | "completed" | "failed"
+  name: string
+}
+```
 
 ## Constraints
-- Must not significantly slow down agent spawning (< 5ms overhead)
-- Must work with existing agent spawning infrastructure
-- Name list must be appropriate for all ages
-- Should not require external dependencies (use Python standard library where possible)
+
+### Technical Constraints
+- Must run on local development environment
+- Frontend port: 3000 (React dev server)
+- Backend port: 3001 (Express API)
+- Browser compatibility: Modern browsers (Chrome, Firefox, Safari, Edge - latest 2 versions)
+
+### Business Constraints
+- Single administrator (no multi-user support needed)
+- Focus on Executive Director tasks only
+- Must enforce safe agent termination hierarchy
+
+### Safety Constraints
+- **CRITICAL**: Cannot delete/kill director task while child agents are active
+- Must validate child agent status before allowing parent termination
+- Must display clear warnings when termination is blocked
 
 ## Success Criteria
-1. ✅ System generates 1,000 fantasy-inspired whimsical child-friendly names
-2. ✅ Each spawned agent receives a unique three-name identifier
-3. ✅ Identifiers are visible in logs, UI, and tracking systems
-4. ✅ No identifier collisions during testing (spawn 100+ agents)
-5. ✅ Agent spawning overhead < 5ms
-6. ✅ All existing agent functionality remains intact
+
+1. **Functional Completeness**: All control buttons (start, pause, stop, cancel, delete) work correctly
+2. **Real-time Updates**: Task status updates appear within 1 second without page refresh
+3. **Hierarchy Enforcement**: System blocks director termination when children are active
+4. **Usability**: User can understand task status and perform actions without documentation
+5. **Reliability**: No crashes or data loss during normal operations
+6. **Performance**: Dashboard loads in < 2 seconds, controls respond in < 500ms
 
 ## Assumptions
-1. **Technology Stack**: Python (ensemble is Python-based)
-2. **Storage**: Name list stored in Python module or JSON file
-3. **Identifier Format**: "Name1-Name2-Name3" (hyphen-separated)
-4. **Collision Handling**: Regenerate on collision (probability ~1 in 1 billion with 1,000 names)
-5. **Persistence**: Identifiers only need to be unique within a single system session
-6. **Integration Point**: Agent spawning happens in ensemble infrastructure, likely in agent manager or orchestrator
-7. **Display**: Identifiers will be added to agent metadata and logged automatically
 
-## Technical Approach (High-Level)
-1. **Name Storage**: Python module with list of 1,000 names
-2. **Identifier Generator**: Singleton service that manages name selection and uniqueness
-3. **Integration**: Modify agent spawn function to call identifier generator
-4. **Tracking**: In-memory set to track assigned identifiers
-5. **Testing**: Unit tests for generator, integration tests for agent spawning
+1. **Single Instance**: One administrator using the dashboard at a time
+2. **Local Development**: Running on localhost, not production deployment initially
+3. **Task Persistence**: Tasks persist across server restarts (file-based storage)
+4. **Agent Communication**: Backend can communicate with agent runtime to control tasks
+5. **Error Recovery**: Tasks can be stopped/cancelled without corrupting state
+6. **WebSocket Reliability**: Fallback to polling if WebSocket connection drops
+7. **Default Styling**: Clean, professional UI without custom branding requirements
+8. **Browser Modern**: ES6+ JavaScript support assumed
 
 ## Non-Functional Requirements
-- **Performance**: Identifier generation < 1ms
-- **Reliability**: 99.9999% uniqueness guarantee (collision retry mechanism)
-- **Maintainability**: Clear code structure, documented name list
-- **Usability**: Identifiers are memorable and fun to read
 
-## Risks and Mitigations
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Name list not child-friendly | High | Low | Review all names during generation |
-| Identifier collisions | Medium | Very Low | Implement collision detection and regeneration |
-| Integration breaks existing agents | High | Low | Comprehensive testing, backward compatibility |
-| Performance overhead | Medium | Low | Use efficient data structures (set for tracking) |
+### Performance
+- Dashboard load time: < 2 seconds
+- API response time: < 500ms
+- WebSocket message latency: < 100ms
+- Support up to 50 concurrent tasks
 
-## Dependencies
-- Access to agent spawning code
-- Python standard library (random, json)
-- Project tracking system (to display identifiers)
+### Usability
+- Intuitive button placement and labeling
+- Clear visual status indicators (colors, icons)
+- Confirmation dialogs for destructive actions (stop, cancel, delete)
+- Helpful error messages
 
-## Out of Scope (Explicit)
-- Persistent identifier storage across system restarts
-- User-defined name lists
-- Name preferences or filtering
-- Multi-language support
-- Agent renaming after spawn
+### Reliability
+- Graceful WebSocket reconnection
+- Error boundary components to prevent UI crashes
+- Backend error handling with proper status codes
+- Data persistence to prevent loss on restart
 
----
+### Maintainability
+- Component-based architecture
+- Clear separation of concerns (UI, API, business logic)
+- Comprehensive code comments
+- README with setup instructions
 
-**Document Status**: Complete
-**Created**: 2026-01-13
-**Author**: Executive Director
-**Version**: 1.0
+## Future Considerations (Not in Initial Scope)
+- Multi-user support with role-based access control
+- Task templates and presets
+- Advanced filtering and search
+- Historical execution analytics
+- Performance metrics and charting
+- Email/Slack notifications
+- Task scheduling
+- Configuration management UI
+- Support for other agent types beyond Executive Director
