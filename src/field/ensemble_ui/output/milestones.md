@@ -1,134 +1,79 @@
-# Project Milestones: Executive Director Project Awareness
+# Agent Hierarchy Organization - Milestones
 
-## Project Overview
-Add project awareness capabilities to Executive Director agents, enabling persistent understanding of projects through descriptive naming and historical note-keeping.
+## Milestone 1: Backend Agent Identification System
+**Objective**: Implement the backend infrastructure to support whimsical names and descriptive titles for agents.
 
----
+**Deliverables**:
+- Agent metadata extension to include `whimsical_name` and `current_activity_title`
+- Whimsical name generator utility (generates unique, memorable names)
+- Agent spawning modifications to assign names at creation
+- API endpoints to expose agent metadata with names and titles
+- Update agent tracking to maintain this information
 
-## Milestone 1: Project Context Manager Core
-**Objective**: Create the foundational ProjectContextManager class with full CRUD operations for project context.
+**Acceptance Criteria**:
+- Each spawned agent receives a unique whimsical name
+- Agent metadata includes both name and current activity title
+- API returns agent information with all new fields
+- Unit tests for name generator and metadata handling
+- No breaking changes to existing agent functionality
 
-### Deliverables
-1. `project_context_manager.py` - Core Python class
-2. Unit tests for ProjectContextManager
-3. Type definitions and data classes for context objects
-
-### Acceptance Criteria
-- [ ] ProjectContextManager class with all required methods:
-  - `initialize_project(name, description)`
-  - `load_context(path)` / `save_context(path)`
-  - `add_completed_task(task_entry)` / `remove_pending_task(task_id)`
-  - `add_note(note_entry)`
-  - `add_pending_task(task_entry)`
-  - `get_summary()` - human-readable summary
-  - `to_dict()` / `from_dict()` - serialization
-- [ ] Data classes for: ProjectContext, TaskEntry, NoteEntry
-- [ ] JSON serialization/deserialization working
-- [ ] All unit tests passing
-- [ ] Error handling for file operations
-
-### Dependencies
-- None (this is the foundation)
-
-### Estimated Effort
-Medium - Core data structures and file I/O
+**Dependencies**: None (foundational work)
 
 ---
 
-## Milestone 2: Tool Integration
-**Objective**: Create the `manage_project_context` tool and integrate with ToolRegistry.
+## Milestone 2: UI Display Updates
+**Objective**: Update the web UI to display task-based hierarchy with names and titles.
 
-### Deliverables
-1. `manage_project_context` tool implementation
-2. Tool registration in ToolRegistry
-3. Integration tests for tool
+**Deliverables**:
+- Modified hierarchy visualization component
+- Display agent whimsical names prominently
+- Show brief activity titles instead of/alongside agent types
+- Task-based grouping/organization of agent hierarchy
+- Responsive design for new information display
+- Updated UI components and styling
 
-### Acceptance Criteria
-- [ ] Tool supports actions: `init`, `add_task`, `complete_task`, `add_note`, `get_status`
-- [ ] Tool follows existing patterns in `tools.py`
-- [ ] Tool properly validates input parameters
-- [ ] Tool returns structured responses
-- [ ] Integration with ToolRegistry
-- [ ] Integration tests passing
+**Acceptance Criteria**:
+- Hierarchy shows tasks being performed, not just types
+- Each agent displays its whimsical name clearly
+- Activity titles are concise and informative
+- UI is visually clear and not cluttered
+- Works across different screen sizes
+- Integration tests for UI components
 
-### Dependencies
-- Milestone 1 (ProjectContextManager)
-
-### Estimated Effort
-Medium - Tool definition and integration
-
----
-
-## Milestone 3: Executive Director Integration
-**Objective**: Update Executive Director agent definition to use project context tool.
-
-### Deliverables
-1. Updated `executive_director.md` agent definition
-2. Integration with activity tracker
-3. End-to-end tests
-
-### Acceptance Criteria
-- [ ] Executive Director definition includes `manage_project_context` tool
-- [ ] Instructions updated to use project context at start
-- [ ] Output format includes project context visibility
-- [ ] Activity type `PROJECT_CONTEXT_UPDATE` added
-- [ ] Activity tracker records context changes
-- [ ] End-to-end flow works correctly
-- [ ] Context persists to `project_context.json`
-
-### Dependencies
-- Milestone 2 (Tool Integration)
-
-### Estimated Effort
-Light-Medium - Definition updates and integration
+**Dependencies**: Milestone 1 (requires backend API with metadata)
 
 ---
 
-## Milestone 4: Testing & Documentation
-**Objective**: Comprehensive testing and documentation for the new feature.
+## Milestone 3: Integration, Testing & Documentation
+**Objective**: Ensure complete system integration, comprehensive testing, and user documentation.
 
-### Deliverables
-1. Complete test suite (unit, integration, e2e)
-2. Documentation for new feature
-3. Example usage documentation
+**Deliverables**:
+- End-to-end integration tests
+- Troubleshooting guide using whimsical names
+- User documentation for new UI features
+- Performance testing to ensure negligible impact
+- Bug fixes and refinements
+- Final system validation
 
-### Acceptance Criteria
-- [ ] All tests passing
-- [ ] Test coverage adequate
-- [ ] README/documentation updated
-- [ ] Example project_context.json documented
-- [ ] Error scenarios tested
+**Acceptance Criteria**:
+- All success criteria from requirements met
+- Full test coverage (unit, integration, e2e)
+- Performance impact < 5% overhead
+- Documentation complete and clear
+- System stable with no regressions
+- Backward compatibility verified
 
-### Dependencies
-- Milestone 3 (Full Integration)
-
-### Estimated Effort
-Light - Testing and docs
+**Dependencies**: Milestone 1 & 2 (requires completed features)
 
 ---
 
-## Summary Timeline
+## Timeline Summary
+- **Milestone 1**: Backend foundation (1-2 days estimated)
+- **Milestone 2**: UI implementation (2-3 days estimated)
+- **Milestone 3**: Integration & polish (1-2 days estimated)
+- **Total**: ~4-7 days estimated for complete delivery
 
-| Milestone | Focus | Dependencies | Status |
-|-----------|-------|--------------|--------|
-| M1 | ProjectContextManager Core | None | Not Started |
-| M2 | Tool Integration | M1 | Not Started |
-| M3 | Executive Director Integration | M2 | Not Started |
-| M4 | Testing & Documentation | M3 | Not Started |
-
-## Technical Decisions Made
-1. **Separate Project Context File (Option B)** - As recommended in requirements, using `project_context.json`
-2. **Python dataclasses** - For type-safe data structures
-3. **JSON serialization** - Human-readable, consistent with requirements
-4. **Existing tool patterns** - Follow `tools.py` conventions
-
-## Risks & Mitigations
-1. **Risk**: Integration with existing ToolRegistry may have undocumented patterns
-   **Mitigation**: Review existing tools for patterns before implementation
-
-2. **Risk**: Activity tracker integration complexity
-   **Mitigation**: Start with simple integration, enhance if needed
-
-## Next Steps
-1. Spawn System Architect for architecture design
-2. Begin Milestone 1 implementation via TDD Coordinator
+## Risk Assessment
+- **Low Risk**: Clear requirements, well-defined scope
+- **Medium Risk**: UI integration complexity depends on existing code structure
+- **Mitigation**: Incremental testing, maintain backward compatibility
