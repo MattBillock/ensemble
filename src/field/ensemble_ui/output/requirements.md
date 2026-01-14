@@ -1,148 +1,112 @@
-# Requirements: Executive Director Delegation Guardrails
+# Requirements Document: Update Ensemble UI Interval Options
+
+## Project Overview
+**Project Name:** Update Ensemble UI Interval Options  
+**Project ID:** 7532844e  
+**Date:** 2026-01-13  
+**Prepared By:** Executive Director Agent
 
 ## Vision
-Ensure the Executive Director agent properly delegates work to specialized agents and never does implementation work itself. Each agent in the ensemble must focus solely on its core strength, with complete guardrails preventing role violations.
+Update the Ensemble UI to provide more appropriate update interval options by changing from high-frequency intervals (500ms, 1s, 2s) to more practical intervals (1s, 1m, 5m) for production use.
 
 ## Problem Statement
-Currently, there's a risk that the Executive Director may be doing too much work directly instead of orchestrating other agents. We need to verify and strengthen guardrails that enforce proper delegation patterns.
+The current update interval options in the Ensemble UI are:
+- 500ms (500 milliseconds)
+- 1s (1 second)
+- 2s (2 seconds)
+
+These high-frequency intervals are not practical for most production scenarios and may cause unnecessary system load.
 
 ## Objectives
-1. **Verify Executive Director boundaries**: Ensure ED only writes requirements docs and status reports, never implementation code
-2. **Strengthen delegation guardrails**: Add validation, checks, and fail-safes to prevent ED from doing implementation work
-3. **Document agent responsibilities**: Clear delineation of what each agent type should and should not do
-4. **Enforce tool-specific strengths**: Each agent focuses on its specialty only
-5. **Validate orchestration patterns**: Ensure ED properly uses spawn_agent for all implementation work
+1. **Update interval dropdown options** from "500ms, 1s, 2s" to "1s, 1m, 5m"
+2. **Ensure proper functionality** - intervals should apply correctly
+3. **Maintain backward compatibility** where possible
+4. **Update any related documentation** or UI labels
 
 ## Scope
 
 ### In Scope
-- Review and enhance Executive Director agent instructions/prompts
-- Add validation logic to detect when ED attempts implementation work
-- Create clear responsibility matrices for all agent types
-- Add pre-checks before ED can proceed without delegation
-- Implement warnings/errors if ED tries to write .py, .js, .jsx, .ts, .tsx files
-- Document proper delegation workflows
-- Add examples of correct vs incorrect delegation patterns
-- Strengthen the "NEVER write implementation code" guardrails
+- Modify UI component(s) displaying interval options
+- Update the underlying logic to handle new time intervals:
+  - 1s = 1 second (1000ms)
+  - 1m = 1 minute (60000ms)
+  - 5m = 5 minutes (300000ms)
+- Update default interval selection if needed
+- Test that intervals apply correctly
+- Update any related UI text or tooltips
 
 ### Out of Scope
-- Changing the overall ensemble architecture
-- Modifying other agent types (unless for delegation-related improvements)
-- Adding new agent types
-- Performance optimization unrelated to delegation
-- UI/UX changes to the ensemble interface
+- Adding custom interval input functionality
+- Modifying other UI components unrelated to update intervals
+- Backend API changes (unless required for interval handling)
+- Performance optimization beyond interval changes
 
 ## User Stories
+1. **As a user**, I want to select reasonable update intervals (1s, 1m, 5m) so that I don't overwhelm the system with unnecessary updates
+2. **As a user**, I want the UI to clearly display what interval is selected so I understand update frequency
+3. **As a user**, I want the selected interval to apply correctly so the UI updates at the expected rate
 
-### As an Executive Director agent:
-- I should only write requirements.md and status reports
-- I must spawn Development Manager for all implementation work
-- I should be blocked from creating .py, .js, .jsx, .ts, .tsx files
-- I need clear validation feedback if I attempt implementation work
-- I should have pre-flight checks before proceeding without delegation
-
-### As a Development Manager:
-- I should receive well-formed requirements from ED
-- I should be responsible for ALL implementation coordination
-- I should spawn appropriate specialized agents for actual coding
-
-### As a Code Writer agent:
-- I should only write implementation code
-- I should never write requirements or orchestration logic
-
-### As a system user:
-- I want confidence that work is being done by the right specialist
-- I want to see clear delegation patterns in execution logs
-- I want validation errors if improper delegation occurs
-
-## Technical Requirements
-
-### Validation Requirements
-1. **Pre-spawn validation**: ED must verify requirements exist before spawning Development Manager
-2. **File type restrictions**: ED cannot write files with implementation extensions (.py, .js, .jsx, .ts, .tsx, .java, .cpp, etc.)
-3. **Spawn failure handling**: If spawn_agent fails, ED must error (not implement itself)
-4. **Parameter validation**: Ensure all required fields passed to Development Manager (requirements_file, output_directory, project_name)
-
-### Documentation Requirements
-1. **Responsibility Matrix**: Document what each agent type should/shouldn't do
-2. **Delegation Flowcharts**: Visual representation of proper orchestration
-3. **Anti-patterns**: Examples of incorrect delegation to avoid
-4. **Best Practices**: Guidelines for proper agent orchestration
-
-### Guardrail Requirements
-1. **Explicit CRITICAL warnings**: Multiple clear warnings in ED instructions about never implementing
-2. **Validation checkpoints**: Specific validation steps ED must complete before proceeding
-3. **Error handling patterns**: Clear rules for what ED does when agents fail
-4. **Escalation paths**: When to ask user vs when to fail fast
-
-## Constraints
-
-### Technical Constraints
-- Must work within existing ensemble architecture
-- Cannot break existing delegation patterns that work correctly
-- Must maintain backward compatibility with existing projects
-- Changes should be additive (add guardrails, not remove capabilities)
-
-### Process Constraints
-- ED must always delegate to Development Manager for implementation
-- Development Manager must always delegate to specialized coordinators
-- Code Writers must only write code, never orchestrate
+## Technical Constraints
+- Must work with existing Ensemble UI codebase
+- Should maintain existing component structure where possible
+- Must convert display values (1s, 1m, 5m) to milliseconds for internal use
 
 ## Success Criteria
-
-### Validation Success
-- [ ] ED cannot create files with implementation extensions
-- [ ] ED errors appropriately when spawn_agent fails (doesn't implement itself)
-- [ ] ED validates requirements exist before spawning
-- [ ] All required parameters validated before spawning Development Manager
-
-### Documentation Success
-- [ ] Clear responsibility matrix exists for all agent types
-- [ ] Examples of correct delegation patterns documented
-- [ ] Anti-patterns clearly identified with explanations
-- [ ] Instructions contain multiple explicit warnings against implementation
-
-### Behavioral Success
-- [ ] ED only writes requirements.md and status reports
-- [ ] All implementation work goes through Development Manager
-- [ ] Each agent stays within its defined role
-- [ ] Proper error handling when delegation fails
-
-### Testing Success
-- [ ] Can verify ED refuses to write .py files
-- [ ] Can verify ED errors when spawn fails
-- [ ] Can verify ED validates before spawning
-- [ ] Can verify proper delegation chain works end-to-end
+1. ✅ Dropdown/selector shows "1s", "1m", "5m" instead of "500ms", "1s", "2s"
+2. ✅ Selecting "1s" results in 1-second update interval
+3. ✅ Selecting "1m" results in 1-minute update interval
+4. ✅ Selecting "5m" results in 5-minute update interval
+5. ✅ UI updates at the correct frequency for each selection
+6. ✅ No console errors or warnings
+7. ✅ Changes are properly tested
 
 ## Assumptions
-1. The existing ensemble architecture supports agent delegation
-2. The spawn_agent function works as documented
-3. Development Manager properly coordinates implementation
-4. File system operations are reliable
-5. Agents have access to their instruction sets
+- The Ensemble UI is a web-based interface (likely React or similar framework)
+- There is an existing dropdown/selector component for interval selection
+- The interval value is stored in milliseconds internally
+- The output directory contains or will contain the relevant UI code
+- Standard JavaScript/TypeScript conventions apply
+- No server-side changes are required (intervals applied client-side)
 
-## Risks
-1. **Over-restrictive guardrails**: Could prevent legitimate ED activities
-   - Mitigation: Carefully define what ED should write (requirements, reports only)
-   
-2. **Validation overhead**: Too many checks could slow execution
-   - Mitigation: Keep validations simple and fast (file existence, parameter checks)
-   
-3. **Edge cases**: Legitimate scenarios where ED needs flexibility
-   - Mitigation: Document exceptions clearly, default to strict delegation
+## Non-Functional Requirements
+- **Performance:** UI should remain responsive when updating intervals
+- **Usability:** Clear labeling so users understand time units (s=seconds, m=minutes)
+- **Maintainability:** Code should be well-documented and follow existing patterns
+- **Compatibility:** Should work across modern browsers
 
-4. **False positives**: Blocking ED from writing legitimate documentation
-   - Mitigation: Whitelist allowed file types (.md, .txt, .json reports)
+## Dependencies
+- Access to Ensemble UI source code
+- Existing UI component structure and state management
 
-## Open Questions
-None - proceeding with implementation of guardrail enhancements.
+## Risks and Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Breaking existing functionality | High | Thorough testing before deployment |
+| Users have saved preferences with old values | Medium | Handle legacy values gracefully or reset to default |
+| Interval conversion errors | Medium | Unit tests for time conversion logic |
 
-## Definition of Done
-1. Executive Director instructions contain explicit, multiple warnings against implementation
-2. Validation logic prevents ED from writing implementation files
-3. Pre-spawn validation ensures requirements exist and parameters are complete
-4. Error handling properly escalates when delegation fails
-5. Documentation exists showing correct delegation patterns
-6. Responsibility matrix clearly defines all agent roles
-7. All changes committed to version control
-8. Guardrails tested and verified working
+## Out of Scope (Explicit)
+- Custom interval input fields
+- Additional interval options beyond 1s, 1m, 5m
+- Persistent storage of user interval preferences (unless already implemented)
+- Real-time vs polling architecture changes
+
+## Deliverables
+1. Updated UI component files with new interval options
+2. Updated logic to handle 1s, 1m, 5m intervals correctly
+3. Unit tests for interval functionality
+4. Updated documentation (if applicable)
+5. This requirements document
+
+## Acceptance Criteria Checklist
+- [ ] Code changes implement 1s, 1m, 5m options
+- [ ] All three intervals function correctly
+- [ ] No regression in existing UI functionality
+- [ ] Tests pass
+- [ ] Code follows project conventions
+- [ ] Changes committed to version control
+
+## Notes
+- This is a straightforward UI update task
+- Should be completed in a single development cycle
+- Focus on clean, maintainable code that follows existing patterns
