@@ -1,45 +1,98 @@
-# Ensemble Development Aliases
-# Add to your ~/.zshrc or ~/.bashrc:
-# source ~/Development/ai_exploration/ensemble/.ensemble_aliases
+#!/bin/bash
+# Ensemble Multi-Agent System Aliases
 
-# Quick navigation
-alias ens='cd ~/Development/ai_exploration/ensemble'
-alias ensvenv='cd ~/Development/ai_exploration/ensemble && source venv/bin/activate'
+# Directory shortcuts
+export ENSEMBLE_DIR="$HOME/Development/ai_exploration/ensemble"
+alias ens="cd $ENSEMBLE_DIR"
+alias ensfr="cd $ENSEMBLE_DIR/src/field/ensemble_ui/frontend"
+alias ensbe="cd $ENSEMBLE_DIR/src/field/ensemble_ui/backend"
 
-# Agent pipeline operations
-alias ens-ui='ensvenv && python complete_ui_pipeline.py'
-alias ens-cli='ensvenv && python cli_pipeline.py'
-alias ens-exec='ensvenv && python spawn_executive_director.py'
+# Service management
+alias ens-restart="$ENSEMBLE_DIR/restart.sh"
+alias ens-logs="$ENSEMBLE_DIR/tail-logs.sh"
+alias ens-stop="pkill -f 'uvicorn.*ensemble' && pkill -f vite && echo '🛑 Ensemble services stopped'"
 
-# Testing & validation
-alias ens-test='ensvenv && pytest -v'
-alias ens-test-cov='ensvenv && pytest --cov=src --cov-report=term-missing'
-alias ens-rogue='ensvenv && python test_rogue_detection.py'
+# Status checks
+alias ens-status="ps aux | grep -E 'uvicorn.*ensemble|vite' | grep -v grep"
+alias ens-ports="lsof -i :8001 -i :5173"
 
-# Agent management
-alias ens-list='find leadership coordinators developers testers designers -name "*.md" -type f'
-alias ens-check='grep -r "drum\|corps\|brass\|percussion" --include="*.md" leadership/ coordinators/ developers/ testers/ designers/ | wc -l'
+# Quick start individual services
+alias ens-backend="cd $ENSEMBLE_DIR && source venv/bin/activate && python -m uvicorn src.field.ensemble_ui.backend.main:app --host 0.0.0.0 --port 8001 --reload"
+alias ens-frontend="cd $ENSEMBLE_DIR/src/field/ensemble_ui/frontend && npm run dev"
 
-# Git workflow
-alias ens-status='git status -sb'
-alias ens-push='git push origin main'
-alias ens-pull='git pull origin main'
-alias ens-sync='git add -A && git commit -m "checkpoint" && git push origin main'
+# Testing
+alias ens-test="cd $ENSEMBLE_DIR && source venv/bin/activate && python -m pytest tests/ -v"
+alias ens-test-quick="cd $ENSEMBLE_DIR && source venv/bin/activate && python -m pytest tests/ -x -q"
 
-# Logging & monitoring
-alias ens-logs='tail -f *.log'
-alias ens-errors='grep -i error *.log'
+# Git shortcuts
+alias ens-git="cd $ENSEMBLE_DIR && git status"
+alias ens-push="cd $ENSEMBLE_DIR && git add -A && git commit && git push"
+
+# Database and logs
+alias ens-db="sqlite3 $ENSEMBLE_DIR/agent_metrics.db"
+alias ens-clean-logs="rm -f $ENSEMBLE_DIR/logs/*.log && echo '🧹 Logs cleaned'"
+
+# Open in browser
+alias ens-open="open http://localhost:5173"
+alias ens-api="open http://localhost:8001/docs"
+
+# Development helpers
+alias ens-venv="cd $ENSEMBLE_DIR && source venv/bin/activate"
+alias ens-install="cd $ENSEMBLE_DIR && source venv/bin/activate && pip install -e ."
 
 # Documentation
-alias ens-docs='open README.md ARCHITECTURE.md AGENT_REGISTRY.md'
-alias ens-review='cat COMPREHENSIVE_SYSTEM_REVIEW.md'
+alias ens-docs="cd $ENSEMBLE_DIR/docs/current && ls -lh"
 
-# Quick agent spawning (future)
-alias ens-spawn='function _ens_spawn() { echo "Spawning agent for: $1"; python spawn_agent.py "$1"; }; _ens_spawn'
+# TMUX session for ensemble
+alias ens-tmux="tmux new-session -s ensemble -c $ENSEMBLE_DIR"
+alias ens-attach="tmux attach -t ensemble"
 
-# Performance monitoring (future)
-alias ens-perf='python scripts/analyze_performance.py'
-alias ens-cost='python scripts/estimate_cost.py'
+echo "✨ Ensemble aliases loaded. Type 'ens-help' for available commands."
 
-# Cleanup
-alias ens-clean='find . -name "*.pyc" -delete && find . -name "__pycache__" -delete && find . -name "*.log" -delete'
+# Help function
+ens-help() {
+    echo ""
+    echo "🤖 Ensemble Multi-Agent System - Available Commands"
+    echo ""
+    echo "📁 Navigation:"
+    echo "  ens              → cd to ensemble directory"
+    echo "  ensfr            → cd to frontend directory"
+    echo "  ensbe            → cd to backend directory"
+    echo ""
+    echo "🚀 Service Management:"
+    echo "  ens-restart      → Stop and restart both services"
+    echo "  ens-logs         → Tail backend and frontend logs"
+    echo "  ens-stop         → Stop all ensemble services"
+    echo "  ens-status       → Show running processes"
+    echo "  ens-ports        → Show what's using ports 8001 and 5173"
+    echo ""
+    echo "🔧 Individual Services:"
+    echo "  ens-backend      → Start backend only (port 8001)"
+    echo "  ens-frontend     → Start frontend only (port 5173)"
+    echo ""
+    echo "🧪 Testing:"
+    echo "  ens-test         → Run all tests (verbose)"
+    echo "  ens-test-quick   → Run tests (stop on first failure)"
+    echo ""
+    echo "📝 Git:"
+    echo "  ens-git          → Git status in ensemble directory"
+    echo "  ens-push         → Add, commit, and push all changes"
+    echo ""
+    echo "🛠️ Development:"
+    echo "  ens-venv         → Activate Python virtual environment"
+    echo "  ens-install      → Install/update Python package"
+    echo "  ens-db           → Open SQLite metrics database"
+    echo "  ens-clean-logs   → Delete all log files"
+    echo ""
+    echo "🌐 Browser:"
+    echo "  ens-open         → Open frontend in browser"
+    echo "  ens-api          → Open API docs in browser"
+    echo ""
+    echo "📚 Documentation:"
+    echo "  ens-docs         → List current documentation files"
+    echo ""
+    echo "🖥️  TMUX:"
+    echo "  ens-tmux         → Start new tmux session for ensemble"
+    echo "  ens-attach       → Attach to existing ensemble tmux session"
+    echo ""
+}
