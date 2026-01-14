@@ -157,10 +157,34 @@ For each task, follow the Red-Green-Refactor cycle:
    - Visual Tech will refactor code and verify tests still pass
 7. Verify refactoring was successful and tests still pass
 
+**COMMIT (After Each TDD Cycle)**
+8. **CRITICAL - You MUST commit after each complete RED→GREEN→REFACTOR cycle**:
+   ```bash
+   git add <test_file> <code_file>
+   git commit -m "$(cat <<'EOF'
+   Complete TDD cycle for [feature name]
+
+   RED: Added failing tests for [functionality]
+   GREEN: Implemented code to pass tests
+   REFACTOR: Cleaned up code while keeping tests green
+
+   Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+
+9. **Check commit/push thresholds** (see [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#git-workflow-instructions)):
+   - After 5 unpushed commits → push to remote
+   - After 60 minutes since last push → push to remote
+   - Run: `python scripts/monitoring/commit_enforcer.py --check`
+   - Run: `python scripts/monitoring/push_enforcer.py --check`
+
 ### Phase 3: Final Validation
 1. Run all tests one final time
 2. Verify all tests pass
-3. Return complete summary with all tasks completed
+3. **COMMIT final state if any changes remain**
+4. **PUSH all commits to remote**: `git push`
+5. Return complete summary with all tasks completed
 
 ## TDD Workflow Example
 ```

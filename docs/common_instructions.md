@@ -14,6 +14,92 @@ This document contains shared instructions that apply to all agents in the ensem
 
 ## Git Workflow Instructions
 
+### Commit and Push Authority
+
+**CRITICAL**: Only **supervisor and director agents** commit and push code. Individual developers do NOT commit.
+
+**Who Commits and Pushes:**
+- ✓ **Executive Director** - After requirements/milestones
+- ✓ **Development Manager** - After architecture/planning phases, after milestones
+- ✓ **TDD Coordinator** - After completing TDD cycles
+- ✓ **Leads** (Frontend Lead, Backend Lead, API Lead) - After developers finish implementation
+- ✓ **Integration Test Lead** - After integration tests pass
+
+**Who Does NOT Commit:**
+- ✗ **Developers** (Frontend Developer, Backend Developer, API Developer) - They write code, supervisors commit it
+- ✗ **Writers** (Unit Test Writer, Integration Test Writer) - They write tests, supervisors commit them
+- ✗ **Coordinators** (Backend Coordinator, Frontend Coordinator, Test Coordinator) - They plan, don't commit
+
+### Commit Frequency Rules
+
+**Supervisors MUST commit work at these checkpoints:**
+
+1. **After Each Major Phase**:
+   - Requirements gathered → commit
+   - Architecture designed → commit
+   - Task breakdown complete → commit
+   - Milestone complete → commit
+
+2. **After Spawned Agent Completes**:
+   - Developer finishes code → Lead commits it
+   - Test writer finishes tests → Lead commits them
+   - TDD cycle completes (RED→GREEN→REFACTOR) → TDD Coordinator commits
+
+3. **Threshold Triggers** (enforce or work is lost):
+   - More than 10 files changed → commit
+   - More than 500 lines changed → commit
+   - More than 30 minutes since last commit → commit
+
+4. **Before Major Operations**:
+   - Before spawning next agent → commit current work
+   - Before starting new milestone → commit previous work
+   - Before reporting completion → commit all work
+
+### Push Frequency Rules
+
+**Supervisors MUST push commits at these checkpoints:**
+
+1. **After Milestone Completion** - Push all commits from the milestone
+2. **After 5 Unpushed Commits** - Don't accumulate too many local commits
+3. **After 60 Minutes** - Push at least once per hour if there are commits
+4. **Before Reporting to Parent Agent** - Ensure work is backed up
+
+### Commit Enforcement Bots
+
+**Two automated bots monitor git hygiene:**
+
+1. **Commit Enforcer** (`scripts/monitoring/commit_enforcer.py`):
+   - Monitors for uncommitted changes
+   - Warns when thresholds exceeded
+   - Can auto-commit work-in-progress
+
+   ```bash
+   # Check status
+   python scripts/monitoring/commit_enforcer.py --check
+
+   # Watch mode (continuous monitoring)
+   python scripts/monitoring/commit_enforcer.py --watch --interval 60
+
+   # Auto-commit if thresholds exceeded
+   python scripts/monitoring/commit_enforcer.py --auto-commit
+   ```
+
+2. **Push Enforcer** (`scripts/monitoring/push_enforcer.py`):
+   - Monitors for unpushed commits
+   - Warns when thresholds exceeded
+   - Can auto-push to remote
+
+   ```bash
+   # Check status
+   python scripts/monitoring/push_enforcer.py --check
+
+   # Watch mode (every 5 minutes)
+   python scripts/monitoring/push_enforcer.py --watch
+
+   # Auto-push if thresholds exceeded
+   python scripts/monitoring/push_enforcer.py --auto-push
+   ```
+
 ### Commit Guidelines
 
 When creating commits:
@@ -38,6 +124,16 @@ Detailed explanation if needed:
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 EOF
 )"
+```
+
+### Push Command
+
+```bash
+# Push current branch to remote
+git push
+
+# First push on new branch (set upstream)
+git push -u origin <branch-name>
 ```
 
 ### Branch Management
