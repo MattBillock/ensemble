@@ -1,280 +1,150 @@
-# Achievements System - Requirements Document
+# Requirements: UI Tab State Persistence
 
 ## Project Overview
-
-**Project Name:** achievements_system  
-**Project ID:** b7960dba  
-**Created:** 2026-01-14  
-**Executive Director:** Orchestrating implementation
+**Project Name:** UI Tab State Persistence  
+**Project ID:** ffceacb3  
+**Created:** 2026-01-14
 
 ## Vision
+Fix the issue where Timeline, Metrics, Improve, and Achievements tabs reset their state while being actively viewed by users. This causes poor user experience as users lose their current view/scroll position/filters when the tabs refresh unexpectedly.
 
-Create a humorous Steam-style achievements system that awards different agent classes tongue-in-cheek achievements based on their actions. The system should track agent behavior and award achievements as milestones are reached, adding a playful gamification layer to the ensemble agent system.
+## Problem Statement
+Currently, certain tabs in the ensemble UI are experiencing unwanted resets during active viewing. This likely occurs due to:
+- Automatic data polling/refresh cycles
+- React component re-renders
+- State management issues
+- WebSocket updates triggering full component resets
+
+Users expect these tabs to maintain their current state (scroll position, filters, selections, expanded sections) while they are actively viewing them.
 
 ## Objectives
-
-1. **Achievement Definition System**: Create a flexible schema for defining achievements with:
-   - Achievement name (humorous/creative)
-   - Description
-   - Target agent class(es)
-   - Trigger conditions
-   - Icon/badge representation
-   - Rarity tier (common, rare, epic, legendary)
-
-2. **Achievement Tracking**: Monitor agent actions and automatically award achievements when conditions are met
-
-3. **Achievement Display**: Present awarded achievements in the UI with visual feedback (toast notifications, achievement card displays)
-
-4. **Achievement History**: Maintain a persistent record of all achievements earned by agent class
-
-5. **Achievement Categories**: Organize achievements by theme:
-   - Productivity (tasks completed, speed records)
-   - Comedy (failures, quirky behaviors)
-   - Milestones (first-time events)
-   - Streaks (consecutive actions)
-   - Meta (self-referential humor about being an AI)
+1. **Prevent unwanted resets** on Timeline, Metrics, Improve, and Achievements tabs during active viewing
+2. **Maintain scroll position** when data updates occur
+3. **Preserve user selections** (filters, expanded sections, etc.) during refresh cycles
+4. **Update data intelligently** without disrupting the viewing experience
+5. **Ensure smooth UX** with no jarring resets or jumps
 
 ## Scope
 
 ### In Scope
-
-**Backend Components:**
-- Achievement data model and schema
-- Achievement definition storage (JSON/database)
-- Achievement tracking service that monitors agent activity
-- Achievement award logic and evaluation engine
-- API endpoints for:
-  - Fetching available achievements
-  - Fetching awarded achievements (by agent class, by project)
-  - Triggering achievement evaluation
-  - Achievement statistics
-
-**Frontend Components:**
-- Achievement notification system (toast/banner when earned)
-- Achievement gallery/showcase view
-- Achievement progress indicators (for multi-step achievements)
-- Agent profile page showing earned achievements
-- Achievement filtering and sorting
-
-**Achievement Content:**
-- 20-30 humorous achievements per major agent class:
-  - Executive Director
-  - Development Manager
-  - System Architect
-  - Code Writer
-  - Code Tester
-  - Bug Fixer
-  - Documentation Writer
-- Examples:
-  - "Executive Overreach" - Executive Director tries to write code (blocked by permissions)
-  - "Infinite Recursion Champion" - Spawned 10 sub-agents in a single task
-  - "Test Whisperer" - Code Tester achieves 100% test coverage
-  - "Bug Whisperer" - Bug Fixer fixes 50 bugs without creating new ones
-  - "RTFM Generator" - Documentation Writer creates docs longer than the code
-  - "Premature Optimization" - Code Writer refactors before requirements are clear
-  - "Merge Conflict Survivor" - Successfully resolved 10 Git conflicts
-  - "Commit Message Poet" - 10 commit messages >100 characters
-  - "TDD Purist" - Wrote tests before code 100 times
+- **Timeline Tab**: Prevent reset of timeline view, scroll position, and expanded items
+- **Metrics Tab**: Maintain chart zoom levels, selected metrics, and view preferences
+- **Improve Tab**: Preserve scroll position and expanded analysis sections
+- **Achievements Tab**: Keep scroll position and any expanded achievement details
+- Implement intelligent state preservation during data updates
+- Add differential updates where possible (update only changed data)
+- Preserve scroll position across re-renders
+- Maintain user interaction state (expanded/collapsed sections, selections)
 
 ### Out of Scope
+- Other tabs not mentioned (they may not have the same issue)
+- Complete UI redesign
+- Backend API changes (unless critical for solution)
+- Performance optimization beyond what's needed for this fix
+- New features or functionality additions
 
-- User-created custom achievements (Phase 2 feature)
-- Achievement leaderboards across different ensemble instances
-- Achievement trading or social features
-- Blockchain/NFT integration for achievements
-- Achievements that affect agent behavior or permissions
-- Multiplayer/competitive achievement mechanics
-- External platform integration (actual Steam, Discord badges, etc.)
+## User Stories
 
-## User Personas
+### As a user viewing the Timeline tab
+- I want my scroll position to stay where it is when new events arrive
+- I want expanded timeline items to remain expanded during updates
+- I want to be able to read through the timeline without it jumping around
 
-**Primary User: Developer/Operator**
-- Monitors ensemble agent activity
-- Enjoys gamification and humor in development tools
-- Appreciates insights into agent behavior patterns
-- Values both functionality and entertainment
+### As a user viewing the Metrics tab
+- I want my selected chart views to persist during data refreshes
+- I want my zoom level and time range selection to stay the same
+- I want to analyze trends without the charts resetting
 
-**Secondary User: Executive Director (Self-Aware AI)**
-- Tracks performance metrics indirectly through achievements
-- Gains insight into which agents are most active
-- Uses achievement patterns to identify optimization opportunities
+### As a user viewing the Improve tab
+- I want my scroll position to remain stable while reading recommendations
+- I want expanded analysis sections to stay expanded
+- I want to study improvement suggestions without interruption
 
-## Features
+### As a user viewing the Achievements tab
+- I want to scroll through achievements without the list resetting
+- I want expanded achievement details to remain visible
+- I want a stable viewing experience
 
-### F1: Achievement Definition System
-- **Priority:** High
-- **Description:** JSON-based achievement schema with:
-  ```json
-  {
-    "id": "executive_overreach",
-    "name": "Executive Overreach",
-    "description": "Attempted to write code despite lacking can_write_code permission",
-    "agent_class": "executive_director",
-    "category": "comedy",
-    "rarity": "common",
-    "trigger": {
-      "event_type": "permission_denied",
-      "action": "write_code_file"
-    },
-    "icon": "🚫💻",
-    "points": 10
-  }
-  ```
+## Technical Assumptions
+1. **Frontend Framework**: React-based UI (likely with hooks)
+2. **State Management**: Using React state, Context API, or similar
+3. **Data Updates**: Polling or WebSocket-based updates from backend
+4. **Component Structure**: Tab components are likely re-rendering on data updates
+5. **Current Issue Root Cause**: Assumed to be component key changes, state resets, or unmounting/remounting
 
-### F2: Real-Time Achievement Tracking
-- **Priority:** High
-- **Description:** Service that monitors agent activity logs and evaluates achievement conditions
-- Integrates with existing activity tracker
-- Triggers award ceremony when conditions met
-
-### F3: Achievement Notification UI
-- **Priority:** High
-- **Description:** Toast notification appears when achievement earned
-- Shows achievement name, description, icon, rarity
-- Plays subtle animation/sound effect
-- Links to full achievement details
-
-### F4: Achievement Gallery
-- **Priority:** Medium
-- **Description:** Dedicated page showing:
-  - All available achievements (locked/unlocked state)
-  - Filter by agent class, category, rarity
-  - Progress bars for multi-step achievements
-  - Statistics (total earned, completion percentage)
-
-### F5: Agent Profile Achievements
-- **Priority:** Medium
-- **Description:** Each agent class profile shows:
-  - Recently earned achievements
-  - Rarest achievements
-  - Achievement count and total points
-  - Links to full gallery filtered by that agent
-
-### F6: Achievement Persistence
-- **Priority:** High
-- **Description:** Store achievement awards in database/JSON file
-- Persist across sessions
-- Track timestamps of when achieved
-- Support for achievement history/timeline
-
-## Technical Constraints
-
-1. **Integration:** Must integrate with existing:
-   - Activity tracking system (`activity_tracker.py`)
-   - Agent spawn/execution pipeline
-   - Project tracking system
-   - Frontend React components
-
-2. **Performance:** Achievement evaluation should not slow down agent execution
-   - Async/background processing
-   - Batch evaluation where possible
-
-3. **Storage:** Use existing storage patterns:
-   - JSON files in `~/.ensemble/achievements/`
-   - Or extend existing SQLite/database if present
-
-4. **Technology Stack:**
-   - Backend: Python/FastAPI (existing)
-   - Frontend: React + TypeScript (existing)
-   - Storage: JSON or SQLite
-   - Real-time updates: WebSocket or polling
+## Solution Approach
+The solution will likely involve:
+1. **State Preservation**: Use React refs or persistent state management to preserve scroll positions and UI state
+2. **Differential Updates**: Update data without unmounting/remounting components
+3. **Smart Re-rendering**: Use React.memo, useMemo, or useCallback to prevent unnecessary re-renders
+4. **Scroll Position Management**: Capture and restore scroll positions during updates
+5. **Component Keys**: Ensure stable component keys that don't change on data updates
 
 ## Success Criteria
+1. ✅ Users can scroll through Timeline tab without unexpected position resets
+2. ✅ Metrics tab maintains chart zoom and selection during data refresh
+3. ✅ Improve tab preserves expanded sections during updates
+4. ✅ Achievements tab maintains scroll position during refresh
+5. ✅ Data still updates in real-time or on polling intervals
+6. ✅ No degradation in performance
+7. ✅ Manual testing confirms stable tab viewing experience
+8. ✅ Automated tests verify state preservation logic
 
-1. **Functional:**
-   - ✅ 20+ achievements defined per major agent class
-   - ✅ Achievements automatically awarded when conditions met
-   - ✅ Notifications appear within 2 seconds of earning
-   - ✅ Achievement history persists across sessions
-   - ✅ Gallery displays all achievements with correct locked/unlocked state
+## Constraints
+- Must maintain existing data update mechanisms
+- Must not break other UI functionality
+- Should not significantly increase complexity
+- Must work across modern browsers (Chrome, Firefox, Safari, Edge)
 
-2. **User Experience:**
-   - ✅ Achievements are genuinely funny/entertaining
-   - ✅ Notifications are non-intrusive but noticeable
-   - ✅ Achievement progress is clear and motivating
-   - ✅ UI integrates seamlessly with existing interface
-
-3. **Technical:**
-   - ✅ No performance degradation in agent execution
-   - ✅ Achievement data persists reliably
-   - ✅ Code follows existing project patterns
-   - ✅ Unit tests cover achievement logic (>80% coverage)
-   - ✅ Integration tests verify end-to-end flow
-
-## Assumptions
-
-1. **Humor Tone:** Achievements should be lighthearted and self-aware, poking fun at AI/developer culture without being mean-spirited
-
-2. **Privacy:** Achievement data is local to the ensemble instance (no external reporting)
-
-3. **Extensibility:** System should be designed for easy addition of new achievements in the future
-
-4. **Performance:** Existing activity tracking provides sufficient event data for achievement triggers
-
-5. **UI Framework:** React frontend exists with component library/patterns to follow
-
-6. **Backend API:** FastAPI backend exists with established patterns for new endpoints
-
-7. **User Preferences:** Users can disable achievement notifications if desired (settings toggle)
+## Acceptance Criteria
+1. User can remain on any of the four tabs (Timeline, Metrics, Improve, Achievements) for extended periods without experiencing resets
+2. Scroll position is preserved during data updates
+3. User selections and expanded sections remain stable
+4. Data continues to update without requiring page refresh
+5. No console errors or warnings related to the fix
+6. All existing tests pass
+7. New tests added to verify state preservation behavior
 
 ## Non-Functional Requirements
+- **Performance**: No noticeable degradation in render performance
+- **Compatibility**: Works on Chrome, Firefox, Safari, Edge (latest 2 versions)
+- **Maintainability**: Solution should be clean and well-documented
+- **Testing**: Unit tests for state preservation logic, integration tests for tab behavior
 
-1. **Maintainability:** Achievement definitions should be easy to add/modify without code changes
-2. **Testability:** Achievement trigger logic should be unit-testable in isolation
-3. **Scalability:** System should handle 100+ achievements without performance issues
-4. **Accessibility:** Achievement UI should be screen-reader friendly
-5. **Localization:** Initial English-only, but structure should support i18n in future
-
-## Risks & Mitigations
-
+## Risks and Mitigation
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Achievement evaluation slows agent execution | High | Use async background processing, batch evaluation |
-| Activity tracker doesn't capture needed events | Medium | Extend activity tracker to emit additional events |
-| Notification fatigue (too many achievements) | Medium | Implement cooldown periods, configurable frequency |
-| Achievement definitions become stale/outdated | Low | Regular review process, community suggestions |
-| Storage conflicts with existing data | Medium | Use isolated namespace/directory for achievements |
+| Fix breaks real-time updates | High | Thoroughly test data update flow |
+| Memory leaks from state preservation | Medium | Use proper cleanup in useEffect hooks |
+| Solution is too complex | Medium | Start with simplest approach, iterate if needed |
+| Different root causes per tab | Medium | Investigate each tab individually if needed |
 
-## Milestones
+## Dependencies
+- Access to existing frontend codebase
+- Understanding of current data update mechanism
+- React development environment
+- Testing framework (Jest, React Testing Library likely)
 
-1. **M1: Requirements & Architecture** (Current)
-   - Requirements document complete
-   - Architecture design approved
-   - Achievement content brainstormed
+## Deliverables
+1. Updated React components for Timeline, Metrics, Improve, and Achievements tabs
+2. State preservation logic implementation
+3. Unit tests for state management
+4. Integration tests for tab behavior
+5. Documentation of changes made
+6. Code review and approval
 
-2. **M2: Backend Implementation**
-   - Achievement data model
-   - Tracking service
-   - API endpoints
-   - Integration with activity tracker
-
-3. **M3: Frontend Implementation**
-   - Notification component
-   - Achievement gallery
-   - Agent profile integration
-   - Settings/preferences
-
-4. **M4: Content & Testing**
-   - All achievement definitions created
-   - Unit tests (>80% coverage)
-   - Integration tests
-   - Manual QA
-
-5. **M5: Deployment & Documentation**
-   - User documentation
-   - Developer documentation (adding new achievements)
-   - Deployment to production
-   - Launch celebration achievement 🎉
+## Timeline Estimate
+- Requirements: Complete
+- Architecture & Design: 1-2 hours
+- Implementation: 4-6 hours
+- Testing: 2-3 hours
+- Review & Fixes: 1-2 hours
+- **Total: 8-13 hours**
 
 ## Open Questions
-
-None - proceeding with assumptions documented above. Executive Director has made decisive choices for:
-- Technology stack (existing Python/React)
-- Storage approach (JSON files in ~/.ensemble/achievements/)
-- Achievement count (20-30 per agent class)
-- Notification mechanism (toast notifications)
+None - requirements are clear. The user wants to prevent unwanted resets on specific tabs during viewing. The technical approach will be determined by the System Architect during the architecture phase.
 
 ---
-
-**Status:** Requirements Complete - Ready for Architecture Phase  
-**Next Step:** Spawn Development Manager with this requirements document
+**Document Status:** Complete  
+**Last Updated:** 2026-01-14  
+**Next Phase:** Architecture & Planning

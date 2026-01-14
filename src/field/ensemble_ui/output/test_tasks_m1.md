@@ -1,66 +1,77 @@
-# Test Strategy - Milestone 1: Documentation & Responsibility Matrix
+# Test Tasks - Milestone 1: Activity Feed Tabbed Interface
+
+## Overview
+Test tab filtering logic, activity type grouping, count badge accuracy, and dark theme styling for the new tabbed interface in ActivityFeed.jsx.
 
 ## Unit Test Tasks
-1. **Responsibility Matrix Validation**
-   - Verify each agent type has precisely defined responsibilities
-   - Check NO/YES indicators are unambiguous
-   - Validate example scenarios for each role
 
-2. **Delegation Flow Validation**
-   - Test each step in delegation diagrams
-   - Verify decision trees cover all scenarios
-   - Validate branching logic for delegation choices
+### Test 1: Tab Filter Constants Validation
+**Description**: Verify TAB_FILTERS configuration is correct
+**Test Cases**:
+- All tabs have required structure (label, types)
+- 'all' tab has types: null
+- 'running' tab contains correct activity types
+- 'completed' tab contains correct activity types
+- 'spawned' tab contains correct activity types
+- 'failed' tab contains correct activity types
+- 'other' tab contains all remaining activity types
+- No activity type is missing from all tabs combined
 
-3. **Anti-Pattern Detection**
-   - Verify each anti-pattern is correctly identified
-   - Check explanations are clear and actionable
-   - Validate proposed correct alternatives
+### Test 2: Filter Logic Tests
+**Description**: Test filtering function with different tab selections
+**Test Cases**:
+- Filter with 'all' returns all activities
+- Filter with 'running' returns only running activities
+- Filter with empty activities array returns empty
+- Filter handles unknown activity types gracefully
 
-4. **Best Practices Verification**
-   - Confirm guidelines are precise and implementable
-   - Verify best practices cover all major delegation scenarios
-   - Validate examples demonstrate correct implementation
+### Test 3: Count Calculation Tests
+**Description**: Test count badge calculations
+**Test Cases**:
+- Count is accurate for each tab
+- Count updates when activities array changes
+- Count is 0 for tabs with no matching activities
 
 ## Integration Test Tasks
-1. **Documentation Completeness Test**
-   - Verify all required documentation files exist
-   - Check cross-references between documents
-   - Validate consistent terminology across documents
 
-2. **Validation Logic Integration**
-   - Test pre-spawn validators work across documents
-   - Verify file type restrictions are correctly implemented
-   - Check parameter validation works for all scenarios
+### Test 4: Tab Switching Behavior
+**Description**: Test tab click changes filtered activities
+**Test Cases**:
+- Clicking tab updates activeTab state
+- Filtered activities list updates immediately
+- Active tab styling changes on click
 
-3. **Error Handling Integration**
-   - Simulate spawn failures with different error types
-   - Verify appropriate error responses generated
-   - Check escalation paths work correctly
+### Test 5: Real-time Update Tests
+**Description**: Test counts and filtering with live data updates
+**Test Cases**:
+- New activities update counts
+- Filter results update when new matching activity arrives
+- Tab retains selection after data refresh
 
-## End-to-End Test Tasks
-1. **Full Delegation Flow Test**
-   - Simulate complete ED delegation scenario
-   - Verify proper agent spawning sequence
-   - Check all guardrails activate correctly
+## Visual/Manual Test Tasks
 
-2. **Failure Scenario Verification**
-   - Test ED attempting to write implementation files
-   - Verify blocking mechanisms work
-   - Check error messages are informative
+### Test 6: Dark Theme Styling Verification
+**Description**: Verify styling matches requirements
+**Checklist**:
+- Tab group background: #242836
+- Inactive tab text: #9ca3af
+- Active tab background: #3a3f52
+- Active tab text: #ffffff
+- Badge styling consistent
+- Hover states work
 
-## Coverage Goals
-- Unit Test Coverage: 90% for documentation validation logic
-- Integration Test Coverage: 100% of delegation paths
-- E2E Test Coverage: All critical delegation scenarios
+### Test 7: Responsive Layout Tests
+**Description**: Verify tabs work on different screen sizes
+**Checklist**:
+- Tabs fit on mobile screens
+- Tabs don't wrap unexpectedly
+- Touch targets are adequate size
 
-## Testing Priorities
-1. Preventing ED from writing implementation code
-2. Correct agent role enforcement
-3. Clear error handling and escalation
-4. Comprehensive documentation accuracy
+## Coverage Requirements
+- All TAB_FILTERS combinations tested
+- Filter logic 100% coverage
+- Count calculation 100% coverage
+- Tab click handlers tested
 
-## Test Implementation Notes
-- Use pytest for unit and integration tests
-- Use shell scripts for end-to-end verification
-- Mock external dependencies
-- Create detailed test fixtures representing various scenarios
+## Test Files to Create
+- `/src/field/ensemble_ui/frontend/src/components/__tests__/ActivityFeed.test.jsx`

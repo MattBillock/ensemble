@@ -1,141 +1,86 @@
-# Frontend Tasks - Documentation & Responsibility Matrix Milestone
+# Frontend Tasks - Milestone 1: Activity Feed Tabbed Interface
 
 ## Overview
-This milestone focuses on creating frontend components to visualize and interact with the delegation guardrails documentation.
-
-## Component Hierarchy
-```
-- ResponsibilityMatrixPage
-  |- AgentTypeSection
-  |   |- AgentRow
-  |   |- PermissionMatrix
-  |   |- ExampleHighlight
-  |- DelegationFlowDiagram
-  |- AntiPatternSection
-  |- BestPracticesSection
-```
+Replace the dropdown filter in ActivityFeed.jsx with a horizontal tabbed interface that groups related activity types with count badges and dark theme styling.
 
 ## Tasks
 
-### 1. Responsibility Matrix Page Layout
-- **Name**: Create Responsibility Matrix Page Structure
-- **Description**: Build main page layout for displaying agent responsibilities
-- **Complexity**: Medium
-- **Acceptance Criteria**:
-  * Page renders full-width responsive layout
-  * Sections for each agent type clearly delineated
-  * Mobile and desktop responsive design
-- **Dependencies**: None
-- **Tasks**:
-  * Create base page component
-  * Implement responsive grid system
-  * Add section containers for agent types
+### Task 1: Remove Dropdown Filter
+**Description**: Remove the existing dropdown filter component from ActivityFeed.jsx
+**Complexity**: Low
+**Acceptance Criteria**:
+- Dropdown filter completely removed
+- No broken references or unused imports
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
 
-### 2. Agent Type Row Component
-- **Name**: Agent Type Row Visualization
-- **Description**: Create reusable component to display individual agent type responsibilities
-- **Complexity**: Medium
-- **Acceptance Criteria**:
-  * Displays agent name
-  * Shows allowed and forbidden actions
-  * Color-coded permissions (green/red)
-  * Hover interactions for detailed info
-- **Dependencies**: Responsibility Matrix Page Layout
-- **Tasks**:
-  * Design agent row component
-  * Implement color-coded permission indicators
-  * Add hover tooltip with detailed explanations
+### Task 2: Add Tab Filter Constants
+**Description**: Define tab filter configuration with activity type groupings
+**Complexity**: Low
+**Acceptance Criteria**:
+- TAB_FILTERS constant defined with proper structure
+- All activity types from ActivityType enum covered
+- Correct groupings: All, Running, Completed, Spawned, Failed, Other
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
 
-### 3. Delegation Flow Diagram
-- **Name**: Interactive Delegation Flow Visualization
-- **Description**: Create interactive SVG/diagram showing delegation patterns
-- **Complexity**: Complex
-- **Acceptance Criteria**:
-  * Animated flow between agent types
-  * Clickable nodes with additional information
-  * Responsive design
-  * Clear arrow indication of delegation direction
-- **Dependencies**: Agent Type Row Component
-- **Tasks**:
-  * Research SVG animation libraries
-  * Create base diagram structure
-  * Implement node interactivity
-  * Add responsive scaling
+```javascript
+const TAB_FILTERS = {
+  all: { label: 'All', types: null },
+  running: { label: 'Running', types: ['agent_started', 'iteration_started', 'tool_use_started'] },
+  completed: { label: 'Completed', types: ['agent_completed', 'iteration_completed', 'tool_use_completed'] },
+  spawned: { label: 'Spawned', types: ['agent_spawned'] },
+  failed: { label: 'Failed', types: ['agent_failed', 'tool_use_failed'] },
+  other: { label: 'Other', types: ['message', 'question', 'answer', 'task_update', 'status_change', 'file_generated', 'git_commit', 'thinking', 'output_created'] }
+};
+```
 
-### 4. Anti-Patterns Section
-- **Name**: Anti-Patterns Showcase
-- **Description**: Create interactive section highlighting delegation anti-patterns
-- **Complexity**: Medium
-- **Acceptance Criteria**:
-  * Expandable/collapsible anti-pattern examples
-  * Side-by-side comparison of wrong vs right approaches
-  * Clear visual indicators of anti-pattern issues
-- **Dependencies**: Delegation Flow Diagram
-- **Tasks**:
-  * Design anti-pattern card component
-  * Implement expand/collapse mechanism
-  * Add visual diff highlighting
+### Task 3: Implement Tab State Management
+**Description**: Add useState for active tab and filtering logic
+**Complexity**: Medium
+**Acceptance Criteria**:
+- activeTab state initialized to 'all'
+- filteredActivities computed based on activeTab
+- Filter logic correctly matches activity types
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
 
-### 5. Best Practices Guide
-- **Name**: Best Practices Interactive Guide
-- **Description**: Create comprehensive best practices documentation component
-- **Complexity**: Medium
-- **Acceptance Criteria**:
-  * Categorized best practices
-  * Code/example snippets
-  * Filterable by agent type
-  * Search functionality
-- **Dependencies**: Anti-Patterns Section
-- **Tasks**:
-  * Create best practices data structure
-  * Implement filter and search components
-  * Design card layout for practices
+### Task 4: Create Tab Component UI
+**Description**: Implement horizontal tab button group with styling
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Horizontal button group below Activity Feed header
+- Each tab shows label and count badge
+- Active tab visually highlighted
+- Dark theme styling (#1a1d29, #242836, #3a3f52)
+- Tabs are clickable and update state
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
 
-### 6. Validation Error Simulator
-- **Name**: Delegation Guardrails Error Simulator
-- **Description**: Interactive component showing validation failures
-- **Complexity**: Complex
-- **Acceptance Criteria**:
-  * Simulate various guardrail failure scenarios
-  * Detailed error message display
-  * Step-through error correction workflow
-  * Highlight specific validation rules broken
-- **Dependencies**: Best Practices Guide
-- **Tasks**:
-  * Create error scenario data
-  * Design error state components
-  * Implement interactive error walkthrough
-  * Add tooltips explaining each error
+### Task 5: Add Count Badge Calculation
+**Description**: Calculate and display activity counts per tab
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Count calculated for each tab based on activity types
+- Counts update when activities change
+- Badge displayed next to tab label
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
 
-## Global State Management
-- Use React Context or Redux for storing documentation state
-- Implement persistent state for user interactions (expanded sections, etc.)
+### Task 6: Apply Tab Styling
+**Description**: Add CSS styles for tab components matching dark theme
+**Complexity**: Low
+**Acceptance Criteria**:
+- Tabs styled with dark theme colors
+- Hover states for tabs
+- Active tab has distinct background
+- Responsive layout
+**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx` (inline styles or CSS module)
 
-## Styling Approach
-- Tailwind CSS for responsive, utility-first design
-- Dark/light mode support
-- Consistent color palette reflecting documentation themes
+## Dependencies
+- React Bootstrap (existing)
+- Existing ActivityFeed component structure
+- Existing dark theme CSS variables
 
-## Performance Considerations
-- Lazy load complex components (delegation diagram, error simulator)
-- Memoize expensive rendering components
-- Optimize SVG and image assets
+## Implementation Order
+1. Task 2 (constants) → Task 1 (remove dropdown) → Task 3 (state) → Task 4 (UI) → Task 5 (counts) → Task 6 (styling)
 
-## Accessibility
-- Ensure WCAG 2.1 AA compliance
-- Keyboard navigable components
-- Proper semantic HTML
-- Screen reader friendly interactions
-
-## Testing Strategy
-- Unit tests for each component
-- Integration tests for page interactions
-- Snapshot testing for layout consistency
-- Accessibility compliance checks
-
-## Delivery Checklist
-- [ ] All components responsive
-- [ ] Accessibility audit passed
-- [ ] Performance optimized
-- [ ] Cross-browser compatible
-- [ ] Mobile and desktop versions verified
+## Testing Notes
+- Unit test tab filtering logic separately
+- Verify all activity types are covered by tab filters
+- Test count calculation accuracy
