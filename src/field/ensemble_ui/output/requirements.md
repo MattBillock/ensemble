@@ -1,222 +1,132 @@
-# Requirements Document: Task Recovery Analysis Implementation
+# Requirements Document: Agent Human-Readable Identifier System
 
-**Project ID**: 3f1c6153  
-**Date**: 2026-01-13  
-**Executive Director**: Task Recovery Analysis Implementation
+## Vision
+Implement a system that assigns each spawned agent instance a unique, human-readable identifier composed of three randomly selected names from a curated list of 1,000 fantasy-inspired, whimsical, child-friendly names.
 
----
+## Objectives
+1. Generate or curate a list of 1,000 fantasy-inspired, whimsical, child-friendly names
+2. Create a mechanism to assign unique identifiers to agent instances
+3. Ensure identifiers are composed of three randomly selected names from the list
+4. Guarantee uniqueness per agent instance
+5. Make identifiers easily accessible and usable throughout the agent lifecycle
 
-## 1. Vision
+## Scope
 
-Implement the task recovery strategy outlined in `task_recovery_analysis.md` to restart 10 stalled/incomplete projects from the ensemble UI system. Each project requires creating an Executive Director to orchestrate the recovery and completion of specific tasks.
+### In Scope
+- Generation/curation of 1,000 fantasy-inspired whimsical child-friendly names
+- Name list storage and management
+- Identifier generation logic (selecting 3 random names)
+- Uniqueness guarantee mechanism (tracking assigned identifiers)
+- Integration with agent spawning system
+- Identifier persistence during agent lifecycle
+- Identifier display in logs, UI, and tracking systems
 
----
+### Out of Scope
+- Modifying existing agent functionality beyond identifier assignment
+- Complex naming algorithms (keep it simple: 3 random names)
+- User customization of name lists (v1 uses fixed list)
+- Name localization/internationalization
+- Agent identity persistence across system restarts (identifiers regenerated on restart)
 
-## 2. Objectives
+## Features
 
-1. **Create recovery orchestration system** to systematically restart stalled projects
-2. **Prioritize by task status**: in_progress (stalled) → todo (not started) → no tasks (planning stalled)
-3. **Generate Executive Director invocations** for each of the 10 identified projects
-4. **Document recovery actions** with proper project IDs, task IDs, and context
-5. **Execute recovery process** following the documented strategy
+### F1: Name List Generation
+- **Description**: Create a curated list of 1,000 unique fantasy-inspired, whimsical, child-friendly names
+- **Acceptance Criteria**:
+  - Exactly 1,000 unique names
+  - Names are fantasy-inspired (e.g., "Sparkle", "Moonbeam", "Whisper", "Zephyr")
+  - Names are whimsical and child-friendly (no dark/scary names)
+  - Names stored in easily accessible format (JSON or Python data structure)
 
----
+### F2: Identifier Generation
+- **Description**: Generate unique identifiers by combining three randomly selected names
+- **Acceptance Criteria**:
+  - Selects 3 names randomly from the 1,000-name list
+  - Combines names with appropriate separator (e.g., "Sparkle-Moonbeam-Zephyr")
+  - Identifiers are human-readable and pronounceable
+  - Generation is fast (< 1ms per identifier)
 
-## 3. Scope
+### F3: Uniqueness Guarantee
+- **Description**: Ensure no two agent instances receive the same identifier during a session
+- **Acceptance Criteria**:
+  - Tracks all assigned identifiers in memory
+  - Regenerates identifier if collision detected (though probability is extremely low)
+  - Works across multiple concurrent agent spawns
+  - Clears tracking on system restart (acceptable per scope)
 
-### In Scope:
-- Parse and analyze the 10 projects listed in task_recovery_analysis.md
-- Create structured recovery plan for each project
-- Implement recovery orchestration logic to:
-  - Priority 1: Restart 3 in_progress tasks (Development Manager restarts)
-  - Priority 2: Start 5 todo tasks (appropriate coordinators)
-  - Priority 3: Initiate 2 projects stuck at planning (requirements phase)
-- Generate proper input format for each Executive Director invocation
-- Track recovery progress and outcomes
-- Document decisions and results
+### F4: Agent Integration
+- **Description**: Integrate identifier system with agent spawning mechanism
+- **Acceptance Criteria**:
+  - Every spawned agent receives an identifier automatically
+  - Identifier is accessible via agent properties (e.g., `agent.identifier`)
+  - Identifier is included in agent logs and output
+  - Identifier is visible in project tracking and UI
+  - No breaking changes to existing agent spawn interface
 
-### Out of Scope:
-- Modifying the original task_recovery_analysis.md document
-- Creating new features beyond the recovery strategy
-- Manual intervention in individual project implementations
-- Debugging issues within the stalled projects (delegate to spawned agents)
+## Users
+- **Primary**: Ensemble system (automatic assignment during agent spawning)
+- **Secondary**: Developers debugging agent interactions
+- **Tertiary**: End users viewing agent activity in UI
 
----
+## Constraints
+- Must not significantly slow down agent spawning (< 5ms overhead)
+- Must work with existing agent spawning infrastructure
+- Name list must be appropriate for all ages
+- Should not require external dependencies (use Python standard library where possible)
 
-## 4. Requirements
+## Success Criteria
+1. ✅ System generates 1,000 fantasy-inspired whimsical child-friendly names
+2. ✅ Each spawned agent receives a unique three-name identifier
+3. ✅ Identifiers are visible in logs, UI, and tracking systems
+4. ✅ No identifier collisions during testing (spawn 100+ agents)
+5. ✅ Agent spawning overhead < 5ms
+6. ✅ All existing agent functionality remains intact
 
-### Functional Requirements:
+## Assumptions
+1. **Technology Stack**: Python (ensemble is Python-based)
+2. **Storage**: Name list stored in Python module or JSON file
+3. **Identifier Format**: "Name1-Name2-Name3" (hyphen-separated)
+4. **Collision Handling**: Regenerate on collision (probability ~1 in 1 billion with 1,000 names)
+5. **Persistence**: Identifiers only need to be unique within a single system session
+6. **Integration Point**: Agent spawning happens in ensemble infrastructure, likely in agent manager or orchestrator
+7. **Display**: Identifiers will be added to agent metadata and logged automatically
 
-**FR1: Recovery Strategy Parser**
-- Read task_recovery_analysis.md
-- Extract project IDs, task IDs, status, and recommended actions
-- Categorize by priority (1, 2, 3)
+## Technical Approach (High-Level)
+1. **Name Storage**: Python module with list of 1,000 names
+2. **Identifier Generator**: Singleton service that manages name selection and uniqueness
+3. **Integration**: Modify agent spawn function to call identifier generator
+4. **Tracking**: In-memory set to track assigned identifiers
+5. **Testing**: Unit tests for generator, integration tests for agent spawning
 
-**FR2: Executive Director Orchestration**
-- For each of 10 projects, prepare proper invocation data:
-  - user_vision: Extracted from project context
-  - output_directory: Maintain original project location
-  - context: Include project_id, task_id, status, and recovery notes
-- Spawn Executive Director agents sequentially or in controlled batches
+## Non-Functional Requirements
+- **Performance**: Identifier generation < 1ms
+- **Reliability**: 99.9999% uniqueness guarantee (collision retry mechanism)
+- **Maintainability**: Clear code structure, documented name list
+- **Usability**: Identifiers are memorable and fun to read
 
-**FR3: Recovery Action Mapping**
-- Priority 1 (in_progress): Signal restart of Development Manager
-- Priority 2 (todo): Start appropriate coordinator (TDD/other)
-- Priority 3 (no tasks): Begin requirements phase
+## Risks and Mitigations
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Name list not child-friendly | High | Low | Review all names during generation |
+| Identifier collisions | Medium | Very Low | Implement collision detection and regeneration |
+| Integration breaks existing agents | High | Low | Comprehensive testing, backward compatibility |
+| Performance overhead | Medium | Low | Use efficient data structures (set for tracking) |
 
-**FR4: Progress Tracking**
-- Track which projects have been recovered
-- Log success/failure for each recovery attempt
-- Generate summary report
+## Dependencies
+- Access to agent spawning code
+- Python standard library (random, json)
+- Project tracking system (to display identifiers)
 
-**FR5: Error Handling**
-- Gracefully handle spawn failures
-- Report errors without stopping entire recovery process
-- Document any projects that couldn't be recovered
-
-### Non-Functional Requirements:
-
-**NFR1: Reliability**
-- Each recovery attempt should be independent (one failure doesn't cascade)
-- Proper error boundaries around spawned agents
-
-**NFR2: Observability**
-- Log each recovery action with timestamp
-- Track progress in project tracking system
-- Generate comprehensive recovery report
-
-**NFR3: Maintainability**
-- Clear documentation of recovery approach
-- Reusable recovery patterns for future use
-
----
-
-## 5. Constraints
-
-1. **Must process exactly 10 projects** as listed in task_recovery_analysis.md
-2. **Must maintain original project structures** (don't modify existing projects)
-3. **Follow existing project IDs and task IDs** from the analysis document
-4. **Executive Director cannot write implementation code** - must delegate
-5. **Output directory**: `/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output`
-
----
-
-## 6. Success Criteria
-
-1. ✅ All 10 projects have recovery actions initiated
-2. ✅ Each recovery action properly spawns appropriate agent level
-3. ✅ Progress tracked in project tracking system
-4. ✅ Comprehensive recovery report generated showing:
-   - Which projects were recovered
-   - What actions were taken
-   - Any errors or issues encountered
-5. ✅ Documentation of recovery process for future reference
-6. ✅ No manual code writing by Executive Director (proper delegation)
-
----
-
-## 7. Assumptions
-
-1. **Project IDs and task IDs in task_recovery_analysis.md are valid** and exist in the tracking system
-2. **Original project contexts are recoverable** from existing project data
-3. **Spawned agents will handle project-specific details** without requiring Executive Director intervention
-4. **Recovery can be done sequentially** (no parallel orchestration required initially)
-5. **Standard technology stack**: Python-based ensemble system with existing project tracking infrastructure
-6. **Error handling**: Individual failures reported but don't block overall recovery process
-
----
-
-## 8. Project Structure
-
-```
-/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output/
-├── task_recovery_analysis.md          (input - existing)
-├── requirements.md                     (this document)
-├── recovery_orchestration.py          (to be created - main logic)
-├── recovery_report.md                 (to be generated - final output)
-└── recovery_actions/                  (to be created - action logs)
-    ├── priority1_in_progress.json
-    ├── priority2_todo.json
-    └── priority3_no_tasks.json
-```
+## Out of Scope (Explicit)
+- Persistent identifier storage across system restarts
+- User-defined name lists
+- Name preferences or filtering
+- Multi-language support
+- Agent renaming after spawn
 
 ---
 
-## 9. Detailed Project Recovery List
-
-### Priority 1: In-Progress (Stalled) - 3 projects
-1. **bb528d28** - Local Weather Display Widget
-   - Task: 25a708e9 - Development Manager orchestration
-   - Action: Restart Development Manager
-
-2. **0114ab16** - Ensemble UI Enhancements
-   - Task: 2c48f5cc - Three UI enhancement features
-   - Action: Restart Development Manager
-
-3. **4af1c241** - Agent Hierarchy Organization
-   - Task: 551c5cdb - Agent hierarchy implementation
-   - Action: Check status and potentially restart
-
-### Priority 2: Todo (Not Started) - 5 projects
-4. **84dd6401** - Agent Tracking Metrics Feature
-   - Task: 4f156ea4 - Implement agent creation tracking
-   - Action: Start Development Manager
-
-5. **5f5892f3** - Agent Cost Tracking Enhancement - Frontend
-   - Task: 8d4f054d - Update AgentSummaryPane Component
-   - Action: Start TDD Coordinator
-
-6. **66af6b69** - Agent Cost Tracking Enhancement - Backend
-   - 3 tasks in todo
-   - Action: Start TDD Coordinator for first task
-
-7. **d863e0cc** - Agent Completion Visibility
-   - 3 tasks in todo
-   - Action: Start appropriate coordinator
-
-8. **ea916e81** - Ensemble UI Completion
-   - 2 tasks in todo
-   - Action: Start TDD Coordinator
-
-### Priority 3: No Tasks (Planning Stalled) - 2 projects
-9. **e30078c1** - Verifier Agent Swarm
-   - No tasks created
-   - Action: Start requirements phase
-
-10. **168565b8** - Ensemble UI Activity Pane Graph
-    - No tasks created
-    - Action: Start requirements phase
-
----
-
-## 10. Technical Approach
-
-**Phase 1**: Create recovery orchestration script
-- Parse task_recovery_analysis.md
-- Structure recovery data by priority
-- Define recovery action mapping
-
-**Phase 2**: Implement recovery executor
-- Sequential processing of 10 projects
-- Spawn Executive Director for each with proper context
-- Track results and errors
-
-**Phase 3**: Generate recovery report
-- Summary of actions taken
-- Success/failure status for each project
-- Recommendations for any unrecoverable projects
-
-**Technology Stack**:
-- Python for orchestration logic
-- JSON for structured data exchange
-- Markdown for reporting
-- Existing project tracking system for state management
-
----
-
-## Document Control
-
-**Version**: 1.0  
-**Status**: Approved  
-**Author**: Executive Director  
-**Last Updated**: 2026-01-13
+**Document Status**: Complete
+**Created**: 2026-01-13
+**Author**: Executive Director
+**Version**: 1.0
