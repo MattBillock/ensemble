@@ -1,44 +1,66 @@
-# Test Tasks - Milestone 1: Core Name Generation Logic
+# Test Strategy - Milestone 1: Documentation & Responsibility Matrix
 
-## Unit Test Tasks for Name Generator
+## Unit Test Tasks
+1. **Responsibility Matrix Validation**
+   - Verify each agent type has precisely defined responsibilities
+   - Check NO/YES indicators are unambiguous
+   - Validate example scenarios for each role
 
-### 1. Basic Functionality Tests
-- [ ] Verify `generate_agent_name()` returns a string
-- [ ] Confirm returned name is in format "Name1-Name2-Name3"
-- [ ] Validate that name components are from AGENT_NAMES list
+2. **Delegation Flow Validation**
+   - Test each step in delegation diagrams
+   - Verify decision trees cover all scenarios
+   - Validate branching logic for delegation choices
 
-### 2. Uniqueness Constraint Tests
-- [ ] Confirm 3 names in generated name are always unique
-- [ ] Test multiple generations to ensure no accidental duplicates
-- [ ] Verify uniqueness works with default and custom name lists
+3. **Anti-Pattern Detection**
+   - Verify each anti-pattern is correctly identified
+   - Check explanations are clear and actionable
+   - Validate proposed correct alternatives
 
-### 3. Randomness Verification Tests
-- [ ] Generate multiple names to check for randomness
-- [ ] Perform statistical test to validate random distribution
-- [ ] Confirm different names generated across multiple calls
+4. **Best Practices Verification**
+   - Confirm guidelines are precise and implementable
+   - Verify best practices cover all major delegation scenarios
+   - Validate examples demonstrate correct implementation
 
-### 4. Edge Case Tests
-- [ ] Test with exactly 3 names in input list
-- [ ] Test with 1000-name list (full requirements)
-- [ ] Verify behavior with custom name list parameter
+## Integration Test Tasks
+1. **Documentation Completeness Test**
+   - Verify all required documentation files exist
+   - Check cross-references between documents
+   - Validate consistent terminology across documents
 
-### 5. Error Handling Tests
-- [ ] Test ValueError when input list has fewer than 3 names
-- [ ] Test behavior with empty list input
-- [ ] Test behavior with None input
+2. **Validation Logic Integration**
+   - Test pre-spawn validators work across documents
+   - Verify file type restrictions are correctly implemented
+   - Check parameter validation works for all scenarios
 
-### 6. Integration Tests
-- [ ] Verify import from package works correctly
-- [ ] Test integration with AGENT_NAMES from name_data
-- [ ] Confirm function works in different Python environments
+3. **Error Handling Integration**
+   - Simulate spawn failures with different error types
+   - Verify appropriate error responses generated
+   - Check escalation paths work correctly
 
-## Coverage and Performance Targets
-- Target: >90% code coverage
-- Performance goal: <1ms per name generation
-- Verify no performance degradation with 1000-name list
+## End-to-End Test Tasks
+1. **Full Delegation Flow Test**
+   - Simulate complete ED delegation scenario
+   - Verify proper agent spawning sequence
+   - Check all guardrails activate correctly
+
+2. **Failure Scenario Verification**
+   - Test ED attempting to write implementation files
+   - Verify blocking mechanisms work
+   - Check error messages are informative
+
+## Coverage Goals
+- Unit Test Coverage: 90% for documentation validation logic
+- Integration Test Coverage: 100% of delegation paths
+- E2E Test Coverage: All critical delegation scenarios
+
+## Testing Priorities
+1. Preventing ED from writing implementation code
+2. Correct agent role enforcement
+3. Clear error handling and escalation
+4. Comprehensive documentation accuracy
 
 ## Test Implementation Notes
-- Use pytest for test framework
-- Use pytest-cov for coverage reporting
-- Follow Google-style docstring conventions
-- Implement mocking where external dependencies are simulated
+- Use pytest for unit and integration tests
+- Use shell scripts for end-to-end verification
+- Mock external dependencies
+- Create detailed test fixtures representing various scenarios
