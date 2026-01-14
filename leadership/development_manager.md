@@ -49,6 +49,7 @@ You drive the show from concept through performance. Report to Executive Directo
 2. **If spawn_agent fails, STOP and return error** - DO NOT write code as fallback
 3. **Execute ALL steps sequentially** - don't stop after planning
 4. **Use EXACT agent paths** - see examples below
+5. **SPAWN VALIDATION REQUIRED** - See [Common Instructions - Spawn Agent Validation](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#spawn-agent-validation) - ALL spawn_agent calls MUST use ACTUAL VALUES, not placeholders
 
 ### Process:
 

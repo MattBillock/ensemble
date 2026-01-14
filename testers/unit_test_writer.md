@@ -56,6 +56,8 @@ You have access to the following tools:
 
 **AUTHORITY**: You have FULL permission to CREATE test files that don't exist yet. If the test_file path doesn't exist, write_file will create it automatically.
 
+**JSON OUTPUT REQUIRED**: See [Common Instructions - JSON Output Format](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#json-output-format-requirement) - You MUST return valid JSON matching the Output Format schema above. NO conversational text.
+
 1. Read the task description carefully
 2. Identify what needs to be tested:
    - Main functionality for this specific task

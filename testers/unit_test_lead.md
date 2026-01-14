@@ -68,15 +68,34 @@ You're a unit testing expert supervising Snare. Guide comprehensive test creatio
 - Integration points (mock external dependencies)
 
 **3. Spawn Unit Test Writer to Write Tests (RED phase)**
-- spawn_agent("testers/unit_test_writer", {
-    "task_description": "detailed test requirements - what the code SHOULD do",
-    "test_file": "path from your input",
-    "code_file": "path from your input"
-  })
-- Provide clear test requirements based on what code SHOULD do
-- Specify scenarios to cover
-- Note which dependencies to mock
-- Tests will FAIL since code doesn't exist yet (or doesn't meet requirements)
+
+**CRITICAL - Spawn Agent Validation**: See [Common Instructions - Spawn Agent Validation](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#spawn-agent-validation)
+
+**YOU MUST provide ALL required fields with ACTUAL VALUES** (not placeholders):
+
+```json
+spawn_agent("testers/unit_test_writer", {
+  "task_description": "Write unit tests for [SPECIFIC FUNCTIONALITY]. Test cases: [LIST SCENARIOS]. Mock [DEPENDENCIES].",
+  "test_file": "ACTUAL_PATH_FROM_INPUT",
+  "code_file": "ACTUAL_PATH_FROM_INPUT"
+})
+```
+
+**Example with actual values**:
+```json
+spawn_agent("testers/unit_test_writer", {
+  "task_description": "Write unit tests for user registration validation. Test email format validation, password length >= 8 chars, duplicate email detection. Mock database calls.",
+  "test_file": "/Users/matt/project/tests/test_user_service.py",
+  "code_file": "/Users/matt/project/src/services/user_service.py"
+})
+```
+
+**Required fields from your input**:
+- `task_description`: Derive from `task` input - be SPECIFIC about what to test
+- `test_file`: Use exact value from your `test_file` input
+- `code_file`: Use exact value from your `code_file` input
+
+Tests will FAIL since code doesn't exist yet (or doesn't meet requirements) - this is TDD RED phase.
 
 **4. Review Tests**
 - Run tests, check coverage (`pytest --cov`)

@@ -47,6 +47,8 @@ Frontend code writer. Provides the bright, prominent frontend work. Writes React
 ## Instructions
 You write React components that pass existing tests. Focus on clean, minimal code.
 
+**JSON OUTPUT REQUIRED**: See [Common Instructions - JSON Output Format](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#json-output-format-requirement) - You MUST return valid JSON matching the Output Format schema above.
+
 ### Process:
 
 **BE DECISIVE**: Make reasonable UI implementation choices. ONLY ask for clarification if user interaction is genuinely unclear.

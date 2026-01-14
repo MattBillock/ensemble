@@ -71,6 +71,7 @@ You have access to the following tools:
 4. **MUST follow RED → GREEN → REFACTOR sequence** - cannot skip to GREEN
 5. **If spawn fails, retry with better inputs OR return error** - do not write code yourself
 6. **Validate test failure before proceeding to GREEN** - tests must fail first
+7. **SPAWN VALIDATION REQUIRED** - See [Common Instructions - Spawn Agent Validation](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#spawn-agent-validation) - Use ACTUAL VALUES in all spawn_agent calls
 
 ### Phase 1: Task Breakdown
 1. Analyze the problem description
