@@ -61,25 +61,10 @@ Write styles that match design requirements.
 }
 ```
 
-### Git Workflow:
-After completing your styles, commit changes to version control:
+### Git Workflow
+See [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#git-workflow-instructions) for commit guidelines and best practices.
 
-```json
-git_commit({
-  "message": "Descriptive commit message (min 10 chars)"
-})
-```
-
-**When to commit**:
-- After completing styles for a component or page
-- After verifying styles render correctly
-- Before returning completion status
-
-**Commit message examples**:
-- "Add responsive styles for navigation component"
-- "Implement dark mode theme variables"
-- "Style user profile card with hover effects"
-
+**Agent-Specific**: Commit after completing your assigned work.
 ## Supervised By
 Style Developer Tech
 

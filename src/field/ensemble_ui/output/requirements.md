@@ -1,198 +1,142 @@
-# Executive Director Management Dashboard - Requirements
+# Agent Leaderboard System - Requirements
 
-## Project Vision
-Create a web-based management dashboard for monitoring and controlling Executive Director agent tasks with comprehensive controls and hierarchical agent management.
+## Vision
+Create a whimsical, tongue-in-cheek leaderboard system that tracks and displays agent statistics in comical yet technically accurate categories. The system should provide entertainment value while genuinely reflecting agent performance metrics.
+
+## Project Information
+- **Project ID**: 60773c48
+- **Project Name**: agent_leaderboard
+- **Output Directory**: /Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output
 
 ## Objectives
-1. Provide real-time visibility into Executive Director task execution
-2. Enable full lifecycle control (start, pause, stop, cancel, delete) of tasks
-3. Display task summaries and detailed reports
-4. Enforce safe agent hierarchy termination (children before parents)
-5. Support multiple concurrent director tasks
+1. Create an automated agent that generates leaderboard statistics at regular intervals
+2. Track agent performance across multiple humorous but accurate categories
+3. Award special achievements for notable agent behaviors
+4. Present results in an engaging, entertaining format
+5. Integrate with existing ensemble system to collect real agent data
 
-## Scope
+## Core Features
 
-### In Scope
-- **Dashboard UI Components**:
-  - Task list view showing all Executive Director tasks
-  - Individual task cards with status indicators
-  - Control buttons: Start, Pause, Stop, Cancel, Delete
-  - Quick summary section showing task objectives
-  - Detailed report view for task execution details
-  - Child agent tree visualization
+### 1. Leaderboard Categories (Minimum 8 comical but accurate categories)
+- **Speed Demon**: Fastest average task completion time
+- **Word Wizard**: Most verbose agent (highest word count in outputs)
+- **Efficiency Expert**: Best output-to-input token ratio
+- **Night Owl**: Most activity during late night hours (10pm-6am)
+- **Early Bird**: Most activity during early morning hours (5am-9am)
+- **Tool Titan**: Highest number of tool invocations per task
+- **Minimalist Maestro**: Least verbose while still completing tasks successfully
+- **Spawn Champion**: Agent that spawns the most child agents
+- **Error Enthusiast**: Most errors encountered (but eventually resolved)
+- **First Responder**: Fastest to accept new tasks
 
-- **Task Management**:
-  - Real-time task status updates
-  - Task lifecycle management (create, start, pause, resume, stop, cancel, delete)
-  - Hierarchical agent tracking (director → spawned child agents)
-  - Safe termination enforcement (block parent kill if children active)
+### 2. Special Achievements (Minimum 5)
+- **"I Regret Nothing"**: Retried a failed task 5+ times before succeeding
+- **"Overachiever"**: Completed a task in <10% of estimated time
+- **"War and Peace Author"**: Generated a single output >10,000 characters
+- **"Swiss Army Knife"**: Used 10+ different tools in a single task
+- **"Team Player"**: Successfully collaborated with 5+ different agent types
+- **"Phoenix"**: Recovered from 3+ consecutive errors in one session
+- **"Speedrunner"**: Completed 10+ tasks in under 1 minute each
+- **"Night Shift Legend"**: Completed 50+ tasks between midnight-6am
 
-- **Data & Reporting**:
-  - Task metadata (name, status, start time, duration)
-  - Quick summary of task objectives
-  - Execution logs and reports
-  - Child agent status tracking
-  - Error handling and display
-
-- **Backend API**:
-  - RESTful endpoints for CRUD operations
-  - WebSocket support for real-time updates
-  - Task state management
-  - Agent hierarchy validation
-
-### Out of Scope
-- Multi-user authentication (single admin user assumed)
-- Task scheduling/cron functionality
-- Historical analytics/charting
-- Agent performance metrics beyond basic status
-- Configuration management UI
-- Other agent types (focus on Executive Director only)
-
-## User Stories
-
-### Core Functionality
-1. As an administrator, I want to see all Executive Director tasks in a dashboard so I can monitor their status at a glance
-2. As an administrator, I want to start a task so it begins execution
-3. As an administrator, I want to pause a running task so I can temporarily suspend it
-4. As an administrator, I want to stop a task so it terminates gracefully
-5. As an administrator, I want to cancel a task so it aborts immediately
-6. As an administrator, I want to delete a completed/stopped task to clean up the dashboard
-7. As an administrator, I want to see a quick summary of each task so I understand what it's doing
-8. As an administrator, I want to view detailed reports for a task so I can review its execution
-
-### Hierarchical Management
-9. As an administrator, I want to see which child agents a director has spawned so I understand the execution hierarchy
-10. As an administrator, I want the system to prevent me from killing a director while it has active children so I don't create orphaned processes
-11. As an administrator, I want to kill all child agents before terminating the director so cleanup happens safely
-
-### Real-time Updates
-12. As an administrator, I want to see live status updates as tasks progress without refreshing the page
-13. As an administrator, I want to be notified when tasks complete or encounter errors
+### 3. Leaderboard Agent
+Create a dedicated agent that:
+- Runs at configurable intervals (default: hourly)
+- Queries agent activity data from the ensemble system
+- Calculates statistics for all categories
+- Evaluates achievement criteria
+- Generates formatted leaderboard output
+- Stores historical data for trend analysis
+- Can be triggered manually or on schedule
 
 ## Technical Requirements
 
-### Frontend
-- **Framework**: React 18+ with hooks
-- **Styling**: Modern CSS framework (Tailwind CSS or Material-UI)
-- **State Management**: React Context API or Redux for task state
-- **Real-time**: WebSocket client for live updates
-- **Responsive**: Desktop-first design (dashboard use case)
+### Data Sources
+- Agent activity logs from ~/.ensemble/projects/
+- Task completion records
+- Tool invocation logs
+- Timestamp data for activity patterns
+- Error/retry logs
+- Agent spawn/hierarchy data
 
-### Backend
-- **Runtime**: Node.js 18+ with Express
-- **WebSocket**: Socket.io for real-time communication
-- **Data Storage**: In-memory store with JSON file persistence (simple, no DB required)
-- **API Design**: RESTful with proper HTTP methods
+### Output Format
+- JSON format for programmatic access
+- Markdown format for human-readable display
+- HTML format for web UI integration (optional)
+- Include timestamps and data collection period
 
-### API Endpoints
-- `GET /api/tasks` - List all director tasks
-- `GET /api/tasks/:id` - Get task details
-- `POST /api/tasks` - Create new task
-- `POST /api/tasks/:id/start` - Start task
-- `POST /api/tasks/:id/pause` - Pause task
-- `POST /api/tasks/:id/stop` - Stop task gracefully
-- `POST /api/tasks/:id/cancel` - Cancel task immediately
-- `DELETE /api/tasks/:id` - Delete task (only if stopped/completed)
-- `GET /api/tasks/:id/report` - Get task execution report
-- `GET /api/tasks/:id/children` - Get child agents
+### Storage
+- Store leaderboard results in output directory
+- Maintain historical snapshots (last 30 days)
+- Implement rotation to prevent disk bloat
 
-### Data Model
+### Scheduling
+- Configurable interval (default: 1 hour)
+- Support for cron-style scheduling
+- Manual trigger capability
+- Graceful shutdown on system stop
 
-```javascript
-Task {
-  id: string (UUID)
-  name: string
-  type: "executive_director"
-  status: "idle" | "running" | "paused" | "completed" | "failed" | "cancelled"
-  summary: string (quick objective description)
-  report: string (detailed execution log)
-  createdAt: timestamp
-  startedAt: timestamp | null
-  completedAt: timestamp | null
-  duration: number (seconds)
-  childAgents: ChildAgent[]
-  error: string | null
-}
+## Implementation Assumptions
 
-ChildAgent {
-  id: string
-  type: string (agent type)
-  status: "running" | "completed" | "failed"
-  name: string
-}
-```
+### Technology Stack
+- **Language**: Python 3.8+ (matches existing ensemble system)
+- **Scheduling**: APScheduler or similar lightweight scheduler
+- **Data Processing**: Pandas for statistical analysis
+- **Format Generation**: Built-in json, markdown libraries
+- **Configuration**: YAML or JSON config file
 
-## Constraints
-
-### Technical Constraints
-- Must run on local development environment
-- Frontend port: 3000 (React dev server)
-- Backend port: 3001 (Express API)
-- Browser compatibility: Modern browsers (Chrome, Firefox, Safari, Edge - latest 2 versions)
-
-### Business Constraints
-- Single administrator (no multi-user support needed)
-- Focus on Executive Director tasks only
-- Must enforce safe agent termination hierarchy
-
-### Safety Constraints
-- **CRITICAL**: Cannot delete/kill director task while child agents are active
-- Must validate child agent status before allowing parent termination
-- Must display clear warnings when termination is blocked
-
-## Success Criteria
-
-1. **Functional Completeness**: All control buttons (start, pause, stop, cancel, delete) work correctly
-2. **Real-time Updates**: Task status updates appear within 1 second without page refresh
-3. **Hierarchy Enforcement**: System blocks director termination when children are active
-4. **Usability**: User can understand task status and perform actions without documentation
-5. **Reliability**: No crashes or data loss during normal operations
-6. **Performance**: Dashboard loads in < 2 seconds, controls respond in < 500ms
-
-## Assumptions
-
-1. **Single Instance**: One administrator using the dashboard at a time
-2. **Local Development**: Running on localhost, not production deployment initially
-3. **Task Persistence**: Tasks persist across server restarts (file-based storage)
-4. **Agent Communication**: Backend can communicate with agent runtime to control tasks
-5. **Error Recovery**: Tasks can be stopped/cancelled without corrupting state
-6. **WebSocket Reliability**: Fallback to polling if WebSocket connection drops
-7. **Default Styling**: Clean, professional UI without custom branding requirements
-8. **Browser Modern**: ES6+ JavaScript support assumed
-
-## Non-Functional Requirements
+### Integration Points
+- Read from existing ensemble project tracking data
+- No modifications to core ensemble system required
+- Standalone agent that can run independently
+- Output compatible with ensemble_ui display
 
 ### Performance
-- Dashboard load time: < 2 seconds
-- API response time: < 500ms
-- WebSocket message latency: < 100ms
-- Support up to 50 concurrent tasks
+- Complete analysis in <30 seconds for 1000+ agent records
+- Minimal CPU/memory footprint when idle
+- No impact on production agent performance
 
-### Usability
-- Intuitive button placement and labeling
-- Clear visual status indicators (colors, icons)
-- Confirmation dialogs for destructive actions (stop, cancel, delete)
-- Helpful error messages
+## Out of Scope
+- Real-time leaderboard updates (batch processing only)
+- User voting or manual category additions
+- Predictive analytics or ML-based insights
+- Multi-system aggregation (single ensemble instance only)
+- Historical trend graphs (data available, but no visualization)
 
-### Reliability
-- Graceful WebSocket reconnection
-- Error boundary components to prevent UI crashes
-- Backend error handling with proper status codes
-- Data persistence to prevent loss on restart
+## Success Criteria
+1. ✅ Agent successfully runs on schedule without manual intervention
+2. ✅ Generates accurate statistics from real agent data
+3. ✅ All 8+ categories display meaningful rankings
+4. ✅ Achievements trigger correctly based on criteria
+5. ✅ Output files are well-formatted and readable
+6. ✅ System runs for 24+ hours without errors
+7. ✅ Leaderboard reflects current agent activity within configured interval
+8. ✅ Code is maintainable and well-documented
 
-### Maintainability
-- Component-based architecture
-- Clear separation of concerns (UI, API, business logic)
-- Comprehensive code comments
-- README with setup instructions
+## Constraints
+- Must not interfere with production agent operations
+- Cannot modify existing agent behavior or tracking
+- Should work with current ensemble system architecture
+- Must handle missing or incomplete data gracefully
 
-## Future Considerations (Not in Initial Scope)
-- Multi-user support with role-based access control
-- Task templates and presets
-- Advanced filtering and search
-- Historical execution analytics
-- Performance metrics and charting
-- Email/Slack notifications
-- Task scheduling
-- Configuration management UI
-- Support for other agent types beyond Executive Director
+## Deliverables
+1. Leaderboard agent implementation (Python)
+2. Configuration file with scheduling options
+3. Documentation for setup and usage
+4. Sample output files (JSON + Markdown)
+5. Test suite validating statistics calculations
+6. README with installation and operation instructions
+
+## Timeline Estimate
+- Requirements: Complete
+- Architecture: ~1 hour
+- Implementation: ~4-6 hours
+- Testing: ~2 hours
+- Documentation: ~1 hour
+- Total: ~8-10 hours
+
+## Notes
+- Tone should be playful and fun while maintaining technical accuracy
+- Categories should celebrate different types of agent "personalities"
+- Achievements should feel rewarding even for unusual behaviors
+- System should be easily extensible for new categories/achievements

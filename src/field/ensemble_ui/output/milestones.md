@@ -1,249 +1,172 @@
-# Executive Director Management Dashboard - Milestone Plan
+# Agent Leaderboard System - Development Milestones
 
 ## Project Overview
-**Project**: Executive Director Management Dashboard
-**Type**: Full-stack web application (React + Node.js/Express)
-**Duration**: 4 Milestones
-**Delivery Strategy**: Incremental with working software at each milestone
+**Project**: agent_leaderboard  
+**Timeline**: 8-10 hours estimated  
+**Output Directory**: /Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output
 
 ---
 
-## Milestone 1: Foundation & Core Backend API
-**Objective**: Establish project structure, backend API, and data models
-
-**Deliverables**:
-- Project structure for frontend and backend
-- Backend Express server with RESTful API
-- Data models (Task, ChildAgent)
-- In-memory storage with JSON file persistence
-- Core CRUD endpoints for tasks
-- Basic error handling and validation
-
-**Acceptance Criteria**:
-- Backend server runs on port 3001
-- All task CRUD endpoints functional (GET, POST, DELETE)
-- Task lifecycle endpoints work (start, pause, stop, cancel)
-- Data persists to JSON file
-- Postman/curl tests pass for all endpoints
-- Error responses use proper HTTP status codes
-
-**Key Endpoints**:
-- GET /api/tasks
-- GET /api/tasks/:id
-- POST /api/tasks
-- POST /api/tasks/:id/start
-- POST /api/tasks/:id/pause
-- POST /api/tasks/:id/stop
-- POST /api/tasks/:id/cancel
-- DELETE /api/tasks/:id
-- GET /api/tasks/:id/report
-- GET /api/tasks/:id/children
-
+## Milestone 1: Core Data Collection & Statistics Engine
+**Duration**: 2-3 hours  
 **Dependencies**: None
 
-**Estimated Complexity**: Medium
+### Objectives
+- Implement data collection from ensemble project tracking system
+- Build statistical analysis engine for leaderboard categories
+- Create data models for agent statistics
+
+### Deliverables
+1. Data collector module that reads from ~/.ensemble/projects/
+2. Statistics calculator for all 8+ leaderboard categories
+3. Data models/classes for agent statistics
+4. Configuration file structure (YAML/JSON)
+5. Unit tests for data collection and statistics
+
+### Acceptance Criteria
+- ✅ Successfully reads agent activity logs from ensemble system
+- ✅ Calculates accurate statistics for all categories (Speed Demon, Word Wizard, etc.)
+- ✅ Handles missing/incomplete data gracefully
+- ✅ Unit tests achieve >80% coverage
+- ✅ Performance: processes 1000+ records in <30 seconds
+
+### Technical Focus
+- Data parsing and validation
+- Statistical calculations
+- Error handling for missing data
+- Configuration management
 
 ---
 
-## Milestone 2: Real-time WebSocket & Child Agent Hierarchy
-**Objective**: Add real-time updates and enforce safe agent hierarchy termination
+## Milestone 2: Achievement System & Leaderboard Generation
+**Duration**: 2-3 hours  
+**Dependencies**: Milestone 1 (statistics engine)
 
-**Deliverables**:
-- Socket.io WebSocket integration
-- Real-time task status broadcasts
-- Child agent tracking logic
-- Hierarchy validation (prevent parent kill if children active)
-- WebSocket reconnection handling
-- Enhanced error messages for hierarchy violations
+### Objectives
+- Implement achievement detection system
+- Build leaderboard ranking logic
+- Generate output in multiple formats (JSON, Markdown)
 
-**Acceptance Criteria**:
-- WebSocket connects on server startup
-- Task status updates broadcast to connected clients within 100ms
-- Backend blocks DELETE requests when child agents are active
-- Child agent status tracked correctly
-- Graceful WebSocket reconnection works
-- Clear error messages for hierarchy violations
+### Deliverables
+1. Achievement evaluator for all 5+ special achievements
+2. Leaderboard ranking and sorting logic
+3. JSON output generator
+4. Markdown output generator
+5. Unit tests for achievements and output generation
 
-**Dependencies**: Milestone 1 (backend must exist)
+### Acceptance Criteria
+- ✅ Correctly detects all achievement triggers
+- ✅ Generates accurate rankings across all categories
+- ✅ Outputs well-formatted JSON with complete data
+- ✅ Outputs human-readable Markdown
+- ✅ Handles edge cases (ties, no data, single agent)
+- ✅ Unit tests achieve >80% coverage
 
-**Estimated Complexity**: Medium-High
-
----
-
-## Milestone 3: Frontend Dashboard UI
-**Objective**: Build React dashboard with task management UI
-
-**Deliverables**:
-- React 18 application structure
-- Task list view component
-- Individual task card components
-- Control buttons (Start, Pause, Stop, Cancel, Delete)
-- Status indicators with color coding
-- Quick summary section
-- Detailed report modal/view
-- Confirmation dialogs for destructive actions
-- Responsive layout (desktop-first)
-- Tailwind CSS styling
-
-**Acceptance Criteria**:
-- React app runs on port 3000
-- Dashboard displays all tasks from API
-- All control buttons trigger correct API calls
-- Status indicators update correctly
-- Task summaries visible on cards
-- Detailed reports viewable in modal
-- Confirmation required for stop/cancel/delete
-- UI is clean and professional
-- Page loads in < 2 seconds
-
-**Components**:
-- TaskDashboard (main container)
-- TaskList (list view)
-- TaskCard (individual task)
-- ControlButtons (action buttons)
-- TaskSummary (quick info)
-- TaskReportModal (detailed view)
-- ConfirmDialog (confirmations)
-- StatusBadge (status indicator)
-
-**Dependencies**: Milestone 1 (needs API endpoints)
-
-**Estimated Complexity**: High
+### Technical Focus
+- Achievement criteria evaluation
+- Sorting and ranking algorithms
+- Output formatting (JSON, Markdown)
+- Edge case handling
 
 ---
 
-## Milestone 4: Real-time Frontend Integration & Final Polish
-**Objective**: Connect WebSocket to frontend, add child agent visualization, and finalize
+## Milestone 3: Scheduling & Agent Integration
+**Duration**: 2-3 hours  
+**Dependencies**: Milestone 2 (leaderboard generation)
 
-**Deliverables**:
-- WebSocket client integration in React
-- Real-time task status updates in UI (no refresh)
-- Child agent tree visualization component
-- Error notification system
-- Loading states and spinners
-- Comprehensive error boundaries
-- README with setup instructions
-- Integration tests
-- Final UI polish and accessibility
+### Objectives
+- Implement scheduling system for automated runs
+- Create main agent orchestrator
+- Implement historical data storage and rotation
+- Add manual trigger capability
 
-**Acceptance Criteria**:
-- Frontend receives real-time WebSocket updates
-- Task status updates appear within 1 second without refresh
-- Child agent tree displays correctly
-- Hierarchy violation warnings show in UI
-- Error messages display user-friendly notifications
-- Loading states shown during API calls
-- Error boundaries prevent UI crashes
-- README has clear setup/run instructions
-- All user stories fulfilled
-- All success criteria met
+### Deliverables
+1. Scheduler implementation (APScheduler)
+2. Main leaderboard agent orchestrator
+3. Historical data storage system (30-day retention)
+4. Command-line interface for manual triggers
+5. Integration tests for end-to-end workflows
 
-**Features**:
-- Live task status updates
-- Child agent hierarchy tree view
-- Toast notifications for errors/completion
-- Blocked action warnings (can't kill parent)
-- WebSocket connection status indicator
-- Polling fallback if WebSocket fails
+### Acceptance Criteria
+- ✅ Runs automatically at configurable intervals (default: hourly)
+- ✅ Stores historical snapshots with rotation
+- ✅ Can be triggered manually via CLI
+- ✅ Graceful startup and shutdown
+- ✅ Runs for 24+ hours without errors
+- ✅ Integration tests validate full workflow
 
-**Dependencies**: Milestones 1, 2, 3 (needs full backend + frontend base)
-
-**Estimated Complexity**: Medium-High
+### Technical Focus
+- APScheduler configuration
+- CLI implementation
+- File rotation and cleanup
+- Long-running process stability
 
 ---
 
-## Risk Assessment
+## Milestone 4: Documentation & Testing
+**Duration**: 2 hours  
+**Dependencies**: Milestone 3 (full implementation)
 
-### High Risk Items
-1. **WebSocket Reliability**: Real-time updates critical to UX
-   - *Mitigation*: Implement polling fallback, test reconnection
+### Objectives
+- Complete comprehensive documentation
+- Finalize test suite
+- Create sample outputs
+- Verify all success criteria
 
-2. **Child Agent Hierarchy Enforcement**: Core safety requirement
-   - *Mitigation*: Thorough validation logic, comprehensive tests
+### Deliverables
+1. README with installation and operation instructions
+2. Configuration documentation
+3. API/module documentation
+4. Sample output files (JSON + Markdown examples)
+5. Complete test suite with >85% coverage
+6. CHANGELOG and version info
 
-3. **State Synchronization**: Frontend/backend state must stay in sync
-   - *Mitigation*: Use WebSocket broadcasts, implement reconciliation
+### Acceptance Criteria
+- ✅ README provides clear setup instructions
+- ✅ All modules have docstrings
+- ✅ Sample outputs demonstrate all features
+- ✅ Test suite passes all tests
+- ✅ Code quality checks pass (linting, formatting)
+- ✅ All success criteria from requirements verified
 
-### Medium Risk Items
-1. **Browser Compatibility**: Modern features may not work everywhere
-   - *Mitigation*: Target latest 2 versions of major browsers
-
-2. **Performance with Many Tasks**: 50 concurrent tasks target
-   - *Mitigation*: Test with mock data, optimize rendering
-
----
-
-## Technical Decisions
-
-### Technology Stack
-- **Frontend**: React 18, Tailwind CSS, Socket.io-client
-- **Backend**: Node.js 18+, Express, Socket.io
-- **Storage**: In-memory + JSON file persistence
-- **Testing**: Jest for unit tests, Supertest for API tests
-
-### Architecture Pattern
-- **Frontend**: Component-based architecture, React Context for state
-- **Backend**: RESTful API + WebSocket for real-time
-- **Data Flow**: Unidirectional (API → State → UI)
-
-### Key Design Choices
-1. **No Database**: JSON file persistence sufficient for local dev
-2. **Single Administrator**: No authentication/authorization needed
-3. **Desktop-First**: Dashboard use case doesn't require mobile optimization
-4. **Component Isolation**: Each UI component self-contained
+### Technical Focus
+- Documentation completeness
+- Code quality
+- Example generation
+- Final validation
 
 ---
 
-## Success Metrics
+## Overall Project Success Criteria Mapping
 
-### Functional
-- ✅ All 13 user stories implemented
-- ✅ All API endpoints working
-- ✅ Hierarchy enforcement prevents unsafe termination
-- ✅ Real-time updates functional
-
-### Performance
-- ✅ Dashboard loads < 2 seconds
-- ✅ API responses < 500ms
-- ✅ WebSocket latency < 100ms
-- ✅ Supports 50 concurrent tasks
-
-### Quality
-- ✅ No crashes during normal operations
-- ✅ Data persists across restarts
-- ✅ Clear error messages
-- ✅ Professional, intuitive UI
+| Success Criterion | Milestone |
+|-------------------|-----------|
+| Agent runs on schedule without manual intervention | M3 |
+| Generates accurate statistics from real agent data | M1 |
+| All 8+ categories display meaningful rankings | M2 |
+| Achievements trigger correctly | M2 |
+| Output files are well-formatted and readable | M2 |
+| System runs for 24+ hours without errors | M3 |
+| Leaderboard reflects current activity within interval | M1, M3 |
+| Code is maintainable and well-documented | M4 |
 
 ---
 
-## Milestone Completion Checklist
+## Risk Mitigation
 
-### Milestone 1
-- [ ] Project structure created
-- [ ] Backend server running
-- [ ] All API endpoints implemented
-- [ ] Data persistence working
-- [ ] Manual API tests passing
+### Potential Risks
+1. **Data format changes**: Ensemble tracking data structure may vary
+   - *Mitigation*: Flexible parsing with schema validation
+   
+2. **Performance issues**: Large datasets may slow processing
+   - *Mitigation*: Built-in performance requirements (<30s for 1000+ records)
+   
+3. **Scheduling reliability**: Long-running process may encounter issues
+   - *Mitigation*: Comprehensive error handling and logging
 
-### Milestone 2
-- [ ] WebSocket server running
-- [ ] Real-time broadcasts working
-- [ ] Child agent tracking implemented
-- [ ] Hierarchy validation enforced
-- [ ] Reconnection logic tested
+---
 
-### Milestone 3
-- [ ] React app running
-- [ ] All UI components built
-- [ ] API integration complete
-- [ ] Control buttons functional
-- [ ] Styling polished
-
-### Milestone 4
-- [ ] WebSocket client integrated
-- [ ] Real-time UI updates working
-- [ ] Child agent visualization complete
-- [ ] Error handling comprehensive
-- [ ] Documentation complete
-- [ ] All success criteria met
-- [ ] Project ready for delivery
+## Next Steps
+1. Proceed to architecture phase (System Architect)
+2. Begin Milestone 1 implementation after architecture approval
+3. Sequential milestone completion with testing at each stage

@@ -37,48 +37,7 @@ Defines comprehensive test strategy for the project. Identifies unit tests, inte
 ```
 
 ## Output Format (Compact - For Agent Communication)
-**IMPORTANT**: When your output will be consumed by another agent (not a human), use this COMPACT format to save tokens:
-
-```json
-{
-  "status": "success",
-  "tasks_identified": 5,
-  "task_file": "path/to/tasks.md"
-}
-```
-
-**Compact Output Rules**:
-- **OMIT**: message, summary, recommendations, rationale, self_analysis
-- **INCLUDE ONLY**: status, essential data fields (tasks_identified, task_file, dependencies if present), errors
-- **In task breakdown file**: Use concise descriptions, no explanations
-- **No verbose summaries**: Other agents don't need to know your reasoning
-
-**Example Task Breakdown (Compact)**:
-```markdown
-# Backend Tasks
-
-## Task: auth-service
-- Desc: User auth with bcrypt + JWT
-- Output: auth_service.py
-- Deps: none
-
-## Task: db-models
-- Desc: SQLAlchemy models: User, Session
-- Output: models.py
-- Deps: auth-service
-```
-
-NOT this (too verbose for agents):
-```markdown
-# Backend Tasks
-
-## Task: auth-service
-- Description: Implement comprehensive user authentication service with bcrypt password hashing and JWT token generation
-- Rationale: Authentication is foundational to the system - all other services depend on it
-- Expected Output: auth_service.py with full UserAuth class implementation
-- Estimated Complexity: Medium
-- Notes: Consider adding refresh token support for better UX
-```
+See [Common Instructions - Compact Output Format](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#compact-output-format-for-agent-to-agent-communication) for detailed guidelines on compact agent-to-agent communication.
 
 ## Available Tools
 - **read_file**: Read architecture, requirements, existing code
@@ -203,39 +162,13 @@ Create markdown document with:
 - "Create test fixtures for sample problems and solutions"
 - "Test error handling for API failures"
 
-### Git Workflow:
-After completing your test strategy document, commit changes to version control:
+### Git Workflow
+See [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#git-workflow-instructions) for commit guidelines and best practices.
 
-```json
-git_commit({
-  "message": "Descriptive commit message (min 10 chars)"
-})
-```
-
-**When to commit**:
-- After completing the test strategy document
-- After defining coverage goals and test tasks
-- Before handing off to TDD Coordinator
-
-**Commit message examples**:
-- "Add test strategy for authentication milestone"
-- "Document test tasks and coverage goals for API layer"
-- "Define E2E test scenarios for checkout flow"
-
+**Agent-Specific**: Commit after completing your assigned work.
 ## Self-Improvement Directive
 
-**CRITICAL**: Analyze your performance in EVERY execution. This is MANDATORY.
-
-### Your Self-Analysis (self_analysis field):
-1. **Quality**: Was my output high quality?
-2. **Efficiency**: Iterations used vs needed?
-3. **Decisiveness**: Good assumptions or unnecessary questions?
-4. **Errors**: What went wrong?
-5. **Improvement**: What would I do differently?
-
-Format: 2-4 honest sentences. Example: "Task breakdown clear with proper dependencies. Used 2 iterations efficiently. Over-specified edge cases not in requirements. Next time: stick closer to requirements."
-
-**Why**: Your analysis feeds the metrics system. Honest self-assessment = system improvement.
+See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.
 
 ## Request Clarification When
 - **Critical business logic unclear** (can't write tests without understanding the logic)

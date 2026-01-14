@@ -14,8 +14,10 @@ import ActivityFeed from './components/ActivityFeed';
 import AgentHierarchyTree from './components/AgentHierarchyTree';
 import PendingQuestions from './components/PendingQuestions';
 import GeneratedFiles from './components/GeneratedFiles';
+import MetricsDashboard from './components/MetricsDashboard';
 
 function App() {
+  const [currentView, setCurrentView] = useState('main'); // 'main' or 'metrics'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,8 +162,23 @@ function App() {
                   {failedAgents > 0 && <Badge bg="danger">{failedAgents} Failed</Badge>}
                 </div>
 
-                {/* Poll interval control */}
+                {/* View Switcher and Poll interval control */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <ButtonGroup size="sm">
+                    <Button
+                      variant={currentView === 'main' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('main')}
+                    >
+                      🎭 Activity
+                    </Button>
+                    <Button
+                      variant={currentView === 'metrics' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('metrics')}
+                    >
+                      📊 Metrics
+                    </Button>
+                  </ButtonGroup>
+
                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>Update Interval:</span>
                   <ButtonGroup size="sm">
                     <Button
@@ -197,7 +214,12 @@ function App() {
         </Container>
       </div>
 
-      <Container fluid style={{ padding: '16px' }}>
+      {/* Conditional rendering based on current view */}
+      {currentView === 'metrics' ? (
+        <MetricsDashboard />
+      ) : (
+        <>
+        <Container fluid style={{ padding: '16px' }}>
         <Row style={{ height: 'calc(100vh - 80px)' }}>
           {/* Left Column - Input & Questions */}
           <Col md={3} style={{ height: '100%', overflowY: 'auto' }}>
@@ -455,6 +477,7 @@ function App() {
                   ))
                 )}
               </Card.Body>
+              )}
             </Card>
 
             {/* Generated Files */}
@@ -483,7 +506,9 @@ function App() {
             </Card>
           </Col>
         </Row>
-      </Container>
+        </Container>
+        </>
+      )}
     </div>
   );
 }

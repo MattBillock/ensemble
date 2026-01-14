@@ -46,12 +46,16 @@ You have access to the following tools:
 - **write_file**: Write content to a file (creates parent directories if needed)
   - Parameters: file_path (string), content (string)
   - Returns: {success: boolean, message: string}
+  - **AUTHORITY**: You have FULL authority to CREATE new test files or OVERWRITE existing ones
 
 - **git_commit**: Commit changes to version control
   - Parameters: message (string), files (array, optional)
   - Returns: {success: boolean, commit_hash: string}
 
 ## Instructions
+
+**AUTHORITY**: You have FULL permission to CREATE test files that don't exist yet. If the test_file path doesn't exist, write_file will create it automatically.
+
 1. Read the task description carefully
 2. Identify what needs to be tested:
    - Main functionality for this specific task
@@ -65,7 +69,7 @@ You have access to the following tools:
    - Are expected to FAIL (code doesn't exist yet)
    - Follow the Arrange-Act-Assert pattern
    - Use appropriate assertions with clear failure messages
-5. Use write_file to save tests to the test file
+5. Use write_file to save tests to the test file (creates file if it doesn't exist)
 6. Return list of test functions written
 7. **CRITICAL**: Do NOT run the tests - that's handled separately
 

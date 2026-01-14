@@ -1,121 +1,149 @@
-# Ensemble UI Enhancements - Milestone Plan
+# Milestone Plan: Task Recovery Analysis Implementation
 
-## Project Overview
-**Project**: ensemble-ui-enhancements  
-**Timeline**: 3 Milestones  
-**Goal**: Enhance Ensemble UI with 6 key features for better UX
+**Project ID**: 3f1c6153  
+**Development Manager**: Task Recovery Analysis Implementation  
+**Date**: 2026-01-13
 
 ---
 
-## Milestone 1: Core UI Improvements (Features 1-3)
-**Objective**: Implement foundational improvements to agent hierarchy and completed items management
+## Milestone Overview
+
+This project implements a systematic task recovery system to restart 10 stalled/incomplete projects. The implementation is divided into 3 milestones for controlled, verified delivery.
+
+---
+
+## Milestone 1: Recovery Data Parser & Structure (FOUNDATION)
+
+**Objective**: Build the core recovery data extraction and structuring system.
 
 **Deliverables**:
-1. Agent Hierarchy Question Links (Feature 1)
-   - Update AgentHierarchyTree component with question links
-   - Implement scroll/navigation to questions
-   - Add visual indicators for linked hierarchies
-   
-2. Completed Items Section (Feature 2)
-   - Create CompletedItemsSection component
-   - Implement collapsible/hideable functionality
-   - Auto-move completed items from active view
-   - Add count badge
-   
-3. Two-Word Subject Summaries (Feature 3)
-   - Create summary generation utility function
-   - Integrate summaries into hierarchy display
-   - Ensure prominent display for quick scanning
+1. Python script to parse task_recovery_analysis.md
+2. Structured JSON files categorizing projects by priority (1, 2, 3)
+3. Data validation ensuring all 10 projects are properly extracted
+4. Recovery action mapping logic
 
 **Acceptance Criteria**:
-- ✅ Clicking hierarchy item navigates to associated question
-- ✅ Completed items appear in separate collapsible section
-- ✅ Each hierarchy displays clear 2-word summary
-- ✅ All existing functionality works unchanged
-- ✅ Unit tests pass for new components
+- ✅ All 10 projects extracted with correct project IDs and task IDs
+- ✅ Projects categorized into 3 priority groups (3, 5, 2 projects)
+- ✅ Each project has proper action mapping (restart/start/requirements)
+- ✅ JSON output files created in recovery_actions/ directory
+- ✅ Unit tests passing for parser logic
 
 **Dependencies**: None
 
----
-
-## Milestone 2: Layout & Collapsible Sections (Features 4-5)
-**Objective**: Improve layout proportions and add collapsible functionality
-
-**Deliverables**:
-1. Layout Improvements (Feature 4)
-   - Adjust Bootstrap grid: Problem description wider, activity feed narrower
-   - Increase textarea rows for problem description (6-8 rows)
-   - Update CSS for responsive design
-   - Test on multiple screen sizes
-   
-2. Collapsible Sections (Feature 5)
-   - Make Current Agent Tasks collapsible
-   - Make Activity Feed collapsible
-   - Add chevron icons for expand/collapse state
-   - Preserve collapse state during re-renders
-   - Smooth transitions
-
-**Acceptance Criteria**:
-- ✅ Problem description visibly larger and more usable
-- ✅ Activity feed narrower but still functional
-- ✅ Current Tasks and Activity Feed collapse/expand smoothly
-- ✅ Collapse state preserved during updates
-- ✅ Responsive design maintained
-- ✅ Unit tests pass
-
-**Dependencies**: Milestone 1 complete
+**Estimated Effort**: Small - focused data processing task
 
 ---
 
-## Milestone 3: Metrics Pane & Final Integration (Feature 6)
-**Objective**: Add metrics visibility and complete final integration testing
+## Milestone 2: Recovery Orchestration Engine (CORE LOGIC)
+
+**Objective**: Implement the orchestration logic to execute recovery actions for all 10 projects.
 
 **Deliverables**:
-1. Metrics Pane Component (Feature 6)
-   - Create MetricsPane.jsx component
-   - Display model usage counts (Haiku, Sonnet, Opus)
-   - Display code delta metrics (lines added/removed, files changed)
-   - Implement real-time polling
-   - Add/extend API endpoint in services/api.js
-   
-2. Final Integration
-   - Place metrics pane in optimal location
-   - Integration testing of all 6 features
-   - Performance testing
-   - Update documentation
-
-3. Testing & Documentation
-   - Comprehensive unit tests for all new components
-   - Integration tests for feature interactions
-   - Update README with new features
-   - Verify no regressions
+1. Recovery executor module that processes each project
+2. Executive Director invocation generator with proper input formatting
+3. Error handling and logging system
+4. Progress tracking integration
+5. Sequential execution control
 
 **Acceptance Criteria**:
-- ✅ Metrics pane displays real-time model and code metrics
-- ✅ All 6 features work together seamlessly
-- ✅ No performance degradation
-- ✅ All tests pass (unit + integration)
-- ✅ Documentation complete
-- ✅ No regressions in existing functionality
+- ✅ For each of 10 projects, proper Executive Director input data generated
+- ✅ Recovery actions mapped correctly:
+  - Priority 1: Development Manager restart signals
+  - Priority 2: Appropriate coordinator start signals
+  - Priority 3: Requirements phase initiation signals
+- ✅ Independent error boundaries (one failure doesn't cascade)
+- ✅ Progress logged with timestamps
+- ✅ All tests passing
 
-**Dependencies**: Milestone 2 complete
+**Dependencies**: Milestone 1 (recovery data structure)
+
+**Estimated Effort**: Medium - core orchestration logic
+
+---
+
+## Milestone 3: Execution & Reporting (DELIVERY)
+
+**Objective**: Execute the recovery process and generate comprehensive reporting.
+
+**Deliverables**:
+1. Execute recovery for all 10 projects
+2. Comprehensive recovery report (recovery_report.md)
+3. Success/failure tracking per project
+4. Documentation of recovery patterns for future use
+5. Final verification and testing
+
+**Acceptance Criteria**:
+- ✅ All 10 projects have recovery actions initiated
+- ✅ Recovery report generated with:
+  - Projects recovered
+  - Actions taken
+  - Errors/issues encountered
+  - Success rate
+- ✅ Progress tracked in project tracking system
+- ✅ All documentation complete
+- ✅ No code written by Executive Director (proper delegation verified)
+
+**Dependencies**: Milestone 2 (recovery orchestration engine)
+
+**Estimated Effort**: Medium - execution and comprehensive reporting
 
 ---
 
 ## Risk Management
 
-**Risks**:
-1. **Backend metrics not available**: Mitigation - Use mock data with clear note
-2. **Layout changes break responsive design**: Mitigation - Test on multiple screen sizes
-3. **State management complexity**: Mitigation - Keep collapse states simple, local to components
+**Risk 1**: Spawned agents fail during recovery
+- **Mitigation**: Independent error boundaries, continue with remaining projects
 
-**Critical Path**: Milestone 1 → Milestone 2 → Milestone 3 (sequential)
+**Risk 2**: Project context insufficient for recovery
+- **Mitigation**: Document failures in recovery report, manual intervention flagged
+
+**Risk 3**: Project tracking system unavailable
+- **Mitigation**: Fallback to file-based logging
 
 ---
 
 ## Success Metrics
-- All 6 features implemented per requirements
-- Zero regressions in existing functionality
-- UI remains responsive (no lag)
-- Test coverage >80% for new code
-- Clean, maintainable code ready for production
+
+1. **Coverage**: 10/10 projects have recovery actions initiated (100%)
+2. **Success Rate**: Target 80%+ successful recovery initiations
+3. **Documentation**: Complete recovery report with actionable insights
+4. **Delegation**: 0 instances of Executive Director writing implementation code
+
+---
+
+## Technical Approach Summary
+
+**Milestone 1**: Parse → Structure → Validate
+**Milestone 2**: Map Actions → Generate Inputs → Orchestrate
+**Milestone 3**: Execute → Track → Report
+
+**Technology Stack**:
+- Python 3.x for orchestration
+- JSON for data exchange
+- Markdown for reporting
+- Existing project tracking system
+
+---
+
+## Timeline Estimate
+
+- **Milestone 1**: 1-2 hours (foundation)
+- **Milestone 2**: 2-3 hours (core logic)
+- **Milestone 3**: 2-3 hours (execution & reporting)
+
+**Total**: 5-8 hours estimated effort
+
+---
+
+## Version Control Strategy
+
+**Commits**:
+1. After Milestone 1: "Complete milestone 1: recovery data parser and structure"
+2. After Milestone 2: "Complete milestone 2: recovery orchestration engine"
+3. After Milestone 3: "Complete milestone 3: task recovery execution and reporting"
+
+---
+
+**Document Status**: Approved  
+**Next Phase**: Architecture design via System Architect

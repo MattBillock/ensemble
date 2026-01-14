@@ -14,12 +14,12 @@ class TestModelSelector:
     def test_select_model_full_firepower_creative(self):
         """Test full_firepower tier with creative complexity returns sonnet."""
         model = ModelSelector.select_model("full_firepower", "creative")
-        assert model == "claude-3-5-sonnet-20241022"
+        assert model == "claude-sonnet-4-5-20250929"
 
     def test_select_model_balanced_strategic(self):
         """Test balanced tier with strategic complexity returns sonnet."""
         model = ModelSelector.select_model("balanced", "strategic")
-        assert model == "claude-3-5-sonnet-20241022"
+        assert model == "claude-sonnet-4-5-20250929"
 
     def test_select_model_balanced_routine(self):
         """Test balanced tier with routine complexity returns haiku."""
@@ -29,7 +29,7 @@ class TestModelSelector:
     def test_select_model_economical_strategic(self):
         """Test economical tier still uses sonnet for strategic (can't compromise)."""
         model = ModelSelector.select_model("economical", "strategic")
-        assert model == "claude-3-5-sonnet-20241022"
+        assert model == "claude-sonnet-4-5-20250929"
 
     def test_select_model_economical_creative(self):
         """Test economical tier uses haiku for creative tasks."""
@@ -46,7 +46,7 @@ class TestModelSelector:
         model = ModelSelector.select_model(
             "balanced", "strategic", agent_name="Test Agent"
         )
-        assert model == "claude-3-5-sonnet-20241022"
+        assert model == "claude-sonnet-4-5-20250929"
 
     def test_select_model_default_parameters(self):
         """Test defaults to balanced/routine (haiku)."""

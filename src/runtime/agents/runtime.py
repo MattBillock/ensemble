@@ -1,10 +1,11 @@
 """Agent runtime for executing agents with Anthropic API."""
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
-from anthropic import Anthropic
+from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError
 from pathlib import Path
 
 from .definition import AgentDefinition
@@ -13,6 +14,8 @@ from .state import StateManager
 from .model_selector import ModelSelector
 from .metrics import AgentMetricsTracker
 from .activity_tracker import AgentActivityTracker
+from .resilience import CircuitBreaker, retry_with_exponential_backoff, CircuitBreakerOpenError
+from .validation import ResponseValidator
 
 # Set up structured logging
 logging.basicConfig(
@@ -29,6 +32,10 @@ class AgentRuntime:
     _metrics_tracker = None
     # Shared activity tracker across all runtimes
     _activity_tracker = None
+    # Shared circuit breaker for API calls
+    _circuit_breaker = None
+    # Cached regex patterns (class-level to avoid recompilation)
+    _json_block_pattern = re.compile(r'```(?:json)?\s*(\{.*?\})\s*```', re.DOTALL)
 
     @classmethod
     def get_metrics_tracker(cls) -> AgentMetricsTracker:
@@ -43,6 +50,17 @@ class AgentRuntime:
         if cls._activity_tracker is None:
             cls._activity_tracker = AgentActivityTracker()
         return cls._activity_tracker
+
+    @classmethod
+    def get_circuit_breaker(cls) -> CircuitBreaker:
+        """Get or create the shared circuit breaker."""
+        if cls._circuit_breaker is None:
+            cls._circuit_breaker = CircuitBreaker(
+                failure_threshold=5,
+                timeout_seconds=60,
+                success_threshold=2
+            )
+        return cls._circuit_breaker
 
     def __init__(
         self,
@@ -83,6 +101,20 @@ class AgentRuntime:
         # Token tracking for cost analysis
         self.total_input_tokens = 0
         self.total_output_tokens = 0
+        # Message history pruning configuration
+        self.max_message_history = 50  # Keep last 50 messages max
+        self.prune_frequency = 10  # Prune every 10 iterations
+        # User input for resume
+        self.user_answer = None
+
+    def set_user_answer(self, answer: str):
+        """
+        Set user answer for resuming execution after a question.
+
+        Args:
+            answer: User's answer to the agent's question
+        """
+        self.user_answer = answer
 
     def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -145,6 +177,14 @@ class AgentRuntime:
         # Initialize conversation
         messages = [{"role": "user", "content": user_prompt}]
 
+        # If resuming with user answer, inject it into conversation
+        if self.user_answer:
+            logger.info(f"Resuming with user answer: {self.user_answer[:100]}...")
+            messages.append({
+                "role": "user",
+                "content": f"User's answer to your question:\n\n{self.user_answer}\n\nPlease continue with the implementation based on this clarification."
+            })
+
         # Prepare API call kwargs
         api_kwargs = {
             "model": model,
@@ -173,8 +213,33 @@ class AgentRuntime:
                     max_iterations=self.definition.max_iterations
                 )
 
-                # Call Anthropic API
-                response = self.client.messages.create(**api_kwargs)
+                # Call Anthropic API with retry logic and circuit breaker
+                circuit_breaker = self.get_circuit_breaker()
+
+                def _make_api_call():
+                    """Wrapper for API call to use with retry logic."""
+                    return circuit_breaker.call(
+                        self.client.messages.create,
+                        **api_kwargs
+                    )
+
+                try:
+                    response = retry_with_exponential_backoff(
+                        _make_api_call,
+                        max_retries=3,
+                        base_delay=1.0,
+                        max_delay=60.0,
+                        retryable_exceptions=(APIConnectionError, RateLimitError, APIError),
+                        on_retry=lambda e, attempt, delay: logger.warning(
+                            f"API call retry {attempt}: {type(e).__name__}: {e}"
+                        )
+                    )
+                except CircuitBreakerOpenError as e:
+                    logger.error(f"Circuit breaker is open, aborting execution: {e}")
+                    raise
+                except (APIConnectionError, RateLimitError, APIError) as e:
+                    logger.error(f"API call failed after all retries: {type(e).__name__}: {e}")
+                    raise
 
                 # Capture token usage from this iteration
                 if hasattr(response, 'usage'):
@@ -198,20 +263,70 @@ class AgentRuntime:
                 if response.stop_reason == "tool_use":
                     logger.info("Agent requested tool use")
                     messages = self._handle_tool_use(messages, response)
+
+                    # Prune message history periodically to prevent unbounded growth
+                    if self.iteration_count % self.prune_frequency == 0:
+                        messages = self._prune_message_history(messages)
+
                     api_kwargs["messages"] = messages
                     continue
 
                 # Extract final response
                 response_data = self._extract_final_response(response)
 
+                # Validate response against expected schema
+                if response_data and response_data.get("response_type") != "conversational":
+                    is_valid, validation_errors = ResponseValidator.validate_response(
+                        response_data,
+                        self.definition.output_format
+                    )
+                    if not is_valid:
+                        logger.warning(
+                            f"Response validation failed: {validation_errors}. "
+                            f"Response: {response_data}"
+                        )
+                        # Continue anyway but log the issue
+                        # In production, you might want to retry or fail
+
                 # Check termination conditions
-                if not response_data.get("needs_clarification", False):
+                needs_clarification = response_data.get("needs_clarification", False)
+                needs_user_input = response_data.get("status") == "needs_user_input"
+
+                if needs_clarification or needs_user_input:
+                    # Agent needs user input - record question and wait
+                    question = response_data.get("user_question") or response_data.get("clarification_question", "")
+
+                    if question:
+                        logger.info(f"Agent {self.definition.name} needs user input: {question}")
+
+                        # Generate question ID
+                        import uuid
+                        question_id = f"q_{self.agent_id}_{uuid.uuid4().hex[:8]}"
+
+                        # Record question in activity tracker
+                        activity_tracker.record_question(
+                            agent_id=self.agent_id,
+                            agent_name=self.definition.name,
+                            request_id=self.request_id,
+                            question_id=question_id,
+                            question=question,
+                            options=response_data.get("options")
+                        )
+
+                        # Add question_id to response for tracking
+                        response_data["question_id"] = question_id
+                        response_data["awaiting_user_input"] = True
+
+                        # Return partial response with question - execution will pause here
+                        # The orchestrator/UI will need to provide an answer and resume execution
+                        return response_data
+                    else:
+                        logger.warning("Agent indicated needs_clarification/needs_user_input but didn't provide question")
+                        # Continue anyway if no question provided
+                else:
+                    # Agent completed successfully
                     logger.info("Agent completed successfully")
                     break
-
-                # If we need clarification, we would handle that here
-                # For now, we'll just continue (in a real system, we'd ask the user)
-                logger.warning("Agent needs clarification but continuing anyway")
 
             if self.iteration_count >= self.definition.max_iterations:
                 logger.warning(f"Agent reached max iterations ({self.definition.max_iterations})")
@@ -341,17 +456,14 @@ Remember to respond with valid JSON matching the expected output format.
         Raises:
             ValueError: If no valid JSON found
         """
-        import re
-
         # Try parsing as-is first
         try:
             return json.loads(response_text)
         except json.JSONDecodeError:
             pass
 
-        # Try extracting from code block
-        json_block_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
-        match = re.search(json_block_pattern, response_text, re.DOTALL)
+        # Try extracting from code block using cached regex pattern
+        match = self._json_block_pattern.search(response_text)
         if match:
             try:
                 return json.loads(match.group(1))
@@ -555,6 +667,31 @@ Remember to respond with valid JSON matching the expected output format.
         # If no text found, return empty
         logger.warning("No text content found in response")
         return {}
+
+    def _prune_message_history(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Prune message history to prevent unbounded growth.
+
+        Keeps the initial user message and the most recent messages.
+
+        Args:
+            messages: Current message history
+
+        Returns:
+            Pruned message history
+        """
+        if len(messages) <= self.max_message_history:
+            return messages
+
+        logger.info(
+            f"Pruning message history from {len(messages)} to {self.max_message_history} messages"
+        )
+
+        # Keep first message (initial user prompt) and most recent messages
+        initial_message = messages[0]
+        recent_messages = messages[-(self.max_message_history - 1):]
+
+        return [initial_message] + recent_messages
 
     def _record_execution_metrics(
         self,
