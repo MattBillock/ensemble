@@ -1,0 +1,48 @@
+# Output Directory .gitignore
+# Manages version control for consolidated output artifacts
+
+# Temporary files
+temp/
+*.tmp
+*.temp
+*.swp
+*~
+
+# Log files
+logs/
+*.log
+
+# Test artifacts (can be regenerated)
+tests/*/coverage/
+tests/*/.pytest_cache/
+tests/*/__pycache__/
+tests/*/htmlcov/
+
+# Node modules and dependencies in generated projects
+projects/*/node_modules/
+projects/*/.venv/
+projects/*/venv/
+projects/*/env/
+
+# Build artifacts in generated projects
+projects/*/dist/
+projects/*/build/
+projects/*/.next/
+projects/*/out/
+
+# IDE and editor files in generated projects
+projects/*/.vscode/
+projects/*/.idea/
+projects/*/*.iml
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Keep directory structure (track .gitkeep files)
+!**/.gitkeep
+
+# Optionally track certain files:
+# Uncomment to track reports and documentation
+# !reports/**/*.md
+# !docs/**/*.md

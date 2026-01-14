@@ -1,220 +1,241 @@
-# Ensemble UI Enhancements - Milestones Plan
+# Milestones Plan: Implement Pending Requirements
 
-## Project Overview
-**Project**: ensemble_ui_enhancements
-**Requirements**: ui_enhancement_requirements.md
-**Duration**: 6 milestones
-**Priority**: Completed items management is highest priority
-
-## Milestone 1: Completed Items Management (PRIORITY)
-**Objective**: Implement hide/show and bottom positioning for completed items in Activity Feed and Agent States panes
-
-**Deliverables**:
-- Toggle controls in Activity Feed header (show/hide completed, position at bottom)
-- Toggle controls in Agent States header (show/hide completed)
-- Filtering logic to hide completed items based on status
-- Sorting logic to move completed items to bottom of lists
-- Visual separator between active and completed sections
-- Collapsible "Completed" section when showing at bottom
-- Count badges showing hidden/completed item counts
-- LocalStorage persistence for user preferences
-- Updated App.jsx with new state management
-
-**Acceptance Criteria**:
-- User can toggle completed items visibility in both panes
-- User can choose to show completed items at bottom
-- Preferences persist across browser sessions
-- Visual separator clearly distinguishes active from completed
-- Count badges accurately reflect item counts
-- No breaking changes to existing UI functionality
-
-**Dependencies**: None (first milestone)
-
-**Estimated Effort**: 2-3 days
+## Project: implement_pending_requirements
+**Project ID:** 14f3bc28  
+**Created:** 2026-01-13  
+**Development Manager:** Driving implementation of remaining pending requirements
 
 ---
 
-## Milestone 2: Enhanced Filtering - Activity Feed
-**Objective**: Implement advanced filtering capabilities for the Activity Feed pane
+## Analysis of Current State
 
-**Deliverables**:
-- Filter UI components (search input, dropdowns for agent ID and type)
-- Time range filter (last hour, today, all)
-- Filter state management in React
-- Combined filter logic (agent ID + type + text search + time range)
-- Active filter badges showing current applied filters
-- Remove button on each filter badge
-- "Clear all filters" button
-- Backend API parameter support for filtering (optional optimization)
+Based on the master requirements document:
+- **Phase 1 (Priority 1):** ✅ Already completed - Core UI improvements (intervals, whimsical names, agent visibility, cost tracking, mobile responsive)
+- **Phase 2 (Priority 2):** 🔲 Pending - Bug fixes and enhancements
+- **Phase 3 (Priority 3):** 🔲 Pending - System improvements
 
-**Acceptance Criteria**:
-- User can filter by agent ID via dropdown/autocomplete
-- User can filter by activity type (started, completed, failed, output, log)
-- User can search text across activity messages
-- User can filter by time range
-- Multiple filters can be combined
-- Active filters are clearly displayed as badges
-- User can remove individual filters or clear all
-- Filters work correctly with completed items toggle
-
-**Dependencies**: Milestone 1 (completed items management)
-
-**Estimated Effort**: 3-4 days
+**Decision:** Focus implementation on Phase 2 and Phase 3 requirements.
 
 ---
 
-## Milestone 3: Enhanced Filtering - Agent States
-**Objective**: Implement advanced filtering and sorting for Agent States pane
+## Milestone 1: Bug Fixes and Core Enhancements (Phase 2)
+**Objective:** Fix critical bugs and implement high-value UI enhancements  
+**Estimated Duration:** 3-4 hours  
+**Dependencies:** None (Phase 1 already complete)
 
-**Deliverables**:
-- Filter UI components (status dropdown, tier dropdown, search input)
-- Filter by status (running, completed, failed, awaiting_user_input)
-- Filter by agent tier (leadership, coordinators, developers, testers)
-- Search by agent name/ID
-- Sort options dropdown (by status, by start time, by name)
-- Sort implementation for all options
-- Filter state management
+### Deliverables:
+1. **UI Files 404 Fix**
+   - Fix 404 errors on `/api/activity/files` endpoint
+   - Investigation and root cause analysis
+   - Implement fix with proper error handling
+   - Test with actual activity data
 
-**Acceptance Criteria**:
-- User can filter agents by status
-- User can filter agents by tier
-- User can search by agent name or ID
-- User can sort agents by status, start time, or name
-- Filters and sorting work together correctly
-- Performance is acceptable with many agents
+2. **Source Control Permissions Handling**
+   - Implement git permissions error handling
+   - Graceful degradation when git not available
+   - User-friendly error messages
 
-**Dependencies**: Milestone 1, Milestone 2 (for UI consistency)
+3. **Consolidated UI Enhancements**
+   - Review ui_enhancement_requirements.md and ui_enhancements_requirements.md
+   - Identify non-duplicate improvements
+   - Implement high-value enhancements (filters, sorting, search)
+   - Improve visual consistency
 
-**Estimated Effort**: 2-3 days
+4. **Agent Summary Improvements**
+   - Enhanced agent summary display
+   - Better error handling in summaries
+   - Performance metrics display
 
----
+### Acceptance Criteria:
+- [ ] `/api/activity/files` endpoint returns proper responses (no 404)
+- [ ] Git permission errors handled gracefully
+- [ ] UI enhancements functional and tested
+- [ ] Agent summaries display correctly with all metadata
+- [ ] All existing tests pass
+- [ ] New tests added for bug fixes
+- [ ] No regressions introduced
 
-## Milestone 4: Improved Badging
-**Objective**: Enhance badges across all panes with more information and interactivity
-
-**Deliverables**:
-- Agent tier badges with color coding (leadership=purple, coordinators=blue, developers=green, testers=orange)
-- Relative timestamp badges ("2m ago", "1h ago")
-- Progress percentage badges for agents
-- Badge styling consistent with dark theme
-- Click-to-filter functionality on badges
-- Hover tooltips for additional context
-- Pulsing animation for actively running agents
-- Badge utility functions and components
-
-**Acceptance Criteria**:
-- All activity items show agent tier badges
-- Timestamps display in relative format
-- Progress percentages shown when available
-- Badges use consistent color scheme
-- Clicking a badge filters by that criterion
-- Tooltips provide additional context on hover
-- Running agents have pulsing visual indicator
-- Badges are visually appealing and readable
-
-**Dependencies**: Milestone 2, Milestone 3 (to enable click-to-filter)
-
-**Estimated Effort**: 2-3 days
+### Technical Approach:
+- **Backend:** FastAPI endpoint fixes, error handling
+- **Frontend:** React component enhancements, UX improvements
+- **Testing:** Unit tests, integration tests, manual UI testing
 
 ---
 
-## Milestone 5: Session Persistence & Resumption
-**Objective**: Enable task resumption after interruption (e.g., API credit exhaustion)
+## Milestone 2: System Architecture Improvements (Phase 3a)
+**Objective:** Implement AI provider configuration and task decomposition enhancements  
+**Estimated Duration:** 3-4 hours  
+**Dependencies:** Milestone 1 complete
 
-**Deliverables**:
-**Backend**:
-- State persistence layer (SQLite or JSON file)
-- Execution checkpoint tracking at agent boundaries
-- `POST /api/resume-task` endpoint
-- `GET /api/task-context/{request_id}` endpoint
-- `GET /api/execution-checkpoints/{request_id}` endpoint
-- Checkpoint save logic in agent orchestration
+### Deliverables:
+1. **AI Provider Configuration Enhancement**
+   - Consolidate ai_provider_enhancement_requirements.md and ai_provider_enhancement/requirements.md
+   - Implement provider selection UI
+   - Add model configuration options
+   - Support multiple AI providers
 
-**Frontend**:
-- Detect interrupted task on page load (check localStorage)
-- "Resume Task" banner/button component
-- Resume workflow (call resume API, handle response)
-- Update localStorage with task context
-- Show resumption status to user
+2. **Smart Task Decomposition**
+   - Improved task breakdown logic
+   - Better dependency detection
+   - Enhanced task prioritization
+   - Clearer task descriptions
 
-**Acceptance Criteria**:
-- Backend persists agent execution state to disk
-- Checkpoints are saved at agent boundaries
-- Frontend detects interrupted tasks on page load
-- User can click "Resume Task" button
-- System resumes from last checkpoint successfully
-- User receives feedback on resumption status
-- Error handling for non-resumable tasks
-- Backward compatible with existing functionality
+3. **Executive Director Project Awareness**
+   - Integrate project tracking system
+   - Display project status in UI
+   - Link activities to projects
+   - Project timeline visualization
 
-**Dependencies**: All previous milestones (full UI must be functional)
+### Acceptance Criteria:
+- [ ] AI provider can be selected and configured via UI
+- [ ] Task decomposition produces clearer, better-organized tasks
+- [ ] Project tracking integrated into UI
+- [ ] All tests pass
+- [ ] Documentation updated for new features
 
-**Estimated Effort**: 4-5 days
-
----
-
-## Milestone 6: Integration & Polish
-**Objective**: Final integration, performance optimization, and user acceptance
-
-**Deliverables**:
-- Full integration of all features into App.jsx
-- Consistent styling and dark theme across new components
-- Loading states for all async operations
-- Error handling and user feedback for all operations
-- Performance optimization for large datasets
-- Unit tests for new components
-- Integration tests for workflows
-- Updated documentation
-- User guide for new features
-
-**Acceptance Criteria**:
-- All features work together seamlessly
-- UI is responsive and performs well with 100+ activities/agents
-- No console errors or warnings
-- Consistent styling with existing UI
-- All async operations have loading indicators
-- Errors display helpful messages
-- Documentation is complete and accurate
-- User guide is clear and helpful
-
-**Dependencies**: All previous milestones
-
-**Estimated Effort**: 2-3 days
+### Technical Approach:
+- **Backend:** Provider configuration, task decomposition algorithms
+- **Frontend:** Configuration UI, project tracking display
+- **Testing:** Unit tests for algorithms, integration tests for UI
 
 ---
 
-## Implementation Order & Rationale
+## Milestone 3: Monitoring and Documentation (Phase 3b)
+**Objective:** Implement monitoring dashboard and comprehensive documentation  
+**Estimated Duration:** 3-4 hours  
+**Dependencies:** Milestone 2 complete
 
-1. **Milestone 1** (Completed Items) - Highest user priority, immediate UX win
-2. **Milestone 2** (Activity Feed Filtering) - Builds on M1, addresses core filtering needs
-3. **Milestone 4** (Improved Badging) - Quick UX wins, enhances information density
-4. **Milestone 3** (Agent States Filtering) - Similar to M2, completes filtering suite
-5. **Milestone 5** (Session Resumption) - Most complex, addresses API credit issue
-6. **Milestone 6** (Integration & Polish) - Final quality pass
+### Deliverables:
+1. **Tmux Monitoring Dashboard**
+   - Create tmux-based monitoring interface
+   - Real-time agent status display
+   - Resource usage monitoring
+   - Command-line control interface
 
-## Risk Mitigation
+2. **Agent Analysis Documentation**
+   - Comprehensive agent performance analysis
+   - Best practices documentation
+   - Troubleshooting guides
+   - Architecture documentation
 
-**LocalStorage Limits**: 
-- Limit stored task context to essential data only
-- Implement cleanup of old task contexts
+3. **System Analysis Documentation**
+   - Overall system architecture docs
+   - Component interaction diagrams
+   - Performance benchmarks
+   - Deployment guides
 
-**State Serialization Complexity**:
-- Checkpoint only at agent boundaries (clear state)
-- Use JSON serialization for simplicity
+4. **UI Improvements 2025**
+   - Review ui_improvements_2025/requirements.md
+   - Implement remaining improvements
+   - Modern UI patterns and best practices
 
-**Filter Performance**:
-- Implement client-side pagination if needed
-- Consider backend filtering for large datasets
+### Acceptance Criteria:
+- [ ] Tmux dashboard functional and displays real-time data
+- [ ] Agent analysis documentation complete and accurate
+- [ ] System documentation covers all major components
+- [ ] UI improvements implemented and tested
+- [ ] All documentation reviewed and approved
 
-**UI Clutter**:
-- Use collapsible filter sections
-- Progressive disclosure of advanced options
+### Technical Approach:
+- **Monitoring:** Tmux scripting, real-time data feeds
+- **Documentation:** Markdown docs with diagrams
+- **Frontend:** Final UI polish and improvements
 
-## Success Metrics
+---
 
-- Users can manage completed items (hide/show/bottom positioning)
-- Users can filter activities and agents by multiple criteria
-- Enhanced badges provide more context at a glance
-- Users can resume interrupted tasks after API reload
-- UI remains responsive with large datasets
-- Zero regressions in existing functionality
+## Overall Project Success Criteria
+
+### Functional Requirements:
+- [ ] All Phase 2 requirements implemented and tested
+- [ ] All Phase 3 requirements implemented and tested
+- [ ] No 404 errors or permission issues
+- [ ] AI provider configuration working
+- [ ] Monitoring dashboard operational
+- [ ] Comprehensive documentation complete
+
+### Quality Requirements:
+- [ ] All automated tests passing
+- [ ] Code coverage > 80% for new code
+- [ ] No performance regressions
+- [ ] UI/UX consistent and polished
+- [ ] Documentation accurate and complete
+
+### Delivery Requirements:
+- [ ] All code committed to version control with descriptive messages
+- [ ] README updated with new features
+- [ ] Migration guide provided if needed
+- [ ] Known issues documented
+
+---
+
+## Risk Management
+
+| Risk | Probability | Impact | Mitigation |
+|------|------------|---------|------------|
+| Requirements overlap/conflict | Medium | Medium | Careful analysis, consolidate duplicates |
+| Tmux dashboard complexity | High | Medium | Start with MVP, iterate |
+| AI provider integration issues | Medium | High | Thorough testing with multiple providers |
+| Documentation scope creep | Medium | Low | Focus on essential docs first |
+| Time estimation too optimistic | Medium | Medium | Regular checkpoints, adjust as needed |
+
+---
+
+## Technical Dependencies
+
+### Existing Systems:
+- Ensemble UI (React + FastAPI)
+- Activity tracking system
+- Agent runtime system
+- Project tracking system
+- Whimsical naming system (already integrated)
+
+### External Dependencies:
+- Tmux (for monitoring dashboard)
+- Git (for version control)
+- Multiple AI providers (OpenAI, Anthropic, etc.)
+
+### New Dependencies:
+- Tmux Python library (if needed)
+- Additional React components/libraries for UI enhancements
+
+---
+
+## Deployment Strategy
+
+### Per Milestone:
+1. Implement features in development environment
+2. Run all automated tests
+3. Manual testing and validation
+4. Code review (if applicable)
+5. Commit to version control
+6. Update documentation
+7. Mark milestone complete
+
+### Final Deployment:
+1. Verify all milestones complete
+2. Run full test suite
+3. Performance testing
+4. User acceptance testing
+5. Final commit with comprehensive message
+6. Report completion to Executive Director
+
+---
+
+## Notes
+
+- Phase 1 already complete - focus on remaining phases
+- Some requirements may overlap - will consolidate during implementation
+- Tmux dashboard is optional/stretch goal depending on time
+- Documentation can be done incrementally throughout implementation
+- Regular status updates to Executive Director for blockers/questions
+
+---
+
+## Next Steps
+
+1. ✅ Create milestone plan
+2. ⏳ Spawn System Architect for Milestone 1 architecture
+3. ⏳ Break down Milestone 1 into tasks via Coordinators
+4. ⏳ Implement Milestone 1 via TDD Coordinator
+5. ⏳ Repeat for Milestones 2 and 3
+6. ⏳ Final verification and completion

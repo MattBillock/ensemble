@@ -1,138 +1,68 @@
-# Test Strategy - Milestone 1: Failure File Creation and Storage
+# Test Strategy: Interval Selector Update
 
-## Test Objectives
-Validate the failure capture mechanism's ability to:
-- Create failure files reliably
-- Handle various exception scenarios
-- Ensure no AI tool dependencies
-- Maintain data integrity and privacy
-- Perform under different system conditions
+## Unit Tests (Target: 80%+ Coverage)
+1. **Interval Conversion Logic Tests**
+   - Validate conversion of "1s" to 1000ms
+   - Validate conversion of "1m" to 60000ms
+   - Validate conversion of "5m" to 300000ms
+   - Test default fallback value handling
+   - Test edge cases in conversion function
 
-## Test Categories
+2. **Interval Selector Component Tests**
+   - Verify dropdown renders 3 new options: "1s", "1m", "5m"
+   - Test each option's selection triggers correct state update
+   - Validate default selection is "1m"
+   - Check event handlers work correctly
+   - Validate no visual regression
 
-### 1. Unit Tests: Failure Capture Module
-- **Filename Generation**
-  - Validate filename format follows `failure_{task_id}_{timestamp}.txt`
-  - Ensure unique filename generation
-  - Handle special characters in task_id safely
-  - Test timestamp precision and format
+## Integration Tests
+1. **State Management Tests**
+   - Verify interval selection updates application state
+   - Confirm millisecond values propagate correctly
+   - Test interaction with timer/polling mechanism
 
-- **File Content Formatting**
-  - Verify complete failure report structure
-  - Check correct error message extraction
-  - Validate stack trace inclusion
-  - Test task context preservation
-  - Ensure no sensitive data leakage
+2. **Timer/Update Mechanism Tests**
+   - Validate updates occur at correct intervals:
+     * 1s = update every 1 second
+     * 1m = update every 1 minute
+     * 5m = update every 5 minutes
+   - Confirm no timing drift or inconsistency
+   - Test boundary conditions
 
-- **Exception Handling**
-  - Test capture with various exception types (ValueError, TypeError, etc.)
-  - Validate capture with nested/complex exceptions
-  - Ensure no additional exceptions during capture
-  - Test capture of partial/incomplete context data
+## End-to-End Tests
+1. **User Interaction Flows**
+   - Complete happy path: select each interval
+   - Verify UI updates reflect selected interval
+   - Test responsiveness of UI during interval changes
 
-### 2. Integration Tests: Failure Linking
-- Verify failure file path stored correctly in task record
-- Test linking mechanism with different task tracking systems
-- Validate file path retrieval for a given task
-- Check linking under concurrent task execution
-- Test file accessibility after linking
+2. **Legacy Value Handling**
+   - Test migration of existing saved preferences
+   - Confirm graceful handling of old interval values
+   - Validate default value application
 
-### 3. Error Resilience Tests
-- **File System Stress**
-  - Create failure files when disk nearly full
-  - Test file creation with limited permissions
-  - Validate fallback mechanism (/tmp/failures/)
-  - Ensure stderr logging for critical failures
+## Performance Tests
+1. **Browser Performance**
+   - Verify no performance degradation
+   - Test memory usage across different intervals
+   - Confirm smooth UI responsiveness
 
-- **Edge Case Scenarios**
-  - Extremely long error messages
-  - Tasks with massive context dictionaries
-  - Unicode/special character handling
-  - Extremely short task IDs
-  - Tasks with no context data
+## Test Coverage Goals
+- Unit Test Coverage: 85%
+- Integration Test Coverage: 100%
+- E2E Test Coverage: Critical paths (3-4 scenarios)
 
-### 4. Performance Tests
-- Measure file creation time (<50ms)
-- Test batch failure capture (100 failures/minute)
-- Verify minimal CPU/memory overhead
-- Check file system impact with 10,000+ failure files
+## Testing Risks & Mitigations
+1. **Interval Conversion Errors**
+   - Extensive unit testing of conversion logic
+   - Add defensive programming checks
+   - Default to safe interval if conversion fails
 
-### 5. Security Tests
-- Validate no PII exposure in failure files
-- Test path traversal prevention
-- Ensure no executable content in failure reports
-- Check file permissions (read-only, user-restricted)
+2. **Browser Compatibility**
+   - Test across multiple modern browsers
+   - Use standardized timing APIs
+   - Provide fallback mechanisms
 
-### 6. No-AI-Dependency Validation
-- Simulate complete AI tool unavailability
-- Verify failure capture works without external dependencies
-- Test all capture methods use only standard library
-- Validate no machine learning or AI-specific imports
-
-## Test Tasks Breakdown
-
-### Unit Test Tasks
-1. `test_filename_generation`
-2. `test_failure_report_structure`
-3. `test_exception_capture_mechanics`
-4. `test_context_data_preservation`
-5. `test_error_message_extraction`
-
-### Integration Test Tasks
-6. `test_task_failure_linking`
-7. `test_failure_file_retrieval`
-8. `test_concurrent_failure_capture`
-
-### Error Resilience Test Tasks
-9. `test_disk_space_failure_handling`
-10. `test_permission_failure_scenarios`
-11. `test_extreme_input_handling`
-
-### Performance Test Tasks
-12. `benchmark_file_creation_speed`
-13. `test_high_volume_failure_capture`
-
-### Security Test Tasks
-14. `test_pii_prevention`
-15. `test_file_path_sanitization`
-
-### No-AI-Dependency Test Tasks
-16. `test_capture_without_ai_tools`
-17. `validate_standard_library_only`
-
-## Test Data Requirements
-- Generate synthetic failure scenarios
-- Create mock task contexts
-- Prepare edge case exception samples
-- Design performance test data generators
-
-## Reporting
-- Capture test results in structured JSON
-- Log detailed failure scenarios
-- Track code coverage for failure capture module
-- Generate comprehensive test report
-
-## Exit Criteria
-- 90%+ unit test coverage
-- All test tasks pass without critical failures
-- Performance within specified thresholds
-- No security vulnerabilities identified
-- No AI tool dependencies detected
-
-## Recommended Tools
-- pytest for test runner
-- hypothesis for property-based testing
-- coverage.py for code coverage
-- pytest-benchmark for performance testing
-
-## Estimated Effort
-- Test Design: 2-3 hours
-- Test Implementation: 6-8 hours
-- Test Execution: 2-3 hours
-- Reporting & Analysis: 1-2 hours
-- Total Estimated: 11-16 hours
-
-## Notes
-- Prioritize reliability over comprehensive coverage
-- Design tests to be repeatable and deterministic
-- Emphasize failure capture resilience
+## Recommended Testing Tools
+- Jest for unit and integration testing
+- React Testing Library for component tests
+- Cypress or Playwright for E2E testing

@@ -1,0 +1,2 @@
+# This file ensures the test_results directory is tracked in git
+# even when empty. Test execution results and reports go here.
