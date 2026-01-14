@@ -73,6 +73,19 @@ function AgentSummaryPane({ agentStatus }) {
                     {agentInfo.problem}
                   </div>
                 )}
+                {agentInfo.status === 'completed' && agentInfo.summary && (
+                  <div className="text-xs text-green-300 mt-2 border-l-2 border-green-500/50 pl-2">
+                    <span className="font-semibold">Summary: </span>
+                    {agentInfo.summary.length > 200
+                      ? `${agentInfo.summary.substring(0, 200)}...`
+                      : agentInfo.summary}
+                  </div>
+                )}
+                {agentInfo.status === 'completed' && agentInfo.deliverables && agentInfo.deliverables.length > 0 && (
+                  <div className="text-xs text-blue-300 mt-1">
+                    📦 {agentInfo.deliverables.length} deliverable(s)
+                  </div>
+                )}
                 {agentInfo.generated_files && agentInfo.generated_files.length > 0 && (
                   <div className="text-xs text-purple-300 mt-1">
                     📁 {agentInfo.generated_files.length} file(s) generated

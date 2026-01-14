@@ -142,9 +142,24 @@ const ActivityFeed = ({ activities = [] }) => {
       case 'agent_completed':
         return (
           <div>
+            {data.result && data.result.summary && (
+              <div style={{
+                marginBottom: '8px',
+                paddingLeft: '8px',
+                borderLeft: '2px solid #10b981',
+                color: '#a7f3d0'
+              }}>
+                <strong>Summary:</strong> {data.result.summary}
+              </div>
+            )}
+            {data.result && data.result.deliverables && data.result.deliverables.length > 0 && (
+              <div style={{ marginBottom: '8px', color: '#93c5fd' }}>
+                📦 <strong>{data.result.deliverables.length} deliverable(s)</strong>
+              </div>
+            )}
             {data.result && (
               <details className="mt-2">
-                <summary style={{ cursor: 'pointer' }}>Result</summary>
+                <summary style={{ cursor: 'pointer' }}>Full Result</summary>
                 <pre style={{ fontSize: '11px', marginTop: '8px' }}>
                   {JSON.stringify(data.result, null, 2)}
                 </pre>

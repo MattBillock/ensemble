@@ -390,6 +390,16 @@ class AgentActivityTracker:
             self.agent_states[agent_id]["current_task"] = "Completed"
             self.agent_states[agent_id]["completed_at"] = activity.timestamp
 
+            # Extract completion details for UI visibility
+            if result:
+                self.agent_states[agent_id]["summary"] = result.get("summary", "")
+                self.agent_states[agent_id]["self_analysis"] = result.get("self_analysis", "")
+                self.agent_states[agent_id]["deliverables"] = result.get("deliverables", [])
+            else:
+                self.agent_states[agent_id]["summary"] = ""
+                self.agent_states[agent_id]["self_analysis"] = ""
+                self.agent_states[agent_id]["deliverables"] = []
+
         self._emit_activity(activity)
 
     def record_agent_failed(
