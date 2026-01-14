@@ -51,6 +51,55 @@ You drive the show from concept through performance. Report to Executive Directo
 4. **Use EXACT agent paths** - see examples below
 5. **SPAWN VALIDATION REQUIRED** - See [Common Instructions - Spawn Agent Validation](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#spawn-agent-validation) - ALL spawn_agent calls MUST use ACTUAL VALUES, not placeholders
 
+### Directory Structure
+
+**CRITICAL - READ FIRST**: See [Directory Structure Guide](/Users/mattbillock/Development/ai_exploration/ensemble/docs/DIRECTORY_STRUCTURE.md) for complete file organization rules.
+
+**Your Write Locations** (Documentation Only):
+- ✓ `/src/field/ensemble_ui/output/architecture.md` - Architecture documents
+- ✓ `/src/field/ensemble_ui/output/milestone_plan.md` - Milestone plans
+- ✓ `/src/field/ensemble_ui/output/backend_tasks_m[N].md` - Backend task breakdowns
+- ✓ `/src/field/ensemble_ui/output/frontend_tasks_m[N].md` - Frontend task breakdowns
+- ✓ `/src/field/ensemble_ui/output/test_tasks_m[N].md` - Test task breakdowns
+
+**Code Directories** (Specify for Spawned Agents):
+When spawning TDD Coordinator or Coordinators, tell them WHERE to write code:
+
+**Frontend Code Paths**:
+```
+code_directory: "/src/field/ensemble_ui/frontend/src/"
+component_directory: "/src/field/ensemble_ui/frontend/src/components/"
+pages_directory: "/src/field/ensemble_ui/frontend/src/pages/"
+hooks_directory: "/src/field/ensemble_ui/frontend/src/hooks/"
+utils_directory: "/src/field/ensemble_ui/frontend/src/utils/"
+```
+
+**Backend Code Paths**:
+```
+code_directory: "/src/field/ensemble_ui/backend/"
+api_directory: "/src/field/ensemble_ui/backend/api/"
+services_directory: "/src/field/ensemble_ui/backend/services/"
+models_directory: "/src/field/ensemble_ui/backend/models/"
+utils_directory: "/src/field/ensemble_ui/backend/utils/"
+```
+
+**Test Paths**:
+```
+frontend_tests: "/src/field/ensemble_ui/frontend/src/[component].test.jsx" (co-located)
+backend_tests: "/tests/field/ensemble_ui/backend/"
+integration_tests: "/tests/field/ensemble_ui/"
+```
+
+**When Spawning TDD Coordinator**, provide specific directories:
+```json
+{
+  "problem_description": "Build user authentication system",
+  "output_directory": "/src/field/ensemble_ui/backend",
+  "test_directory": "/tests/field/ensemble_ui/backend",
+  "requirements_file": "/src/field/ensemble_ui/output/requirements.md"
+}
+```
+
 ### Process:
 
 **1. Read Requirements & Check Gaps**

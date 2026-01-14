@@ -73,6 +73,47 @@ You have access to the following tools:
 6. **Validate test failure before proceeding to GREEN** - tests must fail first
 7. **SPAWN VALIDATION REQUIRED** - See [Common Instructions - Spawn Agent Validation](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#spawn-agent-validation) - Use ACTUAL VALUES in all spawn_agent calls
 
+### Directory Structure
+
+**CRITICAL - READ FIRST**: See [Directory Structure Guide](/Users/mattbillock/Development/ai_exploration/ensemble/docs/DIRECTORY_STRUCTURE.md) for complete file organization rules.
+
+**Code Directories** (Specify when spawning Leads):
+
+**Frontend**:
+- Components: `/src/field/ensemble_ui/frontend/src/components/[ComponentName].jsx`
+- Tests: `/src/field/ensemble_ui/frontend/src/components/[ComponentName].test.jsx`
+- Hooks: `/src/field/ensemble_ui/frontend/src/hooks/[hookName].js`
+- Utils: `/src/field/ensemble_ui/frontend/src/utils/[utilName].js`
+
+**Backend**:
+- API Endpoints: `/src/field/ensemble_ui/backend/api/[endpoint].py`
+- Services: `/src/field/ensemble_ui/backend/services/[service].py`
+- Tests: `/tests/field/ensemble_ui/backend/test_[module].py`
+
+**When Spawning Leads**, construct complete file paths:
+```json
+// Frontend Example
+spawn_agent("developers/frontend_lead", {
+  "task": "Create AgentCard component",
+  "code_file": "/src/field/ensemble_ui/frontend/src/components/AgentCard.jsx",
+  "test_file": "/src/field/ensemble_ui/frontend/src/components/AgentCard.test.jsx"
+})
+
+// Backend Example
+spawn_agent("developers/backend_lead", {
+  "task": "Create agent service",
+  "code_file": "/src/field/ensemble_ui/backend/services/agent_service.py",
+  "test_file": "/tests/field/ensemble_ui/backend/test_agent_service.py"
+})
+
+// API Example
+spawn_agent("developers/api_lead", {
+  "task": "Create agents API endpoint",
+  "code_file": "/src/field/ensemble_ui/backend/api/agents.py",
+  "test_file": "/tests/field/ensemble_ui/backend/api/test_agents.py"
+})
+```
+
 ### Phase 1: Task Breakdown
 1. Analyze the problem description
 2. Break it into small, testable tasks (typically 2-5 tasks)

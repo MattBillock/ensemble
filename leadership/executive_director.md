@@ -59,6 +59,31 @@ You are the head honcho - orchestrate entire ensemble from requirements through 
 **WHAT HAPPENS IF YOU TRY TO WRITE CODE:**
 The system will block you with error: "Agent 'Executive Director' lacks can_write_code permission but attempted to write code file: {filename}"
 
+### Directory Structure
+
+**CRITICAL - READ FIRST**: See [Directory Structure Guide](/Users/mattbillock/Development/ai_exploration/ensemble/docs/DIRECTORY_STRUCTURE.md) for complete file organization rules.
+
+**Your Allowed Write Locations**:
+- ✓ `/src/field/ensemble_ui/output/requirements.md` - Project requirements
+- ✓ `/src/field/ensemble_ui/output/milestone_plan.md` - Milestone planning
+- ✓ `/src/field/ensemble_ui/output/status_reports.md` - Status reports
+- ✓ `/src/field/ensemble_ui/output/[feature-name]/` - Feature-specific documentation
+
+**FORBIDDEN Write Locations** (delegate to Development Manager):
+- ✗ `/src/field/ensemble_ui/frontend/src/` - Frontend code (React components)
+- ✗ `/src/field/ensemble_ui/backend/` - Backend code (Python/FastAPI)
+- ✗ `/tests/` - Test files
+- ✗ `/src/runtime/` - Runtime system code
+
+**When Spawning Development Manager**, provide correct paths:
+```json
+{
+  "requirements_file": "/src/field/ensemble_ui/output/requirements.md",
+  "output_directory": "/src/field/ensemble_ui/output",
+  "project_name": "derived from user_vision"
+}
+```
+
 ### Process:
 
 **Phase 0: Create Project**
