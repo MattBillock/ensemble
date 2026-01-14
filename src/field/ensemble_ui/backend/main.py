@@ -40,6 +40,8 @@ sys.path.insert(0, str(project_root))
 
 from src.runtime.agents import AgentDefinition, AgentRuntime
 from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
+from src.runtime.agents.github_integration import GitHubIntegration
+from src.runtime.agents.title_generator import TitleGenerator
 
 load_dotenv()
 
@@ -287,6 +289,22 @@ class AgentOrchestrator:
             'problem_length': len(problem_description)
         })
 
+        # Detect GitHub repo URL (cached after first call)
+        github_repo_url = GitHubIntegration.detect_repo_url(str(self.project_root))
+
+        # Record request in activity tracker for timeline view
+        activity_tracker = AgentRuntime.get_activity_tracker()
+        activity_tracker.record_request_started(
+            request_id=request_id,
+            prompt=problem_description,
+            budget_tier=budget_tier,
+            root_agent_id=agent_id,
+            github_repo_url=github_repo_url
+        )
+
+        # Start async title generation
+        self._generate_title_async(request_id, problem_description)
+
         try:
             # Load Executive Director
             exec_dir_path = self.project_root / "leadership" / "executive_director.md"
@@ -380,6 +398,24 @@ class AgentOrchestrator:
                                 'error_type': type(e).__name__
                             })
             return agent_id, {"status": "error", **error_details}
+
+    def _generate_title_async(self, request_id: str, prompt: str):
+        """Generate title for request asynchronously in background thread."""
+        def generate():
+            try:
+                generator = TitleGenerator(self.api_key)
+                title = generator.generate_title(prompt)
+                # Update the request with the generated title
+                activity_tracker = AgentRuntime.get_activity_tracker()
+                activity_tracker.update_request_title(request_id, title)
+                self.logger.info(f"Generated title for request",
+                               extra={'request_id': request_id, 'title': title})
+            except Exception as e:
+                self.logger.error(f"Failed to generate title: {e}",
+                                extra={'request_id': request_id})
+
+        thread = threading.Thread(target=generate, daemon=True)
+        thread.start()
 
     def get_agent_status(self, agent_id: str):
         return self.active_agents.get(agent_id, {"status": "not_found"})
@@ -786,6 +822,65 @@ async def get_generated_files(
 
     return {"files": files, "count": len(files)}
 
+# ========== Timeline View Endpoints ==========
+
+@app.get("/api/requests")
+async def get_requests(limit: int = 50):
+    """Get all requests for timeline view, most recent first."""
+    from src.runtime.agents.runtime import AgentRuntime
+    tracker = AgentRuntime.get_activity_tracker()
+    requests = tracker.get_requests(limit)
+    return {"requests": requests, "count": len(requests)}
+
+@app.get("/api/requests/{request_id}/timeline")
+async def get_request_timeline(request_id: str):
+    """Get complete timeline data for a specific request."""
+    from src.runtime.agents.runtime import AgentRuntime
+    tracker = AgentRuntime.get_activity_tracker()
+    timeline = tracker.get_request_timeline(request_id)
+    return timeline
+
+@app.get("/api/git/repo-info")
+async def get_git_repo_info():
+    """Get auto-detected GitHub repository information."""
+    repo_info = GitHubIntegration.get_repo_info(str(orchestrator.project_root))
+    return repo_info
+
+@app.get("/api/deliverables/{request_id}")
+async def get_deliverables(request_id: str):
+    """Get all deliverables (files and commits) for a request with GitHub links."""
+    from src.runtime.agents.runtime import AgentRuntime
+    tracker = AgentRuntime.get_activity_tracker()
+
+    # Get GitHub repo info for generating links
+    repo_info = GitHubIntegration.get_repo_info(str(orchestrator.project_root))
+    repo_url = repo_info.get("repo_url")
+    branch = repo_info.get("branch", "main")
+
+    # Get timeline which includes deliverables
+    timeline = tracker.get_request_timeline(request_id)
+    if "error" in timeline:
+        return timeline
+
+    deliverables = timeline.get("deliverables", [])
+
+    # Add GitHub URLs to deliverables
+    for d in deliverables:
+        if repo_url:
+            if d["type"] == "file":
+                d["github_url"] = GitHubIntegration.get_file_url(repo_url, d["path"], branch)
+            elif d["type"] == "commit":
+                d["github_url"] = GitHubIntegration.get_commit_url(repo_url, d["hash"])
+
+    return {
+        "request_id": request_id,
+        "deliverables": deliverables,
+        "github_repo": repo_url,
+        "branch": branch,
+        "file_count": len([d for d in deliverables if d["type"] == "file"]),
+        "commit_count": len([d for d in deliverables if d["type"] == "commit"])
+    }
+
 @app.get("/api/metrics/summary")
 async def get_metrics_summary(days: int = 30):
     """Get overall system metrics summary"""
@@ -924,6 +1019,123 @@ async def update_agent_definition(update: AgentFileUpdate):
                                      'error_type': type(e).__name__
                                  })
         return {"error": str(e)}, 500
+
+# ========== Self-Improvement Loop Endpoints ==========
+
+class RecommendationAction(BaseModel):
+    recommendation_id: str
+    reason: str = ""
+
+@app.get("/api/self-improvement/analyze")
+async def run_self_improvement_analysis(days: int = 30):
+    """Run self-improvement analysis and generate recommendations."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+    analysis = loop.run_analysis(days)
+    return analysis
+
+@app.get("/api/self-improvement/recommendations")
+async def get_pending_recommendations():
+    """Get all pending improvement recommendations."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+    recommendations = loop.get_pending_recommendations()
+    return {"recommendations": recommendations, "count": len(recommendations)}
+
+@app.get("/api/self-improvement/feedback/{agent_name}")
+async def get_agent_feedback(agent_name: str):
+    """Get performance feedback for a specific agent."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+    feedback = loop.get_feedback_for_agent(agent_name)
+    return {"agent_name": agent_name, "feedback": feedback}
+
+@app.post("/api/self-improvement/recommendations/{recommendation_id}/approve")
+async def approve_recommendation(recommendation_id: str):
+    """Approve a recommendation (human-in-the-loop)."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+    result = loop.approve_recommendation(recommendation_id)
+    return result
+
+@app.post("/api/self-improvement/recommendations/{recommendation_id}/reject")
+async def reject_recommendation(recommendation_id: str, action: RecommendationAction):
+    """Reject a recommendation with optional reason."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+    result = loop.reject_recommendation(recommendation_id, action.reason)
+    return result
+
+# ========== Achievement System Endpoints ==========
+
+@app.get("/api/achievements")
+async def get_all_achievements():
+    """Get all available achievements with unlock status."""
+    from src.runtime.agents.achievements import get_achievement_tracker
+    tracker = get_achievement_tracker()
+    achievements = tracker.get_all_achievements()
+    return {"achievements": achievements, "count": len(achievements)}
+
+@app.get("/api/achievements/recent")
+async def get_recent_achievements(limit: int = 10):
+    """Get most recently awarded achievements."""
+    from src.runtime.agents.achievements import get_achievement_tracker
+    tracker = get_achievement_tracker()
+    recent = tracker.get_recent_achievements(limit)
+    return {"achievements": recent, "count": len(recent)}
+
+@app.get("/api/achievements/stats")
+async def get_achievement_stats():
+    """Get overall achievement statistics."""
+    from src.runtime.agents.achievements import get_achievement_tracker
+    tracker = get_achievement_tracker()
+    return tracker.get_achievement_stats()
+
+@app.get("/api/achievements/agent/{agent_class}")
+async def get_agent_achievements(agent_class: str):
+    """Get all achievements earned by a specific agent class."""
+    from src.runtime.agents.achievements import get_achievement_tracker
+    tracker = get_achievement_tracker()
+    achievements = tracker.get_achievements_for_agent(agent_class)
+    return {"agent_class": agent_class, "achievements": achievements, "count": len(achievements)}
+
+@app.get("/api/self-improvement/status")
+async def get_self_improvement_status():
+    """Get overall self-improvement loop status."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    from pathlib import Path
+
+    loop = get_improvement_loop()
+    recommendations_dir = Path.home() / ".ensemble" / "recommendations"
+
+    # Count total and pending recommendations
+    total_recommendations = 0
+    pending_count = 0
+    approved_count = 0
+    rejected_count = 0
+
+    if recommendations_dir.exists():
+        for filepath in recommendations_dir.glob("recommendations_*.json"):
+            with open(filepath) as f:
+                data = json.load(f)
+                for item in data:
+                    total_recommendations += 1
+                    status = item.get("status", "pending")
+                    if status == "pending":
+                        pending_count += 1
+                    elif status == "approved":
+                        approved_count += 1
+                    elif status == "rejected":
+                        rejected_count += 1
+
+    return {
+        "status": "active",
+        "feedback_injection": "enabled",
+        "total_recommendations": total_recommendations,
+        "pending_recommendations": pending_count,
+        "approved_recommendations": approved_count,
+        "rejected_recommendations": rejected_count
+    }
 
 if __name__ == "__main__":
     # Development mode with auto-reload

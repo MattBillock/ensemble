@@ -1,0 +1,107 @@
+# Ensemble UI Frontend Rules
+
+## Technology Stack
+- **React 19** with functional components and hooks
+- **Vite 7** for build and dev server
+- **Redux Toolkit** for state management
+- **React-Bootstrap 2** + **Bootstrap 5** for UI components
+- **Tailwind CSS 4** + **SASS** for styling
+- **Vitest** + **React Testing Library** for tests
+
+## Project Structure
+```
+frontend/
+├── src/
+│   ├── components/    # React components (PascalCase.jsx)
+│   ├── services/      # API client (api.js)
+│   ├── store/         # Redux (store.js, agentSlice.js)
+│   └── test/          # Test setup
+├── public/            # Static assets
+└── dist/              # Build output
+```
+
+## Code Conventions
+
+### Component Patterns
+- Functional components with hooks (no class components)
+- File naming: `ComponentName.jsx`
+- Destructure props at function signature
+- Use `useState`, `useEffect`, `useRef` from React
+
+### State Management
+- Redux Toolkit patterns with `createSlice`
+- API calls in `src/services/api.js`
+- Local component state for UI-only concerns
+
+### Styling
+- Dark theme colors:
+  - Background: `#1a1d29`
+  - Cards: `#242836`
+  - Borders: `#3a3f52`
+  - Text: `#e4e6eb`
+  - Muted text: `#9ca3af`
+- Prefer inline styles for component-specific styling
+- Use Bootstrap utilities for layout
+- Tailwind for utility classes when needed
+
+## Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `App.jsx` | Main orchestrator, polling, view switching |
+| `ActivityFeed.jsx` | Real-time activity log |
+| `AgentHierarchyTree.jsx` | Visual agent tree |
+| `AgentStatusPane.jsx` | Active agent details |
+| `MetricsDashboard.jsx` | Token usage and costs |
+| `PendingQuestions.jsx` | Q&A interface |
+| `GeneratedFiles.jsx` | File list and viewer |
+
+## API Integration
+
+### Service Functions (src/services/api.js)
+```javascript
+import { generateSolution, getRecentActivities, ... } from './services/api';
+```
+
+### Polling Pattern
+```javascript
+useEffect(() => {
+  const timer = setInterval(fetchActivityData, pollInterval);
+  return () => clearInterval(timer);
+}, [pollInterval, isPaused]);
+```
+
+### WebSocket (backup)
+```javascript
+const ws = new WebSocket('ws://localhost:8001/ws/agent-status');
+```
+
+## Testing
+
+### Run Tests
+```bash
+npm run test          # Run once
+npm run test:ui       # Interactive UI
+npm run test:coverage # With coverage
+```
+
+### Test Files
+- `*.test.jsx` alongside components
+- Use `@testing-library/react` for rendering
+- jsdom environment configured in `vitest.config.js`
+
+## Build & Development
+
+```bash
+npm run dev      # Start dev server (port 5173)
+npm run build    # Production build to dist/
+npm run lint     # ESLint validation
+```
+
+## Common Gotchas
+
+- Backend must be running on port 8001 for API calls
+- Promise.all for parallel API fetches on initial load
+- Filter state managed locally, not in Redux
+- Collapsible sections use local `useState`
+- Badge colors: warning=running, success=completed, danger=failed

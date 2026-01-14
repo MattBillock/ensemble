@@ -1,0 +1,99 @@
+# Ensemble UI Rules
+
+## Architecture Overview
+
+This is the web UI for monitoring and controlling the Ensemble agent system.
+
+```
+ensemble_ui/
+├── backend/     # FastAPI server (Python)
+├── frontend/    # React app (Vite + React 19)
+└── output/      # Generated files from agent execution
+```
+
+## Service Ports
+- **Backend**: http://localhost:8001 (FastAPI)
+- **Frontend**: http://localhost:5173 (Vite dev server)
+- **API Docs**: http://localhost:8001/docs
+- **WebSocket**: ws://localhost:8001/ws/agent-status
+
+## Key API Endpoints
+
+### Agent Execution
+- `POST /api/generate-solution` - Start agent execution with problem description
+- `POST /api/agents/{id}/message` - Send message to agent
+
+### Activity Tracking
+- `GET /api/activity/recent` - Recent agent activities
+- `GET /api/activity/hierarchy` - Agent hierarchy tree
+- `GET /api/activity/states` - All agent states
+- `GET /api/activity/questions` - Pending questions
+- `POST /api/activity/questions/{id}/answer` - Answer a question
+- `GET /api/activity/files` - Generated files
+
+### Metrics
+- `GET /api/metrics/summary` - Overall system metrics
+- `GET /api/metrics/agents` - Per-agent success rates
+- `GET /api/metrics/models` - Model performance comparison
+- `GET /api/metrics/trends` - Performance over time
+
+## Integration Points
+
+### Activity Tracker
+Located at `src/runtime/agents/activity_tracker.py`. Singleton pattern, accessed via:
+```python
+from src.runtime.agents.runtime import AgentRuntime
+tracker = AgentRuntime.get_activity_tracker()
+```
+
+### Agent Runtime
+Imported from project root:
+```python
+from src.runtime.agents import AgentDefinition, AgentRuntime
+from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
+```
+
+## Development Workflow
+
+### Starting Development
+```bash
+# Terminal 1 - Backend
+cd ~/Development/ai_exploration/ensemble
+source venv/bin/activate
+cd src/field/ensemble_ui/backend
+python main.py
+
+# Terminal 2 - Frontend
+cd ~/Development/ai_exploration/ensemble/src/field/ensemble_ui/frontend
+npm run dev
+```
+
+### Testing
+```bash
+# Backend tests
+pytest src/field/ensemble_ui/backend/tests/
+
+# Frontend tests
+cd frontend && npm run test
+```
+
+## Common Patterns
+
+### Request Tracing
+All operations include `request_id` and `agent_id` for tracing:
+```python
+self.logger.info(f"Message", extra={'request_id': request_id, 'agent_id': agent_id})
+```
+
+### File Generation Tracking
+Backend scans output directory before/after execution to detect generated files.
+
+### WebSocket Updates
+Real-time status broadcasts to all connected clients on agent state changes.
+
+## Important Notes
+
+- Backend imports from project root, Python path set at startup
+- Frontend uses polling (configurable interval: 500ms, 1s, 2s)
+- Output directory: `src/field/ensemble_ui/output/`
+- Agent definitions loaded from project root directories

@@ -178,3 +178,167 @@ export const getGeneratedFiles = async (filters = {}) => {
     throw error;
   }
 };
+
+// Timeline View API
+export const getRequests = async (limit = 50) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/requests?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch requests');
+    return await response.json();
+  } catch (error) {
+    console.error('Get requests error:', error);
+    throw error;
+  }
+};
+
+export const getRequestTimeline = async (requestId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/requests/${requestId}/timeline`);
+    if (!response.ok) throw new Error('Failed to fetch timeline');
+    return await response.json();
+  } catch (error) {
+    console.error('Get timeline error:', error);
+    throw error;
+  }
+};
+
+export const getGitRepoInfo = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/git/repo-info`);
+    if (!response.ok) throw new Error('Failed to fetch git info');
+    return await response.json();
+  } catch (error) {
+    console.error('Get git info error:', error);
+    throw error;
+  }
+};
+
+export const getDeliverables = async (requestId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/deliverables/${requestId}`);
+    if (!response.ok) throw new Error('Failed to fetch deliverables');
+    return await response.json();
+  } catch (error) {
+    console.error('Get deliverables error:', error);
+    throw error;
+  }
+};
+
+// Self-Improvement Loop API
+export const getSelfImprovementStatus = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/status`);
+    if (!response.ok) throw new Error('Failed to fetch self-improvement status');
+    return await response.json();
+  } catch (error) {
+    console.error('Get self-improvement status error:', error);
+    throw error;
+  }
+};
+
+export const runSelfImprovementAnalysis = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/analyze?days=${days}`);
+    if (!response.ok) throw new Error('Failed to run analysis');
+    return await response.json();
+  } catch (error) {
+    console.error('Run analysis error:', error);
+    throw error;
+  }
+};
+
+export const getRecommendations = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/recommendations`);
+    if (!response.ok) throw new Error('Failed to fetch recommendations');
+    return await response.json();
+  } catch (error) {
+    console.error('Get recommendations error:', error);
+    throw error;
+  }
+};
+
+export const getAgentFeedback = async (agentName) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/feedback/${encodeURIComponent(agentName)}`);
+    if (!response.ok) throw new Error('Failed to fetch agent feedback');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent feedback error:', error);
+    throw error;
+  }
+};
+
+export const approveRecommendation = async (recommendationId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/recommendations/${recommendationId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to approve recommendation');
+    return await response.json();
+  } catch (error) {
+    console.error('Approve recommendation error:', error);
+    throw error;
+  }
+};
+
+export const rejectRecommendation = async (recommendationId, reason = '') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/recommendations/${recommendationId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recommendation_id: recommendationId, reason }),
+    });
+    if (!response.ok) throw new Error('Failed to reject recommendation');
+    return await response.json();
+  } catch (error) {
+    console.error('Reject recommendation error:', error);
+    throw error;
+  }
+};
+
+// Achievement System API
+export const getAllAchievements = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/achievements`);
+    if (!response.ok) throw new Error('Failed to fetch achievements');
+    return await response.json();
+  } catch (error) {
+    console.error('Get achievements error:', error);
+    throw error;
+  }
+};
+
+export const getRecentAchievements = async (limit = 10) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/achievements/recent?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch recent achievements');
+    return await response.json();
+  } catch (error) {
+    console.error('Get recent achievements error:', error);
+    throw error;
+  }
+};
+
+export const getAchievementStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/achievements/stats`);
+    if (!response.ok) throw new Error('Failed to fetch achievement stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Get achievement stats error:', error);
+    throw error;
+  }
+};
+
+export const getAgentAchievements = async (agentClass) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/achievements/agent/${encodeURIComponent(agentClass)}`);
+    if (!response.ok) throw new Error('Failed to fetch agent achievements');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent achievements error:', error);
+    throw error;
+  }
+};

@@ -1,0 +1,145 @@
+# Ensemble UI Backend Rules
+
+## Technology Stack
+- **FastAPI** with async endpoints
+- **Uvicorn** web server with auto-reload
+- **Pydantic** for request/response validation
+- **WebSocket** for real-time updates
+- **Python 3.10+**
+
+## Service Configuration
+- **Port**: 8001
+- **CORS**: Allows all origins (development)
+- **Auto-reload**: Watches backend dir, runtime, and agent definitions
+
+## Key Files
+
+### main.py
+The single-file FastAPI application containing:
+- `AgentOrchestrator` - Agent lifecycle management
+- REST endpoints for agent control
+- WebSocket endpoint for real-time updates
+- Activity and metrics endpoints
+
+### Integration Points
+```python
+# Import from project root (path added at startup)
+from src.runtime.agents import AgentDefinition, AgentRuntime
+from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
+from src.runtime.agents.activity_tracker import ActivityType
+```
+
+## Logging Pattern
+
+### Structured JSON Logging
+```python
+logging.basicConfig(
+    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", ...}'
+)
+```
+
+### Request/Agent ID Tracking
+```python
+self.logger.info(f"Message",
+    extra={
+        'request_id': request_id,
+        'agent_id': agent_id,
+        'additional_context': value
+    }
+)
+```
+
+## API Endpoint Categories
+
+### Agent Control
+- `POST /api/generate-solution` - Start execution
+- `POST /api/agents/{id}/message` - Send message
+- `GET /api/agents` - List agent definitions
+- `POST /api/agents/update` - Update agent file
+
+### Activity Tracking
+- `GET /api/activity/recent` - Recent activities
+- `GET /api/activity/hierarchy` - Agent tree
+- `GET /api/activity/states` - Agent states
+- `GET /api/activity/questions` - Pending questions
+- `POST /api/activity/questions/{id}/answer` - Answer question
+- `GET /api/activity/files` - Generated files
+
+### Metrics
+- `GET /api/metrics/summary` - System overview
+- `GET /api/metrics/agents` - Per-agent stats
+- `GET /api/metrics/models` - Model comparison
+- `GET /api/metrics/trends` - Time series
+
+## Agent Execution Pattern
+
+### Background Thread Execution
+```python
+thread = threading.Thread(
+    target=self._execute_agent_background,
+    args=(agent_id, runtime, input_data),
+    daemon=True
+)
+thread.start()
+```
+
+### File Generation Tracking
+1. Snapshot files before execution
+2. Execute agent
+3. Scan for new files after execution
+4. Record in activity tracker
+
+## Pydantic Models
+
+```python
+class ProblemRequest(BaseModel):
+    problem: str
+    budget_tier: str = "balanced"
+
+class AgentMessage(BaseModel):
+    agent_id: str
+    message: str
+```
+
+## WebSocket Pattern
+
+### Connection Management
+```python
+@app.websocket("/ws/agent-status")
+async def agent_status_ws(websocket: WebSocket):
+    await websocket.accept()
+    orchestrator.active_connections.append(websocket)
+    # Send periodic updates
+    while True:
+        await websocket.send_json(status)
+```
+
+### Broadcast to All Clients
+```python
+async def broadcast_status(self):
+    for connection in self.active_connections:
+        await connection.send_json(status)
+```
+
+## Running the Backend
+
+```bash
+# Development with auto-reload
+cd ~/Development/ai_exploration/ensemble
+source venv/bin/activate
+cd src/field/ensemble_ui/backend
+python main.py
+```
+
+## Environment Requirements
+- `ANTHROPIC_API_KEY` in `.env` at project root
+- Virtual environment activated
+- Project root in PYTHONPATH (handled automatically)
+
+## Common Gotchas
+
+- Path manipulation adds project root to sys.path at startup
+- Agent execution runs in background threads, not async
+- Activity tracker is a singleton, accessed via AgentRuntime
+- File truncation at 50KB for large generated files
+- WebSocket connections cleaned up on broadcast failure

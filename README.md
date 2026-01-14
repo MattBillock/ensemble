@@ -4,6 +4,15 @@
 
 Ensemble is a hierarchical multi-agent system that builds software through coordinated collaboration. Each agent has specific expertise and works together to deliver complete software solutions using Test-Driven Development methodology.
 
+## Version 1.0-beta
+
+This release includes:
+- Complete agent hierarchy (25+ agents)
+- Self-improvement loop with feedback injection
+- Achievement system for gamification
+- Real-time monitoring UI with Timeline view
+- File overwrite guardrails for data protection
+
 ## Overview
 
 Ensemble uses specialized AI agents organized into a clear hierarchy with distinct responsibilities. Agents coordinate through a structured workflow to deliver high-quality code following TDD principles.
@@ -15,6 +24,7 @@ Ensemble uses specialized AI agents organized into a clear hierarchy with distin
 - **Development Manager** - Drives implementation from requirements through delivery
 - **System Architect** - Defines system architecture and technical design
 - **TDD Coordinator** - Orchestrates test-driven development workflow
+- **Question Marshal** - Handles escalations and clarifications
 
 **Coordinators** - Task breakdown and planning
 - **Backend Coordinator** - Breaks backend work into API, model, and service tasks
@@ -25,26 +35,50 @@ Ensemble uses specialized AI agents organized into a clear hierarchy with distin
 - **Frontend Lead** / **Frontend Developer** - React and UI development
 - **Backend Lead** / **Backend Developer** - Business logic and services
 - **API Lead** / **API Developer** - REST API and endpoints
-- **Component Lead** / **Component Developer** - Reusable component architecture
+- **Database Manager** - Schema design and migrations
 
 **Testers** - Test implementation
 - **Unit Test Lead** / **Unit Test Writer** - Unit tests and test fixtures
-- **Integration Test Lead** / **Integration Test Writer** - Integration and E2E tests
-- **Test Validator** - Validates test quality and coverage
+- **Integration Test Lead** / **Integration Test Writer** - Integration tests
+- **API Test Writer** - API endpoint testing
+
+**Support** - Cross-cutting concerns
+- **Code Reviewer** - Quality gate before commits
+- **Visual Tech** - Code refactoring (TDD REFACTOR phase)
+- **Drill Writer** - Documentation
+- **Logistics Manager** - Codebase exploration
 
 **Designers** - Styling and visual
-- **Style Lead** / **Style Developer** - CSS, Tailwind, and styling code
+- **Style Developer** - CSS, Tailwind, and styling code
 
 ## Current Capabilities
 
-Ensemble currently supports:
-- ✅ Requirements analysis (Development Manager)
-- ✅ Architecture design (System Architect)
-- ✅ Test-Driven Development workflow (TDD Coordinator)
-- ✅ Task breakdown and coordination (Coordinators)
-- ✅ Code writing with supervision (Leads spawn Developers)
-- ✅ Test writing with supervision (Test Leads spawn Writers)
-- ✅ Rogue agent prevention (permission system enforces delegation)
+### Core Features
+- Requirements analysis and architecture design
+- Test-Driven Development workflow (RED-GREEN-REFACTOR)
+- Hierarchical delegation with permission enforcement
+- Real-time activity monitoring via Web UI
+- Agent spawn tracking and timeline visualization
+
+### Self-Improvement Loop (NEW)
+- Automatic metrics collection on every agent execution
+- Performance analysis and recommendation generation
+- Feedback injection into agent prompts based on past performance
+- Human-in-the-loop approval for recommendations
+- Dashboard at `/improve` for managing recommendations
+
+### Achievement System (NEW)
+- 30+ achievements with ska music theme references
+- Categories: Productivity, Comedy, Milestone, Streak, Meta, Ska
+- Rarities from Common to Legendary
+- Automatic tracking and award notifications
+- Dashboard at `/achievements` for viewing progress
+
+### Data Protection (NEW)
+- Automatic backups before file overwrites
+- Protected file patterns (requirements, architecture, readme, etc.)
+- Timestamped backups in `~/.ensemble/backups/`
+- Logging of all file overwrites
 
 ## Installation
 
@@ -65,19 +99,39 @@ cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
 ```
 
+## Running the UI
+
+```bash
+# Start the backend (port 8001)
+cd src/field/ensemble_ui/backend
+python main.py
+
+# In another terminal, start the frontend (port 5173)
+cd src/field/ensemble_ui/frontend
+npm install
+npm run dev
+```
+
+Navigate to `http://localhost:5173` to access the UI.
+
+### UI Views
+- **Activity** - Real-time agent activity feed
+- **Timeline** - Horizontal timeline showing task execution flow
+- **Metrics** - Performance analytics and statistics
+- **Improve** - Self-improvement recommendations
+- **Achievements** - Gamification and progress tracking
+
 ## Usage
 
-### Development Workflow
+### Web UI Workflow
 
-The typical development workflow follows a structured hierarchy:
+1. Open `http://localhost:5173`
+2. Enter your problem description in the "New Task" form
+3. Select budget tier (Economical/Balanced/Full Power)
+4. Click "Start Task"
+5. Watch agents spawn and execute in real-time
 
-1. **Executive Director** - Receives user vision, spawns Development Manager
-2. **Development Manager** - Breaks into milestones, spawns System Architect and Coordinators
-3. **System Architect** - Designs architecture
-4. **Coordinators** - Break work into detailed tasks
-5. **TDD Coordinator** - Implements using RED-GREEN-REFACTOR cycle
-
-### Example: Building with TDD
+### Programmatic Usage
 
 ```python
 from pathlib import Path
@@ -95,8 +149,8 @@ Build a function that calculates the factorial of a number.
 Handle edge cases like 0, 1, and negative numbers.
 """
 
-# Load the TDD Coordinator
-tdd_coordinator = AgentDefinition.from_file("leadership/tdd_coordinator.md")
+# Load the Executive Director
+exec_dir = AgentDefinition.from_file("leadership/executive_director.md")
 
 # Set up tools
 tools = ToolRegistry.default()
@@ -108,10 +162,10 @@ spawn_tool = SpawnAgentTool(
 tools.register(spawn_tool)
 
 # Execute
-runtime = AgentRuntime(tdd_coordinator, api_key=os.getenv("ANTHROPIC_API_KEY"), tools=tools)
+runtime = AgentRuntime(exec_dir, api_key=os.getenv("ANTHROPIC_API_KEY"), tools=tools)
 result = runtime.execute({
-    "problem_description": problem,
-    "output_directory": "rehearsals/factorial"
+    "user_vision": problem,
+    "output_directory": "output/factorial"
 })
 ```
 
@@ -119,92 +173,132 @@ result = runtime.execute({
 
 ```
 ensemble/
-├── README.md, QUICKSTART.md, requirements.md  # Core documentation
+├── README.md                    # This file
+├── CLAUDE.md                    # Project guide for Claude
+├── requirements.txt             # Python dependencies
 │
 ├── Agent Definitions (Markdown agent specs)
-│   ├── leadership/          # Strategic agents (Executive Director, Development Manager, etc.)
-│   ├── coordinators/        # Task breakdown agents (Backend, Frontend, Test Coordinators)
-│   ├── developers/          # Code writers and leads (Frontend, Backend, etc.)
-│   ├── testers/             # Test writers and leads (Unit, Integration)
-│   └── designers/           # Styling agents (Style Developer)
+│   ├── leadership/              # Executive Director, Development Manager, etc.
+│   ├── coordinators/            # Backend, Frontend, Test Coordinators
+│   ├── developers/              # Frontend, Backend, API, Database agents
+│   ├── testers/                 # Unit, Integration, API test agents
+│   ├── support/                 # Code Reviewer, Visual Tech, Drill Writer
+│   └── designers/               # Style Developer
 │
 ├── Source Code
 │   └── src/
-│       ├── runtime/agents/      # Agent runtime, tools, activity tracking, metrics
-│       └── field/ensemble_ui/   # Web UI for monitoring agent execution
+│       ├── runtime/agents/      # Agent runtime, tools, metrics, achievements
+│       │   ├── runtime.py       # Core agent execution
+│       │   ├── tools.py         # Available tools (write_file, spawn_agent, etc.)
+│       │   ├── metrics.py       # Performance metrics collection
+│       │   ├── activity_tracker.py  # Real-time activity tracking
+│       │   ├── self_improvement.py  # Self-improvement loop
+│       │   └── achievements.py  # Achievement system
+│       │
+│       └── field/ensemble_ui/   # Web UI for monitoring
 │           ├── backend/         # FastAPI server (port 8001)
 │           └── frontend/        # React UI (port 5173)
 │
 ├── Documentation
-│   ├── docs/current/        # Active documentation (diagnostic reports, reviews)
-│   └── docs/archive/        # Historical documentation and milestone records
+│   ├── docs/                    # Technical documentation
+│   └── CLAUDE.md               # Project conventions
 │
-├── Scripts
-│   ├── scripts/deployment/  # start_backend.sh, start_frontend.sh, run_ensemble_ui.sh
-│   ├── scripts/development/ # Test scripts and development utilities
-│   └── scripts/deprecated/  # Old scripts kept for reference
+├── Data Directories
+│   └── ~/.ensemble/             # User data (created at runtime)
+│       ├── metrics.db           # Performance metrics database
+│       ├── achievements.db      # Achievement tracking
+│       ├── recommendations/     # Self-improvement recommendations
+│       ├── backups/            # Automatic file backups
+│       └── projects/           # Project state tracking
 │
-└── logs/                # Execution logs
+└── scripts/                     # Deployment and development scripts
 ```
 
 ## Development Philosophy
 
 ### Test-Driven Development
 All code is built following the Red-Green-Refactor cycle:
-1. **RED** - Unit Test Writer creates failing tests
+1. **RED** - Test Writers create failing tests
 2. **GREEN** - Developers write minimal code to pass tests
-3. **REFACTOR** - Code improvements while maintaining test coverage
+3. **REFACTOR** - Visual Tech improves code while maintaining tests
 
 ### Hierarchical Delegation
-- **Supervisors coordinate, never write code** - Leads and Coordinators delegate to writers
-- **Permission system prevents rogue agents** - Enforced at tool level (can_write_code, can_write_tests)
-- **Clear spawning patterns** - Each agent knows exactly which agents to spawn
-- **Fail-fast rules** - If spawn fails, agents stop and return error (no fallback to writing code)
+- **Supervisors coordinate, never write code** - Leads and Coordinators delegate
+- **Permission system prevents rogue agents** - Enforced at tool level
+- **Clear spawning patterns** - Each agent knows which agents to spawn
+- **Fail-fast rules** - If spawn fails, return error (no fallback)
 
-### Eating Our Own Dogfood
-Ensemble is building itself. The UI and tooling are developed using the agent system.
+### Continuous Improvement
+- Every execution records metrics (success rate, duration, tokens)
+- Agents provide self-analysis and performance analysis
+- System generates recommendations based on patterns
+- Feedback is injected into future agent prompts
 
 ## Key Features
 
 ### Rogue Agent Prevention
-- Supervisors (Leads, Coordinators, Leadership) have `can_write_code: false`
-- Writers (Developers, Test Writers) have explicit write permissions
-- WriteFileTool enforces permissions and detects violations
-- Test suite validates prevention system (5/5 tests passing)
+- Supervisors have `can_write_code: false`
+- Writers have explicit write permissions
+- WriteFileTool enforces permissions
+- Automatic backup on protected file overwrites
 
-### Agent Registry
-See `docs/current/AGENT_REGISTRY.md` for complete agent paths and spawning patterns.
+### Budget Tiers
+- **Economical** - Uses Claude Haiku for most tasks
+- **Balanced** - Uses Claude Sonnet for complex tasks
+- **Full Firepower** - Uses Claude Opus for strategic decisions
 
-### State Persistence
-Agent execution state is checkpointed for crash recovery and resume capability.
+### Real-Time Monitoring
+- WebSocket-based activity streaming
+- Agent hierarchy visualization
+- File generation tracking
+- Timeline view with AI-generated task titles
+
+## API Endpoints
+
+### Core Endpoints
+- `POST /api/generate-solution` - Start a new task
+- `GET /api/status` - Get system status
+- `GET /api/agents` - List available agents
+- `WS /ws/agent-status` - WebSocket for real-time updates
+
+### Metrics Endpoints
+- `GET /api/metrics/summary` - Overall statistics
+- `GET /api/metrics/agents` - Per-agent performance
+- `GET /api/metrics/trends` - Performance over time
+
+### Self-Improvement Endpoints
+- `GET /api/self-improvement/status` - Loop status
+- `GET /api/self-improvement/analyze` - Run analysis
+- `GET /api/self-improvement/recommendations` - Pending recommendations
+
+### Achievement Endpoints
+- `GET /api/achievements` - All achievements
+- `GET /api/achievements/recent` - Recent unlocks
+- `GET /api/achievements/stats` - Achievement statistics
 
 ## Roadmap
 
-### ✅ Phase 1: Core Infrastructure (Complete)
-- [x] Requirements analysis
-- [x] Architecture design
+### Completed
+- [x] Core agent hierarchy
 - [x] TDD workflow
 - [x] Permission system
-- [x] Agent naming refactor (drum corps → standard names)
-- [x] Coordinators for task breakdown
-- [x] Rogue agent prevention
+- [x] Real-time UI monitoring
+- [x] Timeline view
+- [x] Self-improvement loop
+- [x] Achievement system
+- [x] File overwrite guardrails
 
-### Phase 2: Enhanced Capabilities
-- [ ] Error recovery and retry logic
-- [ ] Enhanced TDD workflow validation
-- [ ] File exploration agents
-- [ ] Integration testing workflows
-- [ ] Performance monitoring
-
-### Phase 3: Self-Improvement
-- [ ] Agent performance analytics
-- [ ] Token usage optimization
-- [ ] Automated agent refinement
-- [ ] Continuous improvement feedback loops
+### Future Enhancements
+- [ ] Security testing agents
+- [ ] Performance testing agents
+- [ ] E2E testing agents
+- [ ] DevOps/deployment agents
+- [ ] Multi-project support
+- [ ] Team collaboration features
 
 ## Contributing
 
-This project is currently in active development. Contributions welcome!
+This project is in active development. Contributions welcome!
 
 ## License
 
@@ -216,4 +310,4 @@ Built with Claude (Anthropic API) and inspired by the principles of clear commun
 
 ---
 
-*"Test first, code second, refactor always."*
+*"Pick it up! Pick it up! Pick it up!"* 🎺

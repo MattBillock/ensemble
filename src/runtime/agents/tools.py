@@ -36,10 +36,10 @@ class Tool(Protocol):
 
 
 class WriteFileTool:
-    """Tool for writing content to files."""
+    """Tool for writing content to files with automatic backup protection."""
 
     name = "write_file"
-    description = "Write content to a file, creating parent directories if needed"
+    description = "Write content to a file, creating parent directories if needed. Automatically backs up existing files."
     input_schema = {
         "type": "object",
         "properties": {
@@ -61,9 +61,58 @@ class WriteFileTool:
         ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".cs", ".sql"
     }
 
+    # Protected file patterns - these ALWAYS get backed up and logged
+    PROTECTED_PATTERNS = {
+        "requirements", "architecture", "readme", "config", "setup",
+        "manifest", "package", "lock", "env", "settings"
+    }
+
+    # Backup directory
+    BACKUP_DIR = Path.home() / ".ensemble" / "backups"
+
     def __init__(self, agent_definition: Optional["AgentDefinition"] = None):
         """Initialize with optional agent definition for permission checking."""
         self.agent_definition = agent_definition
+        # Ensure backup directory exists
+        self.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _is_protected_file(self, file_path: Path) -> bool:
+        """Check if file matches protected patterns."""
+        name_lower = file_path.stem.lower()
+        return any(pattern in name_lower for pattern in self.PROTECTED_PATTERNS)
+
+    def _create_backup(self, file_path: Path) -> Optional[Path]:
+        """Create a backup of an existing file with timestamp."""
+        if not file_path.exists():
+            return None
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Create project-specific backup directory
+        relative_parts = []
+        try:
+            # Try to get relative path from ensemble root
+            ensemble_root = Path(__file__).parent.parent.parent.parent
+            relative_parts = file_path.relative_to(ensemble_root).parts
+        except ValueError:
+            # Not in ensemble directory, use absolute path parts
+            relative_parts = file_path.parts[-3:] if len(file_path.parts) > 3 else file_path.parts
+
+        backup_subdir = self.BACKUP_DIR / "/".join(relative_parts[:-1])
+        backup_subdir.mkdir(parents=True, exist_ok=True)
+
+        backup_name = f"{file_path.stem}_{timestamp}{file_path.suffix}"
+        backup_path = backup_subdir / backup_name
+
+        try:
+            import shutil
+            shutil.copy2(file_path, backup_path)
+            logger.info(f"Created backup: {backup_path}")
+            return backup_path
+        except Exception as e:
+            logger.warning(f"Failed to create backup for {file_path}: {e}")
+            return None
 
     def _is_code_file(self, file_path: Path) -> bool:
         """Check if file path is a code file."""
@@ -125,13 +174,46 @@ class WriteFileTool:
             # Create parent directories if they don't exist
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
+            # Create backup if file exists (guardrail against data loss)
+            backup_path = None
+            file_existed = file_path.exists()
+
+            if file_existed:
+                # Always backup protected files, otherwise backup based on content change
+                is_protected = self._is_protected_file(file_path)
+
+                if is_protected:
+                    backup_path = self._create_backup(file_path)
+                    if backup_path:
+                        logger.warning(
+                            f"PROTECTED FILE OVERWRITE: {file_path} backed up to {backup_path} "
+                            f"by agent {self.agent_definition.name if self.agent_definition else 'unknown'}"
+                        )
+                else:
+                    # For non-protected files, backup if content is different
+                    try:
+                        existing_content = file_path.read_text()
+                        if existing_content != content:
+                            backup_path = self._create_backup(file_path)
+                    except Exception:
+                        # If we can't read, backup anyway
+                        backup_path = self._create_backup(file_path)
+
             # Write the file
             file_path.write_text(content)
 
-            logger.info(f"Successfully wrote file: {file_path}")
+            result_msg = f"File written successfully to {file_path}"
+            if backup_path:
+                result_msg += f" (backup: {backup_path})"
+
+            logger.info(f"Successfully wrote file: {file_path}" +
+                       (f" [OVERWRITE, backup: {backup_path}]" if backup_path else " [NEW FILE]"))
+
             return {
                 "success": True,
-                "message": f"File written successfully to {file_path}"
+                "message": result_msg,
+                "backup_path": str(backup_path) if backup_path else None,
+                "was_overwrite": file_existed
             }
 
         except Exception as e:

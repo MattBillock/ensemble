@@ -1,19 +1,23 @@
 # Ensemble Project Rules for Claude Code
 
+## Quick Reference
+
+**See also**: `CLAUDE.md` for comprehensive project documentation.
+
 ## Agent Naming and Paths
 
 **CRITICAL**: As of January 10, 2026, all agents use standard developer naming (NOT drum corps names).
 
 ### Current Agent Paths (DO NOT use old names)
-- ❌ `leadership/program_coordinator` → ✅ `leadership/development_manager`
-- ❌ `leadership/designer` → ✅ `leadership/system_architect`
-- ❌ `leadership/drum_major` → ✅ `leadership/tdd_coordinator`
-- ❌ `caption_heads/*` → ✅ `coordinators/*`
-- ❌ `brass/*` → ✅ `developers/*`
-- ❌ `percussion/*` → ✅ `testers/*`
-- ❌ `guard/*` → ✅ `designers/*`
+- `leadership/program_coordinator` → `leadership/development_manager`
+- `leadership/designer` → `leadership/system_architect`
+- `leadership/drum_major` → `leadership/tdd_coordinator`
+- `caption_heads/*` → `coordinators/*`
+- `brass/*` → `developers/*`
+- `percussion/*` → `testers/*`
+- `guard/*` → `designers/*`
 
-**Authoritative Source**: Always check `AGENT_REGISTRY.md` for current agent paths.
+**Authoritative Source**: Always check `docs/current/AGENT_REGISTRY.md` for current agent paths.
 
 ## Agent Architecture Rules
 
@@ -123,3 +127,38 @@ See `AGENT_REGISTRY.md` for complete hierarchy diagram and spawn patterns.
 - **ALWAYS validate permissions** after modifying agents
 - **ALWAYS test after significant changes**
 - State files are in `src/field/*/` (can be deleted to start fresh)
+
+## UI Development (ensemble_ui)
+
+### Architecture
+- **Backend**: FastAPI on port 8001, WebSocket at `/ws/agent-status`
+- **Frontend**: React 19 + Vite on port 5173, Redux Toolkit for state
+- **Real-time**: Polling-based updates with configurable intervals
+
+### Running the UI
+```bash
+# Terminal 1 - Backend
+source venv/bin/activate && cd src/field/ensemble_ui/backend && python main.py
+
+# Terminal 2 - Frontend
+cd src/field/ensemble_ui/frontend && npm run dev
+```
+
+### Key Frontend Patterns
+- Dark theme: `#1a1d29` (background), `#242836` (cards), `#3a3f52` (borders)
+- Components in `src/components/`, services in `src/services/api.js`
+- Redux store in `src/store/` (agentSlice.js, store.js)
+
+### Key Backend Patterns
+- Structured JSON logging with request_id and agent_id
+- Activity tracking via `ActivityTracker` singleton
+- Background thread execution for agents
+- File generation scanning with before/after snapshots
+
+## Budget Tiers (Model Selection)
+- `economical` - Haiku (fast, cheap, simple tasks)
+- `balanced` - Sonnet (default, most tasks)
+- `full_firepower` - Opus (complex analysis, architecture)
+
+## Whimsical Agent Naming
+Agents get whimsical display names (e.g., "Stately Penguin") via the naming system in `src/runtime/agents/name_generator.py`. Agent IDs remain stable; display names are cosmetic.

@@ -62,6 +62,9 @@ class AgentActivityTracker:
         self.callbacks: List[Callable[[Activity], None]] = []
         self.max_activities = 10000  # Keep last 10k activities
 
+        # Request tracking for timeline view
+        self.requests: Dict[str, Dict[str, Any]] = {}
+
     def register_callback(self, callback: Callable[[Activity], None]):
         """Register a callback to be called when activities occur."""
         self.callbacks.append(callback)
@@ -545,3 +548,208 @@ class AgentActivityTracker:
         # Remove from hierarchy and states
         # (This is tricky without tracking request_id in hierarchy)
         # For now, we'll keep the data
+
+    # ========== Request Tracking for Timeline View ==========
+
+    def record_request_started(
+        self,
+        request_id: str,
+        prompt: str,
+        budget_tier: str,
+        root_agent_id: Optional[str] = None,
+        github_repo_url: Optional[str] = None
+    ):
+        """
+        Record a new request/prompt starting.
+
+        Args:
+            request_id: Unique request identifier
+            prompt: Original user prompt text
+            budget_tier: Budget tier for model selection
+            root_agent_id: ID of the root agent (e.g., exec_dir_1)
+            github_repo_url: Auto-detected GitHub repo URL
+        """
+        self.requests[request_id] = {
+            "request_id": request_id,
+            "prompt": prompt,
+            "prompt_preview": prompt[:200] + "..." if len(prompt) > 200 else prompt,
+            "title": None,  # Will be set by update_request_title
+            "title_status": "pending",  # pending, generating, completed, failed
+            "budget_tier": budget_tier,
+            "status": "running",
+            "root_agent_id": root_agent_id,
+            "github_repo_url": github_repo_url,
+            "created_at": datetime.now().isoformat(),
+            "completed_at": None,
+            "agent_count": 0,
+            "file_count": 0,
+            "commit_count": 0
+        }
+        logger.info(f"Request started: {request_id}")
+
+    def update_request_title(self, request_id: str, title: str):
+        """
+        Update request with AI-generated title.
+
+        Args:
+            request_id: Request to update
+            title: AI-generated title
+        """
+        if request_id in self.requests:
+            self.requests[request_id]["title"] = title
+            self.requests[request_id]["title_status"] = "completed"
+            logger.info(f"Request {request_id} title updated: {title}")
+
+    def update_request_root_agent(self, request_id: str, root_agent_id: str):
+        """Link request to its root agent."""
+        if request_id in self.requests:
+            self.requests[request_id]["root_agent_id"] = root_agent_id
+
+    def update_request_status(self, request_id: str, status: str):
+        """
+        Update request status.
+
+        Args:
+            request_id: Request to update
+            status: New status (running, completed, failed)
+        """
+        if request_id in self.requests:
+            self.requests[request_id]["status"] = status
+            if status in ("completed", "failed"):
+                self.requests[request_id]["completed_at"] = datetime.now().isoformat()
+
+    def increment_request_counts(
+        self,
+        request_id: str,
+        agents: int = 0,
+        files: int = 0,
+        commits: int = 0
+    ):
+        """Increment counters for a request."""
+        if request_id in self.requests:
+            self.requests[request_id]["agent_count"] += agents
+            self.requests[request_id]["file_count"] += files
+            self.requests[request_id]["commit_count"] += commits
+
+    def get_requests(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get all requests for timeline view, most recent first.
+
+        Args:
+            limit: Maximum number of requests to return
+
+        Returns:
+            List of request dictionaries
+        """
+        requests_list = list(self.requests.values())
+        # Sort by created_at descending
+        requests_list.sort(key=lambda r: r["created_at"], reverse=True)
+        return requests_list[:limit]
+
+    def get_request(self, request_id: str) -> Optional[Dict[str, Any]]:
+        """Get a single request by ID."""
+        return self.requests.get(request_id)
+
+    def get_request_timeline(self, request_id: str) -> Dict[str, Any]:
+        """
+        Get complete timeline data for a request.
+
+        Returns structured data for rendering a horizontal timeline:
+        - Request metadata
+        - Agents with timing and hierarchy info
+        - Deliverables (files and commits)
+
+        Args:
+            request_id: Request to get timeline for
+
+        Returns:
+            Timeline data structure for frontend rendering
+        """
+        request = self.requests.get(request_id)
+        if not request:
+            return {"error": "Request not found"}
+
+        # Find all agents for this request
+        request_agents = []
+        for activity in self.activities:
+            if (activity.request_id == request_id and
+                activity.activity_type == ActivityType.AGENT_STARTED):
+                agent_id = activity.agent_id
+                agent_state = self.agent_states.get(agent_id, {})
+                agent_hierarchy = self.agent_hierarchy.get(agent_id, {})
+
+                request_agents.append({
+                    "agent_id": agent_id,
+                    "agent_name": activity.agent_name,
+                    "agent_type": activity.data.get("agent_type", "unknown"),
+                    "parent_id": agent_hierarchy.get("parent_agent_id"),
+                    "children": agent_hierarchy.get("children", []),
+                    "status": agent_state.get("status", "unknown"),
+                    "started_at": agent_hierarchy.get("started_at"),
+                    "completed_at": agent_state.get("completed_at"),
+                    "current_task": agent_state.get("current_task"),
+                    "current_iteration": agent_state.get("current_iteration", 0),
+                    "max_iterations": agent_state.get("max_iterations"),
+                    "summary": agent_state.get("summary"),
+                    "deliverables": agent_state.get("deliverables", [])
+                })
+
+        # Get deliverables (files and commits)
+        deliverables = []
+
+        # Get files
+        file_activities = [
+            a for a in self.activities
+            if a.request_id == request_id and a.activity_type == ActivityType.FILE_GENERATED
+        ]
+        for fa in file_activities:
+            deliverables.append({
+                "type": "file",
+                "agent_id": fa.agent_id,
+                "agent_name": fa.agent_name,
+                "timestamp": fa.timestamp,
+                "path": fa.data.get("file_path"),
+                "file_type": fa.data.get("file_type"),
+                "file_size": fa.data.get("file_size"),
+                "preview": fa.data.get("preview")
+            })
+
+        # Get commits
+        commit_activities = [
+            a for a in self.activities
+            if a.request_id == request_id and a.activity_type == ActivityType.GIT_COMMIT
+        ]
+        for ca in commit_activities:
+            deliverables.append({
+                "type": "commit",
+                "agent_id": ca.agent_id,
+                "agent_name": ca.agent_name,
+                "timestamp": ca.timestamp,
+                "hash": ca.data.get("commit_hash"),
+                "message": ca.data.get("commit_message"),
+                "files": ca.data.get("files", [])
+            })
+
+        # Calculate timeline metrics
+        if request_agents:
+            start_times = [a["started_at"] for a in request_agents if a["started_at"]]
+            end_times = [a["completed_at"] for a in request_agents if a["completed_at"]]
+
+            timeline_start = min(start_times) if start_times else request["created_at"]
+            timeline_end = max(end_times) if end_times else datetime.now().isoformat()
+        else:
+            timeline_start = request["created_at"]
+            timeline_end = datetime.now().isoformat()
+
+        return {
+            "request": request,
+            "agents": request_agents,
+            "deliverables": deliverables,
+            "timeline": {
+                "start": timeline_start,
+                "end": timeline_end,
+                "agent_count": len(request_agents),
+                "file_count": len(file_activities),
+                "commit_count": len(commit_activities)
+            }
+        }

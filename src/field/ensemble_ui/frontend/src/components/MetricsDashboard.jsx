@@ -221,10 +221,12 @@ function MetricsDashboard() {
                       <td className="text-end">
                         <div style={{ width: '100px', display: 'inline-block' }}>
                           <ProgressBar
-                            now={agent.success_rate}
-                            variant={agent.success_rate >= 90 ? 'success' : agent.success_rate >= 70 ? 'warning' : 'danger'}
+                            now={agent.success_rate || 0}
+                            min={0}
+                            max={100}
+                            variant={(agent.success_rate || 0) >= 90 ? 'success' : (agent.success_rate || 0) >= 70 ? 'warning' : 'danger'}
                             style={{ height: '20px' }}
-                            label={`${agent.success_rate}%`}
+                            label={`${agent.success_rate || 0}%`}
                           />
                         </div>
                       </td>
@@ -269,12 +271,16 @@ function MetricsDashboard() {
                         </td>
                         <td className="text-end">{model.total_executions}</td>
                         <td className="text-end">
-                          <ProgressBar
-                            now={model.success_rate}
-                            variant={model.success_rate >= 90 ? 'success' : 'warning'}
-                            style={{ height: '20px', width: '100px' }}
-                            label={`${model.success_rate}%`}
-                          />
+                          <div style={{ width: '100px', display: 'inline-block' }}>
+                            <ProgressBar
+                              now={model.success_rate || 0}
+                              min={0}
+                              max={100}
+                              variant={(model.success_rate || 0) >= 90 ? 'success' : 'warning'}
+                              style={{ height: '20px' }}
+                              label={`${model.success_rate || 0}%`}
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -314,12 +320,16 @@ function MetricsDashboard() {
                       </td>
                       <td className="text-end">{item.total_executions}</td>
                       <td className="text-end">
-                        <ProgressBar
-                          now={item.success_rate}
-                          variant="info"
-                          style={{ height: '20px', width: '100px' }}
-                          label={`${item.success_rate}%`}
-                        />
+                        <div style={{ width: '100px', display: 'inline-block' }}>
+                          <ProgressBar
+                            now={item.success_rate || 0}
+                            min={0}
+                            max={100}
+                            variant="info"
+                            style={{ height: '20px' }}
+                            label={`${item.success_rate || 0}%`}
+                          />
+                        </div>
                       </td>
                       <td className="text-end">
                         {item.avg_duration_ms ? `${(item.avg_duration_ms / 1000).toFixed(1)}s` : 'N/A'}

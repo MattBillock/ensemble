@@ -15,10 +15,12 @@ import AgentHierarchyTree from './components/AgentHierarchyTree';
 import PendingQuestions from './components/PendingQuestions';
 import GeneratedFiles from './components/GeneratedFiles';
 import MetricsDashboard from './components/MetricsDashboard';
-import PipelineTreeView from './components/PipelineTreeView';
+import HorizontalTimelineView from './components/HorizontalTimelineView';
+import SelfImprovementDashboard from './components/SelfImprovementDashboard';
+import AchievementsDashboard from './components/AchievementsDashboard';
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', or 'pipeline'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', or 'achievements'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,16 +175,28 @@ function App() {
                       🎭 Activity
                     </Button>
                     <Button
-                      variant={currentView === 'pipeline' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('pipeline')}
+                      variant={currentView === 'timeline' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('timeline')}
                     >
-                      🌳 Pipeline
+                      ⏱️ Timeline
                     </Button>
                     <Button
                       variant={currentView === 'metrics' ? 'primary' : 'outline-secondary'}
                       onClick={() => setCurrentView('metrics')}
                     >
                       📊 Metrics
+                    </Button>
+                    <Button
+                      variant={currentView === 'improve' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('improve')}
+                    >
+                      🔄 Improve
+                    </Button>
+                    <Button
+                      variant={currentView === 'achievements' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('achievements')}
+                    >
+                      🏆 Achievements
                     </Button>
                   </ButtonGroup>
 
@@ -224,10 +238,14 @@ function App() {
       {/* Conditional rendering based on current view */}
       {currentView === 'metrics' ? (
         <MetricsDashboard />
-      ) : currentView === 'pipeline' ? (
-        <Container fluid style={{ height: 'calc(100vh - 80px)', padding: '16px' }}>
-          <PipelineTreeView />
-        </Container>
+      ) : currentView === 'timeline' ? (
+        <div style={{ height: 'calc(100vh - 80px)' }}>
+          <HorizontalTimelineView />
+        </div>
+      ) : currentView === 'improve' ? (
+        <SelfImprovementDashboard />
+      ) : currentView === 'achievements' ? (
+        <AchievementsDashboard />
       ) : (
         <>
         <Container fluid style={{ padding: '16px' }}>

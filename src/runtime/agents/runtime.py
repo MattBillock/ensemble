@@ -17,6 +17,8 @@ from .activity_tracker import AgentActivityTracker
 from .resilience import CircuitBreaker, retry_with_exponential_backoff, CircuitBreakerOpenError
 from .validation import ResponseValidator
 from .naming.name_generator import generate_agent_name
+from .self_improvement import get_improvement_loop
+from .achievements import get_achievement_tracker
 
 # Set up structured logging
 logging.basicConfig(
@@ -163,7 +165,7 @@ class AgentRuntime:
         activity_tracker.record_agent_started(
             agent_id=self.agent_id,
             agent_name=self.definition.name,
-            agent_type=getattr(self.definition, 'agent_type', 'unknown'),
+            agent_type=self.definition.category,
             request_id=self.request_id,
             parent_agent_id=self.parent_agent_id,
             input_data=input_data,
@@ -438,7 +440,24 @@ You are done when:
 
 CRITICAL: Your response must be valid JSON matching the Output Format exactly.
 """
+        # Inject performance feedback if available (self-improvement loop)
+        feedback_section = self._get_performance_feedback()
+        if feedback_section:
+            prompt += f"\n{feedback_section}\n"
+
         return prompt
+
+    def _get_performance_feedback(self) -> Optional[str]:
+        """Get performance feedback for this agent type from the self-improvement loop."""
+        try:
+            improvement_loop = get_improvement_loop()
+            feedback = improvement_loop.get_feedback_for_agent(self.definition.name)
+            if feedback and len(feedback) > 50:  # Only include meaningful feedback
+                return feedback
+        except Exception as e:
+            # Don't fail agent execution if feedback fails
+            logger.warning(f"Could not get performance feedback: {e}")
+        return None
 
     def _build_user_prompt(self, input_data: Dict[str, Any]) -> str:
         """Build the user prompt with input data."""
@@ -784,6 +803,31 @@ Remember to respond with valid JSON matching the expected output format.
             )
 
             logger.info(f"Recorded metrics for {self.definition.name}: success={success}, duration={duration_ms}ms")
+
+            # Check for achievements
+            try:
+                achievement_tracker = get_achievement_tracker()
+                execution_data = {
+                    "success": success,
+                    "duration_ms": duration_ms,
+                    "iterations": self.iteration_count,
+                    "spawned_agents_count": self.spawned_agents_count,
+                    "tokens_used": self.total_input_tokens + self.total_output_tokens,
+                    "error_type": error_type,
+                    "self_analysis": self_analysis,
+                    "performance_analysis": performance_analysis
+                }
+                awarded = achievement_tracker.check_and_award(
+                    agent_id=self.agent_id,
+                    agent_name=self.definition.name,
+                    agent_class=self.definition.name,
+                    execution_data=execution_data
+                )
+                if awarded:
+                    for achievement in awarded:
+                        logger.info(f"Achievement unlocked for {self.definition.name}: {achievement.achievement_id}")
+            except Exception as ae:
+                logger.warning(f"Achievement check failed (non-critical): {ae}")
 
         except Exception as e:
             logger.error(f"Failed to record metrics: {e}")
