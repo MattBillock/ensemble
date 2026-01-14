@@ -1,142 +1,148 @@
-# Agent Leaderboard System - Requirements
+# Requirements: Executive Director Delegation Guardrails
 
 ## Vision
-Create a whimsical, tongue-in-cheek leaderboard system that tracks and displays agent statistics in comical yet technically accurate categories. The system should provide entertainment value while genuinely reflecting agent performance metrics.
+Ensure the Executive Director agent properly delegates work to specialized agents and never does implementation work itself. Each agent in the ensemble must focus solely on its core strength, with complete guardrails preventing role violations.
 
-## Project Information
-- **Project ID**: 60773c48
-- **Project Name**: agent_leaderboard
-- **Output Directory**: /Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output
+## Problem Statement
+Currently, there's a risk that the Executive Director may be doing too much work directly instead of orchestrating other agents. We need to verify and strengthen guardrails that enforce proper delegation patterns.
 
 ## Objectives
-1. Create an automated agent that generates leaderboard statistics at regular intervals
-2. Track agent performance across multiple humorous but accurate categories
-3. Award special achievements for notable agent behaviors
-4. Present results in an engaging, entertaining format
-5. Integrate with existing ensemble system to collect real agent data
+1. **Verify Executive Director boundaries**: Ensure ED only writes requirements docs and status reports, never implementation code
+2. **Strengthen delegation guardrails**: Add validation, checks, and fail-safes to prevent ED from doing implementation work
+3. **Document agent responsibilities**: Clear delineation of what each agent type should and should not do
+4. **Enforce tool-specific strengths**: Each agent focuses on its specialty only
+5. **Validate orchestration patterns**: Ensure ED properly uses spawn_agent for all implementation work
 
-## Core Features
+## Scope
 
-### 1. Leaderboard Categories (Minimum 8 comical but accurate categories)
-- **Speed Demon**: Fastest average task completion time
-- **Word Wizard**: Most verbose agent (highest word count in outputs)
-- **Efficiency Expert**: Best output-to-input token ratio
-- **Night Owl**: Most activity during late night hours (10pm-6am)
-- **Early Bird**: Most activity during early morning hours (5am-9am)
-- **Tool Titan**: Highest number of tool invocations per task
-- **Minimalist Maestro**: Least verbose while still completing tasks successfully
-- **Spawn Champion**: Agent that spawns the most child agents
-- **Error Enthusiast**: Most errors encountered (but eventually resolved)
-- **First Responder**: Fastest to accept new tasks
+### In Scope
+- Review and enhance Executive Director agent instructions/prompts
+- Add validation logic to detect when ED attempts implementation work
+- Create clear responsibility matrices for all agent types
+- Add pre-checks before ED can proceed without delegation
+- Implement warnings/errors if ED tries to write .py, .js, .jsx, .ts, .tsx files
+- Document proper delegation workflows
+- Add examples of correct vs incorrect delegation patterns
+- Strengthen the "NEVER write implementation code" guardrails
 
-### 2. Special Achievements (Minimum 5)
-- **"I Regret Nothing"**: Retried a failed task 5+ times before succeeding
-- **"Overachiever"**: Completed a task in <10% of estimated time
-- **"War and Peace Author"**: Generated a single output >10,000 characters
-- **"Swiss Army Knife"**: Used 10+ different tools in a single task
-- **"Team Player"**: Successfully collaborated with 5+ different agent types
-- **"Phoenix"**: Recovered from 3+ consecutive errors in one session
-- **"Speedrunner"**: Completed 10+ tasks in under 1 minute each
-- **"Night Shift Legend"**: Completed 50+ tasks between midnight-6am
+### Out of Scope
+- Changing the overall ensemble architecture
+- Modifying other agent types (unless for delegation-related improvements)
+- Adding new agent types
+- Performance optimization unrelated to delegation
+- UI/UX changes to the ensemble interface
 
-### 3. Leaderboard Agent
-Create a dedicated agent that:
-- Runs at configurable intervals (default: hourly)
-- Queries agent activity data from the ensemble system
-- Calculates statistics for all categories
-- Evaluates achievement criteria
-- Generates formatted leaderboard output
-- Stores historical data for trend analysis
-- Can be triggered manually or on schedule
+## User Stories
+
+### As an Executive Director agent:
+- I should only write requirements.md and status reports
+- I must spawn Development Manager for all implementation work
+- I should be blocked from creating .py, .js, .jsx, .ts, .tsx files
+- I need clear validation feedback if I attempt implementation work
+- I should have pre-flight checks before proceeding without delegation
+
+### As a Development Manager:
+- I should receive well-formed requirements from ED
+- I should be responsible for ALL implementation coordination
+- I should spawn appropriate specialized agents for actual coding
+
+### As a Code Writer agent:
+- I should only write implementation code
+- I should never write requirements or orchestration logic
+
+### As a system user:
+- I want confidence that work is being done by the right specialist
+- I want to see clear delegation patterns in execution logs
+- I want validation errors if improper delegation occurs
 
 ## Technical Requirements
 
-### Data Sources
-- Agent activity logs from ~/.ensemble/projects/
-- Task completion records
-- Tool invocation logs
-- Timestamp data for activity patterns
-- Error/retry logs
-- Agent spawn/hierarchy data
+### Validation Requirements
+1. **Pre-spawn validation**: ED must verify requirements exist before spawning Development Manager
+2. **File type restrictions**: ED cannot write files with implementation extensions (.py, .js, .jsx, .ts, .tsx, .java, .cpp, etc.)
+3. **Spawn failure handling**: If spawn_agent fails, ED must error (not implement itself)
+4. **Parameter validation**: Ensure all required fields passed to Development Manager (requirements_file, output_directory, project_name)
 
-### Output Format
-- JSON format for programmatic access
-- Markdown format for human-readable display
-- HTML format for web UI integration (optional)
-- Include timestamps and data collection period
+### Documentation Requirements
+1. **Responsibility Matrix**: Document what each agent type should/shouldn't do
+2. **Delegation Flowcharts**: Visual representation of proper orchestration
+3. **Anti-patterns**: Examples of incorrect delegation to avoid
+4. **Best Practices**: Guidelines for proper agent orchestration
 
-### Storage
-- Store leaderboard results in output directory
-- Maintain historical snapshots (last 30 days)
-- Implement rotation to prevent disk bloat
-
-### Scheduling
-- Configurable interval (default: 1 hour)
-- Support for cron-style scheduling
-- Manual trigger capability
-- Graceful shutdown on system stop
-
-## Implementation Assumptions
-
-### Technology Stack
-- **Language**: Python 3.8+ (matches existing ensemble system)
-- **Scheduling**: APScheduler or similar lightweight scheduler
-- **Data Processing**: Pandas for statistical analysis
-- **Format Generation**: Built-in json, markdown libraries
-- **Configuration**: YAML or JSON config file
-
-### Integration Points
-- Read from existing ensemble project tracking data
-- No modifications to core ensemble system required
-- Standalone agent that can run independently
-- Output compatible with ensemble_ui display
-
-### Performance
-- Complete analysis in <30 seconds for 1000+ agent records
-- Minimal CPU/memory footprint when idle
-- No impact on production agent performance
-
-## Out of Scope
-- Real-time leaderboard updates (batch processing only)
-- User voting or manual category additions
-- Predictive analytics or ML-based insights
-- Multi-system aggregation (single ensemble instance only)
-- Historical trend graphs (data available, but no visualization)
-
-## Success Criteria
-1. ✅ Agent successfully runs on schedule without manual intervention
-2. ✅ Generates accurate statistics from real agent data
-3. ✅ All 8+ categories display meaningful rankings
-4. ✅ Achievements trigger correctly based on criteria
-5. ✅ Output files are well-formatted and readable
-6. ✅ System runs for 24+ hours without errors
-7. ✅ Leaderboard reflects current agent activity within configured interval
-8. ✅ Code is maintainable and well-documented
+### Guardrail Requirements
+1. **Explicit CRITICAL warnings**: Multiple clear warnings in ED instructions about never implementing
+2. **Validation checkpoints**: Specific validation steps ED must complete before proceeding
+3. **Error handling patterns**: Clear rules for what ED does when agents fail
+4. **Escalation paths**: When to ask user vs when to fail fast
 
 ## Constraints
-- Must not interfere with production agent operations
-- Cannot modify existing agent behavior or tracking
-- Should work with current ensemble system architecture
-- Must handle missing or incomplete data gracefully
 
-## Deliverables
-1. Leaderboard agent implementation (Python)
-2. Configuration file with scheduling options
-3. Documentation for setup and usage
-4. Sample output files (JSON + Markdown)
-5. Test suite validating statistics calculations
-6. README with installation and operation instructions
+### Technical Constraints
+- Must work within existing ensemble architecture
+- Cannot break existing delegation patterns that work correctly
+- Must maintain backward compatibility with existing projects
+- Changes should be additive (add guardrails, not remove capabilities)
 
-## Timeline Estimate
-- Requirements: Complete
-- Architecture: ~1 hour
-- Implementation: ~4-6 hours
-- Testing: ~2 hours
-- Documentation: ~1 hour
-- Total: ~8-10 hours
+### Process Constraints
+- ED must always delegate to Development Manager for implementation
+- Development Manager must always delegate to specialized coordinators
+- Code Writers must only write code, never orchestrate
 
-## Notes
-- Tone should be playful and fun while maintaining technical accuracy
-- Categories should celebrate different types of agent "personalities"
-- Achievements should feel rewarding even for unusual behaviors
-- System should be easily extensible for new categories/achievements
+## Success Criteria
+
+### Validation Success
+- [ ] ED cannot create files with implementation extensions
+- [ ] ED errors appropriately when spawn_agent fails (doesn't implement itself)
+- [ ] ED validates requirements exist before spawning
+- [ ] All required parameters validated before spawning Development Manager
+
+### Documentation Success
+- [ ] Clear responsibility matrix exists for all agent types
+- [ ] Examples of correct delegation patterns documented
+- [ ] Anti-patterns clearly identified with explanations
+- [ ] Instructions contain multiple explicit warnings against implementation
+
+### Behavioral Success
+- [ ] ED only writes requirements.md and status reports
+- [ ] All implementation work goes through Development Manager
+- [ ] Each agent stays within its defined role
+- [ ] Proper error handling when delegation fails
+
+### Testing Success
+- [ ] Can verify ED refuses to write .py files
+- [ ] Can verify ED errors when spawn fails
+- [ ] Can verify ED validates before spawning
+- [ ] Can verify proper delegation chain works end-to-end
+
+## Assumptions
+1. The existing ensemble architecture supports agent delegation
+2. The spawn_agent function works as documented
+3. Development Manager properly coordinates implementation
+4. File system operations are reliable
+5. Agents have access to their instruction sets
+
+## Risks
+1. **Over-restrictive guardrails**: Could prevent legitimate ED activities
+   - Mitigation: Carefully define what ED should write (requirements, reports only)
+   
+2. **Validation overhead**: Too many checks could slow execution
+   - Mitigation: Keep validations simple and fast (file existence, parameter checks)
+   
+3. **Edge cases**: Legitimate scenarios where ED needs flexibility
+   - Mitigation: Document exceptions clearly, default to strict delegation
+
+4. **False positives**: Blocking ED from writing legitimate documentation
+   - Mitigation: Whitelist allowed file types (.md, .txt, .json reports)
+
+## Open Questions
+None - proceeding with implementation of guardrail enhancements.
+
+## Definition of Done
+1. Executive Director instructions contain explicit, multiple warnings against implementation
+2. Validation logic prevents ED from writing implementation files
+3. Pre-spawn validation ensures requirements exist and parameters are complete
+4. Error handling properly escalates when delegation fails
+5. Documentation exists showing correct delegation patterns
+6. Responsibility matrix clearly defines all agent roles
+7. All changes committed to version control
+8. Guardrails tested and verified working
