@@ -16,6 +16,7 @@ from .metrics import AgentMetricsTracker
 from .activity_tracker import AgentActivityTracker
 from .resilience import CircuitBreaker, retry_with_exponential_backoff, CircuitBreakerOpenError
 from .validation import ResponseValidator
+from .naming.name_generator import generate_agent_name
 
 # Set up structured logging
 logging.basicConfig(
@@ -92,7 +93,12 @@ class AgentRuntime:
         self.iteration_count = 0
         self.state_manager = StateManager(state_file) if state_file else None
         self.budget_tier = budget_tier
-        self.agent_id = agent_id or f"{definition.name}_{datetime.now().timestamp()}"
+        # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
+        self.agent_id = agent_id or generate_agent_name(
+            agent_type=definition.name,
+            parent_id=parent_agent_id,
+            use_whimsical=True
+        )
         self.request_id = request_id or "unknown"
         self.parent_agent_id = parent_agent_id
         self.spawned_agents_count = 0

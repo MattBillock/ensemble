@@ -10,7 +10,7 @@ alias ensbe="cd $ENSEMBLE_DIR/src/field/ensemble_ui/backend"
 # Service management
 alias ens-restart="$ENSEMBLE_DIR/restart.sh"
 alias ens-logs="$ENSEMBLE_DIR/tail-logs.sh"
-alias ens-stop="pkill -f 'uvicorn.*ensemble' && pkill -f vite && echo '🛑 Ensemble services stopped'"
+alias ens-stop="pkill -f 'uvicorn.*ensemble' 2>/dev/null; pkill -f vite 2>/dev/null; pkill -f 'node.*vite' 2>/dev/null; lsof -ti:8001 | xargs kill -9 2>/dev/null; lsof -ti:5173 | xargs kill -9 2>/dev/null; echo '🛑 Ensemble services stopped'"
 
 # Status checks
 alias ens-status="ps aux | grep -E 'uvicorn.*ensemble|vite' | grep -v grep"
@@ -46,6 +46,8 @@ alias ens-docs="cd $ENSEMBLE_DIR/docs/current && ls -lh"
 # TMUX session for ensemble
 alias ens-tmux="tmux new-session -s ensemble -c $ENSEMBLE_DIR"
 alias ens-attach="tmux attach -t ensemble"
+alias ens-dashboard="$ENSEMBLE_DIR/ens-dashboard.sh"
+alias ens-dash-attach="tmux attach -t ensemble-dash"
 
 echo "✨ Ensemble aliases loaded. Type 'ens-help' for available commands."
 
@@ -94,5 +96,7 @@ ens-help() {
     echo "🖥️  TMUX:"
     echo "  ens-tmux         → Start new tmux session for ensemble"
     echo "  ens-attach       → Attach to existing ensemble tmux session"
+    echo "  ens-dashboard    → Launch tmux dashboard with all services"
+    echo "  ens-dash-attach  → Reattach to dashboard session"
     echo ""
 }
