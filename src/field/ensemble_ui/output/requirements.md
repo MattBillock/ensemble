@@ -1,112 +1,91 @@
-# Requirements Document: Update Ensemble UI Interval Options
+# Requirements Document: Test Writer File Access Enhancement
 
-## Project Overview
-**Project Name:** Update Ensemble UI Interval Options  
-**Project ID:** 7532844e  
-**Date:** 2026-01-13  
-**Prepared By:** Executive Director Agent
+## 1. Vision
+Enable Unit Test Writer and similar test-writing agents in the ensemble system to write test code files and fixtures, ensuring proper permissions and capabilities are configured.
 
-## Vision
-Update the Ensemble UI to provide more appropriate update interval options by changing from high-frequency intervals (500ms, 1s, 2s) to more practical intervals (1s, 1m, 5m) for production use.
+## 2. Objectives
+- Verify and enhance permissions for Unit Test Writer agent to write test files
+- Ensure test fixture files can be created and written by test writer agents
+- Validate that test code files (.py test files, fixture files) are writable
+- Maintain system security while enabling necessary write access
+- Document any configuration changes needed for proper test writer functionality
 
-## Problem Statement
-The current update interval options in the Ensemble UI are:
-- 500ms (500 milliseconds)
-- 1s (1 second)
-- 2s (2 seconds)
+## 3. Core Problem
+The current system may have restrictions preventing Unit Test Writer agents from writing test code files and fixtures, which is essential for TDD (Test-Driven Development) workflow where tests are written before implementation.
 
-These high-frequency intervals are not practical for most production scenarios and may cause unnecessary system load.
+## 4. Solution Approach
+- Review current agent permissions and capabilities for Unit Test Writer
+- Identify file writing restrictions that may block test file creation
+- Update agent configurations to enable test file and fixture writing
+- Verify write access through test scenarios
+- Document proper usage patterns
 
-## Objectives
-1. **Update interval dropdown options** from "500ms, 1s, 2s" to "1s, 1m, 5m"
-2. **Ensure proper functionality** - intervals should apply correctly
-3. **Maintain backward compatibility** where possible
-4. **Update any related documentation** or UI labels
-
-## Scope
+## 5. Scope
 
 ### In Scope
-- Modify UI component(s) displaying interval options
-- Update the underlying logic to handle new time intervals:
-  - 1s = 1 second (1000ms)
-  - 1m = 1 minute (60000ms)
-  - 5m = 5 minutes (300000ms)
-- Update default interval selection if needed
-- Test that intervals apply correctly
-- Update any related UI text or tooltips
+- Unit Test Writer agent permission configuration
+- Test file writing capabilities (.py test files)
+- Fixture file writing capabilities (JSON, YAML, text fixtures)
+- Verification of write access to test directories
+- Documentation of changes made
+- Test validation of new capabilities
 
 ### Out of Scope
-- Adding custom interval input functionality
-- Modifying other UI components unrelated to update intervals
-- Backend API changes (unless required for interval handling)
-- Performance optimization beyond interval changes
+- Modification of core testing frameworks (pytest, unittest)
+- Changes to non-test-writer agents
+- Implementation of new test features beyond file writing
+- UI changes for test management
 
-## User Stories
-1. **As a user**, I want to select reasonable update intervals (1s, 1m, 5m) so that I don't overwhelm the system with unnecessary updates
-2. **As a user**, I want the UI to clearly display what interval is selected so I understand update frequency
-3. **As a user**, I want the selected interval to apply correctly so the UI updates at the expected rate
+## 6. Technical Requirements
 
-## Technical Constraints
-- Must work with existing Ensemble UI codebase
-- Should maintain existing component structure where possible
-- Must convert display values (1s, 1m, 5m) to milliseconds for internal use
+### Functional Requirements
+1. Unit Test Writer must be able to create and write .py test files
+2. Unit Test Writer must be able to create and write fixture files (JSON, YAML, .txt, etc.)
+3. Write operations must support standard test directory structures (tests/, fixtures/, etc.)
+4. Agent must be able to create nested directories as needed
+5. File writing must preserve proper Python syntax and formatting
 
-## Success Criteria
-1. ✅ Dropdown/selector shows "1s", "1m", "5m" instead of "500ms", "1s", "2s"
-2. ✅ Selecting "1s" results in 1-second update interval
-3. ✅ Selecting "1m" results in 1-minute update interval
-4. ✅ Selecting "5m" results in 5-minute update interval
-5. ✅ UI updates at the correct frequency for each selection
-6. ✅ No console errors or warnings
-7. ✅ Changes are properly tested
+### Non-Functional Requirements
+1. Security: Write access limited to appropriate test directories
+2. Performance: File writing operations should complete within reasonable time
+3. Reliability: Write operations should handle errors gracefully
+4. Maintainability: Configuration changes should be well-documented
 
-## Assumptions
-- The Ensemble UI is a web-based interface (likely React or similar framework)
-- There is an existing dropdown/selector component for interval selection
-- The interval value is stored in milliseconds internally
-- The output directory contains or will contain the relevant UI code
-- Standard JavaScript/TypeScript conventions apply
-- No server-side changes are required (intervals applied client-side)
+## 7. Constraints
+- Must maintain compatibility with existing ensemble agent framework
+- Cannot compromise system security or allow arbitrary file access
+- Must work within existing agent permission system
+- Should follow established patterns for agent capabilities
 
-## Non-Functional Requirements
-- **Performance:** UI should remain responsive when updating intervals
-- **Usability:** Clear labeling so users understand time units (s=seconds, m=minutes)
-- **Maintainability:** Code should be well-documented and follow existing patterns
-- **Compatibility:** Should work across modern browsers
+## 8. Success Criteria
+1. Unit Test Writer can successfully create test files in test directories
+2. Unit Test Writer can successfully create fixture files
+3. Written files have correct permissions and formatting
+4. No security vulnerabilities introduced
+5. Documentation clearly explains the changes and how to use them
+6. Verification tests pass demonstrating the capability
 
-## Dependencies
-- Access to Ensemble UI source code
-- Existing UI component structure and state management
+## 9. Target Users
+- Development teams using the ensemble system for TDD
+- Unit Test Writer agent (automated)
+- System administrators configuring agent permissions
+- Developers debugging test writing issues
 
-## Risks and Mitigations
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Breaking existing functionality | High | Thorough testing before deployment |
-| Users have saved preferences with old values | Medium | Handle legacy values gracefully or reset to default |
-| Interval conversion errors | Medium | Unit tests for time conversion logic |
+## 10. Assumptions
+- The ensemble system has an agent configuration or permission system
+- Unit Test Writer agent exists and is currently functional for reading/analyzing
+- The system uses file-based operations for test creation
+- Standard Python testing frameworks (pytest) are in use
+- Agent configurations are stored in accessible configuration files or code
 
-## Out of Scope (Explicit)
-- Custom interval input fields
-- Additional interval options beyond 1s, 1m, 5m
-- Persistent storage of user interval preferences (unless already implemented)
-- Real-time vs polling architecture changes
+## 11. Technical Stack
+- Python (existing ensemble framework language)
+- File system operations (os, pathlib)
+- Agent configuration system (to be identified)
+- Pytest or unittest framework (standard Python testing)
 
-## Deliverables
-1. Updated UI component files with new interval options
-2. Updated logic to handle 1s, 1m, 5m intervals correctly
-3. Unit tests for interval functionality
-4. Updated documentation (if applicable)
-5. This requirements document
-
-## Acceptance Criteria Checklist
-- [ ] Code changes implement 1s, 1m, 5m options
-- [ ] All three intervals function correctly
-- [ ] No regression in existing UI functionality
-- [ ] Tests pass
-- [ ] Code follows project conventions
-- [ ] Changes committed to version control
-
-## Notes
-- This is a straightforward UI update task
-- Should be completed in a single development cycle
-- Focus on clean, maintainable code that follows existing patterns
+## 12. Deliverables
+1. Updated agent configuration enabling test file writing
+2. Verification tests demonstrating capability
+3. Documentation of changes made
+4. Summary report of modifications
