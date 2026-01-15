@@ -1,4 +1,5 @@
 import React from 'react';
+import { generateWhimsicalName, getAgentEmoji } from '../utils/whimsicalNames';
 
 function AgentSummaryPane({ agentStatus }) {
   const agents = agentStatus?.agents || {};
@@ -45,7 +46,11 @@ function AgentSummaryPane({ agentStatus }) {
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white">{agentId}</span>
+                    <span className="text-lg">{getAgentEmoji(agentInfo.type)}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-white">{generateWhimsicalName(agentId)}</span>
+                      <span className="text-xs text-gray-500">{agentId}</span>
+                    </div>
                     {agentInfo.status === 'running' && (
                       <div className="flex gap-1">
                         <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>

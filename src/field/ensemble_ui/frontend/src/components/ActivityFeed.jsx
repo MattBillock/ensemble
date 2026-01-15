@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Badge, Collapse } from 'react-bootstrap';
+import { generateWhimsicalName } from '../utils/whimsicalNames';
 
 const ActivityFeed = ({ activities = [] }) => {
   const [expandedActivities, setExpandedActivities] = useState(new Set());
@@ -106,8 +107,8 @@ const ActivityFeed = ({ activities = [] }) => {
       case 'agent_spawned':
         return (
           <div>
-            <div><strong>Spawned Agent:</strong> {data.spawned_agent_name}</div>
-            <div><strong>Agent ID:</strong> {data.spawned_agent_id}</div>
+            <div><strong>Spawned Agent:</strong> {generateWhimsicalName(data.spawned_agent_id)}</div>
+            <div style={{ fontSize: '11px', color: '#6b7280' }}>Type: {data.spawned_agent_name} • ID: {data.spawned_agent_id}</div>
           </div>
         );
 
@@ -230,7 +231,9 @@ const ActivityFeed = ({ activities = [] }) => {
                 <span style={{ fontSize: '18px' }}>{icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <strong style={{ fontSize: '13px' }}>{activity.agent_name}</strong>
+                    <strong style={{ fontSize: '13px' }} title={`${activity.agent_name} (${activity.agent_id})`}>
+                      {generateWhimsicalName(activity.agent_id)}
+                    </strong>
                     <Badge bg={color} style={{ fontSize: '10px' }}>
                       {activity.activity_type.replace(/_/g, ' ')}
                     </Badge>
