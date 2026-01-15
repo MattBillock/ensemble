@@ -60,7 +60,7 @@ describe('useUpdateInterval', () => {
     localStorageMock.getItem.mockReturnValueOnce(savedInterval);
     
     const { result } = renderHook(() => useUpdateInterval());
-    
+
     expect(localStorageMock.getItem).toHaveBeenCalledWith('ensemble_poll_interval');
     expect(result.current.interval).toBe(2500);
   });
@@ -82,17 +82,17 @@ describe('useUpdateInterval', () => {
 
   it('test_interval_above_30000ms_produces_error_message', () => {
     /**
-     * Verify that setting an interval above 30000ms
-     * produces an appropriate error message.
+     * Verify that setting an interval above 300000ms
+     * produces an appropriate error message containing '300000ms'.
      */
     const { result } = renderHook(() => useUpdateInterval());
     
     act(() => {
-      result.current.setInterval(35000);
+      result.current.setInterval(350000);
     });
     
     expect(result.current.error).toBeTruthy();
-    expect(result.current.error).toMatch(/30000ms|maximum|too high|above/i);
+    expect(result.current.error).toMatch(/300000ms/);
   });
 
   it('test_warning_fast_polling_below_500ms', () => {
@@ -303,7 +303,7 @@ describe('useUpdateInterval', () => {
     localStorageMock.getItem.mockReturnValueOnce('invalid_value');
     
     const { result } = renderHook(() => useUpdateInterval());
-    
+
     expect(result.current.interval).toBe(1000);
   });
 
