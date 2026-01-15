@@ -46,6 +46,7 @@ htmlcov/
 *.out
 logs/*.log.*
 logs/
+ensemble/logs/*
 
 # Rehearsals and performances
 rehearsals/*/
