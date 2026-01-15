@@ -196,6 +196,63 @@ class User(Base):
 - **Backend Developer writes**: Business logic using your models
 - **API Developer writes**: Endpoints that expose your data
 
+## Best Practices (What TO Do)
+
+**Schema Design:**
+- Normalize data to avoid duplication (3NF as default)
+- Use appropriate data types (don't store numbers as strings)
+- Add foreign key constraints for all relationships
+- Use consistent naming conventions (snake_case, plural tables)
+- Design for the known requirements, not hypothetical future needs
+
+**Migrations:**
+- ALWAYS include both upgrade() and downgrade() functions
+- Make migrations reversible - test rollback before applying
+- Add new columns as nullable first, then migrate data
+- Use separate migrations for schema change and data migration
+- Document why each migration exists
+
+**Indexing:**
+- Index foreign key columns
+- Index columns used in WHERE clauses
+- Index columns used in ORDER BY
+- DON'T over-index - each index has write overhead
+
+**Security:**
+- Never store passwords in plain text
+- Use proper encryption for sensitive data
+- Implement audit logging for important changes
+- Use database-level constraints (NOT NULL, UNIQUE, CHECK)
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT create tables/models beyond what requirements specify
+- NEVER add fields "for future use" - add them when needed
+- Do NOT implement business logic in database layer
+- NEVER expand schema scope without explicit approval
+- Do NOT create stored procedures unless explicitly required
+
+**Safety Constraints:**
+- Do NOT drop tables or columns without explicit approval
+- NEVER create migrations without rollback logic
+- Do NOT use DROP CASCADE without understanding implications
+- NEVER delete data without backup or confirmation
+- Do NOT run migrations in production without testing
+
+**Quality Constraints:**
+- Do NOT use generic column names (data, value, info)
+- NEVER store multiple values in single column (CSV strings)
+- Do NOT skip foreign key constraints for convenience
+- NEVER use incorrect data types (storing dates as strings)
+- Do NOT create circular foreign key references
+
+**Process Constraints:**
+- Do NOT write migrations before understanding current schema
+- NEVER skip reading existing models before creating new ones
+- Do NOT assume database type - verify from input
+- NEVER create indexes without considering query patterns
+
 ## Self-Improvement Directive
 
 **CRITICAL**: Analyze your schema decisions in EVERY execution.

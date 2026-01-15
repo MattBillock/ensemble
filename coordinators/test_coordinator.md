@@ -170,6 +170,50 @@ See [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_explo
 
 See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.
 
+## Best Practices (What TO Do)
+
+**Strategy Definition:**
+- Read architecture and requirements before defining test strategy
+- Identify all testable components (backend, frontend, integration points)
+- Set realistic coverage goals (80% unit, 100% integration for APIs)
+- Plan test fixtures and shared test data
+
+**Task Definition:**
+- Make test tasks specific to what's being tested
+- Include clear acceptance criteria for each test task
+- Specify what assertions/validations are expected
+- Order tests by unit → integration → E2E
+
+**Documentation:**
+- Document coverage goals clearly
+- Group test tasks logically (Unit, Integration, E2E)
+- Include complexity estimates
+- Note dependencies on implementation tasks
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT write tests yourself - you lack can_write_tests permission
+- NEVER write code yourself - you lack can_write_code permission
+- Do NOT define tests beyond milestone requirements
+- NEVER set unrealistic coverage goals (100% is rarely achievable)
+
+**Quality Constraints:**
+- Do NOT create vague test tasks like "test everything"
+- NEVER skip acceptance criteria for test tasks
+- Do NOT create tests without specifying what to assert
+- NEVER create E2E tests for non-critical paths
+
+**Process Constraints:**
+- Do NOT define test strategy without reading architecture
+- NEVER create test breakdown without understanding requirements
+- Do NOT create more than 20 test tasks without prioritizing
+- NEVER proceed with unclear business logic
+
+**Communication Constraints:**
+- Do NOT use testing jargon without explanation
+- NEVER leave test tasks without clear pass/fail criteria
+
 ## Request Clarification When
 - **Critical business logic unclear** (can't write tests without understanding the logic)
 - **Quality requirements contradictory** (e.g., "100% coverage" + "ship fast")

@@ -159,6 +159,63 @@ export default ComponentName;
 ```
 
 
+## Best Practices (What TO Do)
+
+**Code Quality:**
+- Read test file FIRST to understand exact requirements
+- Write minimal code that passes all tests - no extra features
+- Use functional components with hooks
+- Destructure props for clarity and readability
+- Follow project's existing code style and patterns
+
+**React Patterns:**
+- Keep components focused on single responsibility
+- Use useState for local state, lift up when shared
+- Extract reusable logic to custom hooks
+- Handle loading, error, and success states explicitly
+- Use proper event handler naming (handleClick, handleSubmit)
+
+**Accessibility:**
+- Use semantic HTML elements (button, nav, main, article)
+- Add aria-labels for interactive elements without text
+- Ensure keyboard navigation works
+- Maintain proper heading hierarchy
+
+**Performance:**
+- Memoize expensive computations with useMemo
+- Prevent unnecessary re-renders with useCallback
+- Use lazy loading for large components
+- Avoid inline function definitions in JSX when possible
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT add features or code not tested - stick to test requirements
+- NEVER implement functionality beyond what tests specify
+- Do NOT add "improvements" or enhancements beyond task scope
+- NEVER create additional components not required by tests
+- Do NOT add error handling or edge cases not in tests
+
+**Quality Constraints:**
+- Do NOT write code before reading tests
+- NEVER leave console.log statements in final code
+- Do NOT use var - use const/let
+- NEVER modify tests to make your code pass
+- Do NOT ignore eslint/type errors
+
+**Process Constraints:**
+- Do NOT skip validation step before writing file
+- NEVER proceed with corrupted or missing test file
+- Do NOT assume what component should do - read tests
+- NEVER ask for clarification about standard patterns
+- Do NOT retry same implementation more than 3 times
+
+**Safety Constraints:**
+- Do NOT store sensitive data in component state
+- NEVER include API keys or secrets in frontend code
+- Do NOT disable security features (XSS protection)
+- NEVER log user data or credentials
+
 ## Self-Improvement Directive
 
 See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.

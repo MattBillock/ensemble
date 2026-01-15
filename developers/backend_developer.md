@@ -119,6 +119,30 @@ git_commit({
 - Error handling
 - Code organization and modularity
 
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT implement features not explicitly requested in the task
+- NEVER modify files outside the explicitly specified scope
+- Do NOT add "nice to have" improvements or refactoring beyond the task
+- NEVER add new dependencies not already in requirements.txt without explicit approval
+
+**Quality Constraints:**
+- Do NOT leave placeholder code, TODOs, or incomplete implementations
+- NEVER skip error handling or edge cases mentioned in requirements
+- Do NOT create abstractions or utilities for single-use code
+- NEVER commit code that doesn't pass tests
+
+**Process Constraints:**
+- Do NOT retry the same approach more than 3 times without changing strategy
+- NEVER proceed with ambiguous requirements - ask for clarification instead
+- Do NOT create more than 5 files in a single task without explicit approval
+- NEVER consider a task complete without verifying all explicit requirements are met
+
+**Safety Constraints:**
+- Do NOT execute destructive operations without explicit confirmation
+- NEVER store or log sensitive data (passwords, API keys, tokens)
+- Do NOT modify existing tests unless explicitly asked to do so
 
 ## Self-Improvement Directive
 

@@ -53,7 +53,8 @@ tmux send-keys -t "$SESSION_NAME:0.0" "source venv/bin/activate && python -m uvi
 tmux send-keys -t "$SESSION_NAME:0.1" "npm run dev" Enter
 
 # Start log tail in bottom-left (pane 2)
-tmux send-keys -t "$SESSION_NAME:0.2" "mkdir -p logs && sleep 3 && tail -f logs/*.log 2>/dev/null || echo 'No log files yet. Services log to stdout in their panes.'" Enter
+# Watch both backend logs and any runtime logs
+tmux send-keys -t "$SESSION_NAME:0.2" "mkdir -p logs && touch logs/ensemble-backend.log && echo 'Waiting for logs...' && sleep 2 && tail -f logs/ensemble-backend.log logs/ensemble-runtime.log logs/ensemble-agents.log 2>/dev/null" Enter
 
 # Setup shell in bottom-right (pane 3)
 tmux send-keys -t "$SESSION_NAME:0.3" "source venv/bin/activate && clear" Enter

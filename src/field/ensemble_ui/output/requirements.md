@@ -1,106 +1,119 @@
-# Requirements: Willow UI Updates - Tabbed Activity Feed
+# Project Cleanup and Documentation Refinement Requirements
 
-## Overview
-Implement approved changes from `frontend_tasks_m1.md` to enhance the Ensemble UI activity feed interface and update the application title.
+## Vision
+Comprehensive cleanup of generated code, documentation, and temporary artifacts throughout the ensemble project. This includes reorganizing files, removing unnecessary artifacts, and refining documentation for accuracy.
 
-## User Approval
-User has explicitly approved the content of `frontend_tasks_m1.md` for implementation.
+## Objectives
 
-## Change Requests
+### 1. Remove Temporary and Build Artifacts
+- Remove all `__pycache__` directories throughout the project
+- Remove all `.pyc` compiled Python files
+- Clean up log files (keeping logs/ directory structure but clearing old logs)
+- Remove any `.tmp`, `.bak` backup files not needed
 
-### 1. Title Change
-**File**: `/src/field/ensemble_ui/frontend/src/App.jsx`
-**Change**: Update the application title from `🎭 Ensemble AI` to `🎭 Willow says Hi`
-**Location**: Header section, line ~134 (the h4 element)
+### 2. Clean Up Output Directory (`/src/field/ensemble_ui/output/`)
+The output directory has accumulated 90+ files from various project runs. Organize as follows:
 
-### 2. Activity Feed Tabbed Interface
-**File**: `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
+**Files to Archive** (move to `output/archive/`):
+- Older milestone plans and task breakdowns (keep only most recent versions)
+- Completed project documentation from past work
+- One-off analysis files that are no longer current
 
-#### 2.1 Remove Dropdown Filter
-- The dropdown filter is actually in App.jsx (Form.Select with activityFilter state)
-- Remove the dropdown from the Activity Feed Card.Header in App.jsx
-- Remove the `activityFilter` state variable and related filtering logic from App.jsx
+**Files to Keep in Root**:
+- `requirements.md` - Current requirements (this file)
+- `architecture.md` - Current architecture document
+- `milestone_plan.md` - Current milestone plan
+- `README.md` - Output directory readme
+- `.gitignore` - Git ignore rules
 
-#### 2.2 Add Tab Filter Constants to ActivityFeed.jsx
-```javascript
-const TAB_FILTERS = {
-  all: { label: 'All', types: null },
-  running: { label: 'Running', types: ['agent_started', 'iteration_started', 'tool_use_started'] },
-  completed: { label: 'Completed', types: ['agent_completed', 'iteration_completed', 'tool_use_completed'] },
-  spawned: { label: 'Spawned', types: ['agent_spawned'] },
-  failed: { label: 'Failed', types: ['agent_failed', 'tool_use_failed'] },
-  other: { label: 'Other', types: ['message', 'question', 'answer', 'task_update', 'status_change', 'file_generated', 'git_commit', 'thinking', 'output_created'] }
-};
-```
+**Directories to Review**:
+- Consolidate related feature directories
+- Remove empty directories
 
-#### 2.3 Tab State Management
-- Add `activeTab` state initialized to 'all'
-- Filter activities based on activeTab selection
-- Pass all activities to ActivityFeed (not pre-filtered)
+### 3. Clean Up Deprecated Scripts
+The `/scripts/deprecated/` directory contains old pipeline scripts that are no longer used:
+- `add_fail_fast_rules.py`
+- `analyze_milestone.py`
+- `build_milestone2.py`
+- `cleanup_drum_corps.sh`
+- `cli_pipeline.py`
+- `complete_milestone2_frontend.py`
+- `complete_ui_pipeline.py`
+- `consolidate_agents.sh`
+- `continue_ensemble.py`
+- `milestone_0_pipeline.py`
 
-#### 2.4 Tab Component UI
-- Horizontal button group below Activity Feed header
-- Each tab shows label and count badge
-- Active tab visually highlighted
-- Dark theme styling (#1a1d29, #242836, #3a3f52)
+**Decision**: These should be deleted as they are in a deprecated folder and the functionality has been superseded.
 
-#### 2.5 Count Badge Calculation
-- Calculate count for each tab based on activity types
-- Counts update when activities change
-- Badge displayed next to tab label
+### 4. Clean Up Log Files
+Log files found:
+- `/backend.log` (15MB+) - Should be rotated/cleared
+- `/logs/backend.log` - Duplicate
+- `/logs/milestone_0_pipeline_run.log` - Old
+- `/logs/cli_pipeline_run.log` - Old
+- `/logs/model_selector_pipeline.log` - Old
+- `/logs/ui_pipeline_run.log` - Old
+- `/src/frontend.log` - Misplaced
+- `/src/field/ensemble_ui/backend/backend.log` - Should be in logs/
 
-#### 2.6 Tab Styling
-- Dark theme colors matching existing UI
-- Hover states for tabs
-- Active tab has distinct background
-- Responsive layout
+**Decision**: Clear all old logs, ensure logging goes to `/logs/` directory only.
 
-## Technical Notes
+### 5. Clean Up Empty/Unused Directories
+- `/performances/` - Empty directory
+- `/rehearsals/` - Empty directory
+- `/problems/` - Contains old problem definitions, may need archiving
 
-### Current State Analysis
-- ActivityFeed.jsx is a pure component that receives `activities` prop
-- The dropdown filter currently exists in App.jsx (lines ~280-297)
-- App.jsx handles the `activityFilter` state and `filteredActivities` computation
-- ActivityFeed.jsx does not currently have any filtering logic
+### 6. Documentation Refinement
 
-### Implementation Approach
-**Option A (Recommended)**: Move filtering INTO ActivityFeed.jsx
-- ActivityFeed receives ALL activities from App.jsx
-- Tab filtering logic lives entirely within ActivityFeed.jsx
-- Cleaner separation of concerns
+**README.md** (root): Current and accurate - no changes needed.
 
-**Option B**: Keep filtering in App.jsx, just change UI
-- Replace dropdown with tabs in App.jsx
-- ActivityFeed stays unchanged
+**QUICKSTART.md**: Verify commands are current and accurate.
 
-**Decision**: Use Option A - Move filtering into ActivityFeed.jsx component for better encapsulation.
+**CLAUDE.md**: Verify project conventions are current.
 
-## Files to Modify
-1. `/src/field/ensemble_ui/frontend/src/App.jsx`
-   - Change title from "Ensemble AI" to "Willow says Hi"
-   - Remove dropdown filter from Activity Feed Card.Header
-   - Remove `activityFilter` state variable
-   - Pass unfiltered `activities` to ActivityFeed (instead of `filteredActivities`)
+**docs/DIRECTORY_STRUCTURE.md**: Comprehensive and accurate - no changes needed.
 
-2. `/src/field/ensemble_ui/frontend/src/components/ActivityFeed.jsx`
-   - Add TAB_FILTERS constant
-   - Add activeTab state
-   - Add filtering logic based on activeTab
-   - Add tab UI component with badges showing counts
-   - Style tabs to match dark theme
+**Verify and update if needed**:
+- `/docs/common_instructions.md`
+- `/docs/project_milestones.md`
+- `/docs/FILE_ORGANIZATION_PLAN.md`
 
-## Acceptance Criteria
-- [ ] Title displays "🎭 Willow says Hi" in header
-- [ ] Horizontal tabbed interface visible in Activity Feed
-- [ ] Tabs: All, Running, Completed, Spawned, Failed, Other
-- [ ] Each tab shows count badge
-- [ ] Active tab is visually distinct
-- [ ] Clicking tab filters activities correctly
-- [ ] Dark theme styling consistent with existing UI
-- [ ] No console errors
-- [ ] All existing activity display functionality preserved
+**Archive old documentation** in `/docs/archive/`:
+- Already properly archived - no action needed
 
-## Dependencies
-- React Bootstrap (existing)
-- Existing ActivityFeed component structure
-- Existing dark theme CSS variables
+### 7. Verify Agent Definitions
+Ensure all agent markdown files in:
+- `/leadership/`
+- `/coordinators/`
+- `/developers/`
+- `/testers/`
+- `/support/`
+- `/designers/`
+
+Are current and match the hierarchy described in README.md.
+
+## Out of Scope
+- No changes to runtime Python code in `/src/runtime/`
+- No changes to UI code in `/frontend/` or `/backend/`
+- No changes to test files in `/tests/`
+- No new feature development
+
+## Success Criteria
+1. All `__pycache__` directories removed
+2. Output directory organized with clear archive structure
+3. Deprecated scripts removed
+4. Log files cleaned up and consolidated to `/logs/`
+5. Documentation verified for accuracy
+6. No broken references or orphaned files
+
+## Execution Notes
+- This is a file organization/cleanup task, not a code development task
+- Use shell commands for bulk operations (rm, mv, find)
+- Create archive directories before moving files
+- Commit changes in logical batches
+
+## Assumptions Made
+- Old log files can be safely deleted (not needed for audit)
+- Deprecated scripts can be permanently removed (functionality superseded)
+- Files older than 7 days in output/ can be archived
+- Empty directories with no clear purpose can be removed

@@ -14,13 +14,37 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Configure structured logging
+# Configure structured logging with file and console output
+LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "ensemble-backend.log"
+
+# Create formatters
+log_format = '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "module": "%(name)s", "message": "%(message)s"}'
+date_format = '%Y-%m-%d %H:%M:%S'
+
+# Console handler (stdout)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
+
+# File handler (rotates at 10MB, keeps 5 backups)
+from logging.handlers import RotatingFileHandler
+file_handler = RotatingFileHandler(
+    LOG_FILE, maxBytes=10*1024*1024, backupCount=5, encoding='utf-8'
+)
+file_handler.setLevel(logging.DEBUG)  # Capture more detail in file
+file_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
+
+# Configure root logger
 logging.basicConfig(
-    level=logging.INFO,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "module": "%(name)s", "message": "%(message)s"}',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    level=logging.DEBUG,
+    format=log_format,
+    datefmt=date_format,
+    handlers=[console_handler, file_handler]
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Logging to file: {LOG_FILE}")
 
 # Custom logging adapter for request IDs
 class RequestLogger(logging.LoggerAdapter):
@@ -1136,6 +1160,600 @@ async def get_self_improvement_status():
         "approved_recommendations": approved_count,
         "rejected_recommendations": rejected_count
     }
+
+# ========== Swarm State Management Endpoints ==========
+
+@app.get("/api/swarm/sessions")
+async def get_swarm_sessions(limit: int = 50, status: str = None):
+    """Get all swarm sessions with optional status filter."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        sessions = state_manager.get_sessions(limit=limit, status=status)
+        return {"sessions": sessions, "count": len(sessions)}
+    except Exception as e:
+        logger.error(f"Error getting swarm sessions: {e}")
+        return {"error": str(e), "sessions": []}
+
+@app.get("/api/swarm/sessions/{session_id}")
+async def get_swarm_session(session_id: str):
+    """Get detailed information about a specific session."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        session = state_manager.get_session(session_id)
+        if not session:
+            return {"error": "Session not found"}, 404
+
+        # Get agents for this session
+        agents = state_manager.get_session_agents(session_id)
+
+        return {
+            "session": session,
+            "agents": agents,
+            "agent_count": len(agents)
+        }
+    except Exception as e:
+        logger.error(f"Error getting session {session_id}: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/swarm/agents")
+async def get_swarm_agents(session_id: str = None, status: str = None, limit: int = 100):
+    """Get all agents with optional filters."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        agents = state_manager.get_agents(
+            session_id=session_id,
+            status=status,
+            limit=limit
+        )
+        return {"agents": agents, "count": len(agents)}
+    except Exception as e:
+        logger.error(f"Error getting swarm agents: {e}")
+        return {"error": str(e), "agents": []}
+
+@app.get("/api/swarm/agents/{agent_id}")
+async def get_swarm_agent(agent_id: str):
+    """Get detailed information about a specific agent."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        agent = state_manager.get_agent(agent_id)
+        if not agent:
+            return {"error": "Agent not found"}, 404
+
+        # Get messages and tool executions
+        messages = state_manager.get_agent_messages(agent_id, limit=50)
+        tool_executions = state_manager.get_agent_tool_executions(agent_id, limit=50)
+
+        return {
+            "agent": agent,
+            "messages": messages,
+            "tool_executions": tool_executions
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent {agent_id}: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/swarm/stats")
+async def get_swarm_stats():
+    """Get overall swarm statistics."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        stats = state_manager.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting swarm stats: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/swarm/events")
+async def get_swarm_events(
+    session_id: str = None,
+    agent_id: str = None,
+    event_type: str = None,
+    limit: int = 100
+):
+    """Get swarm events with optional filters."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        events = state_manager.get_events(
+            session_id=session_id,
+            agent_id=agent_id,
+            event_type=event_type,
+            limit=limit
+        )
+        return {"events": events, "count": len(events)}
+    except Exception as e:
+        logger.error(f"Error getting swarm events: {e}")
+        return {"error": str(e), "events": []}
+
+# ========== Recovery System Endpoints ==========
+
+@app.get("/api/recovery/stalled")
+async def get_stalled_agents(threshold_minutes: int = 5):
+    """Get list of stalled agents that may need recovery."""
+    try:
+        from src.runtime.agents.swarm_state import SwarmStateManager
+        state_manager = SwarmStateManager()
+
+        stalled = state_manager.get_stalled_agents(threshold_minutes)
+        return {"stalled_agents": stalled, "count": len(stalled)}
+    except Exception as e:
+        logger.error(f"Error getting stalled agents: {e}")
+        return {"error": str(e), "stalled_agents": []}
+
+@app.get("/api/recovery/queue")
+async def get_recovery_queue():
+    """Get the current recovery queue status."""
+    try:
+        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator
+        orchestrator = RecoveryOrchestrator()
+
+        queue = orchestrator.get_queue_status()
+        return queue
+    except Exception as e:
+        logger.error(f"Error getting recovery queue: {e}")
+        return {"error": str(e), "queue": []}
+
+@app.post("/api/recovery/trigger/{agent_id}")
+async def trigger_agent_recovery(agent_id: str, strategy: str = "retry"):
+    """Manually trigger recovery for a specific agent."""
+    try:
+        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator, RecoveryStrategy
+        orchestrator = RecoveryOrchestrator()
+
+        # Map string to enum
+        strategy_map = {
+            "retry": RecoveryStrategy.RETRY,
+            "retry_with_backoff": RecoveryStrategy.RETRY_WITH_BACKOFF,
+            "escalate_model": RecoveryStrategy.ESCALATE_MODEL,
+            "spawn_replacement": RecoveryStrategy.SPAWN_REPLACEMENT,
+            "abort": RecoveryStrategy.ABORT
+        }
+
+        recovery_strategy = strategy_map.get(strategy, RecoveryStrategy.RETRY)
+        result = orchestrator.recover_agent(agent_id, recovery_strategy)
+
+        return {
+            "agent_id": agent_id,
+            "strategy": strategy,
+            "result": result
+        }
+    except Exception as e:
+        logger.error(f"Error triggering recovery for {agent_id}: {e}")
+        return {"error": str(e)}
+
+@app.post("/api/recovery/scan")
+async def scan_for_stalled_agents(threshold_minutes: int = 5):
+    """Scan for stalled agents and queue them for recovery."""
+    try:
+        from src.runtime.agents.swarm_recovery import StallDetector
+        detector = StallDetector()
+
+        stalled = detector.detect_stalled_agents(threshold_minutes)
+        queued = detector.queue_for_recovery(stalled)
+
+        return {
+            "scanned": True,
+            "stalled_found": len(stalled),
+            "queued_for_recovery": queued
+        }
+    except Exception as e:
+        logger.error(f"Error scanning for stalled agents: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/recovery/history")
+async def get_recovery_history(limit: int = 50):
+    """Get history of recovery operations."""
+    try:
+        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator
+        orchestrator = RecoveryOrchestrator()
+
+        history = orchestrator.get_recovery_history(limit)
+        return {"history": history, "count": len(history)}
+    except Exception as e:
+        logger.error(f"Error getting recovery history: {e}")
+        return {"error": str(e), "history": []}
+
+# ========== Cost Tracking Endpoints ==========
+
+@app.get("/api/costs/summary")
+async def get_cost_summary(days: int = 30):
+    """Get cost summary for the specified period."""
+    try:
+        from src.runtime.agents.runtime import AgentRuntime
+        tracker = AgentRuntime.get_metrics_tracker()
+
+        # Get token usage stats
+        stats = tracker.get_summary_stats(days)
+
+        # Calculate estimated costs (rough estimates based on Claude pricing)
+        # These are approximate - actual costs depend on the specific model used
+        cost_per_1k_input = 0.003  # ~$3/million input tokens (Sonnet average)
+        cost_per_1k_output = 0.015  # ~$15/million output tokens
+
+        total_input = stats.get("total_input_tokens", 0)
+        total_output = stats.get("total_output_tokens", 0)
+
+        estimated_input_cost = (total_input / 1000) * cost_per_1k_input
+        estimated_output_cost = (total_output / 1000) * cost_per_1k_output
+        estimated_total_cost = estimated_input_cost + estimated_output_cost
+
+        return {
+            "period_days": days,
+            "token_usage": {
+                "total_input_tokens": total_input,
+                "total_output_tokens": total_output,
+                "total_tokens": total_input + total_output
+            },
+            "estimated_costs": {
+                "input_cost_usd": round(estimated_input_cost, 4),
+                "output_cost_usd": round(estimated_output_cost, 4),
+                "total_cost_usd": round(estimated_total_cost, 4)
+            },
+            "execution_stats": {
+                "total_executions": stats.get("total_executions", 0),
+                "successful_executions": stats.get("successful_executions", 0),
+                "failed_executions": stats.get("failed_executions", 0)
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting cost summary: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/costs/by-agent")
+async def get_costs_by_agent(days: int = 30):
+    """Get cost breakdown by agent type."""
+    try:
+        from src.runtime.agents.runtime import AgentRuntime
+        tracker = AgentRuntime.get_metrics_tracker()
+
+        # Get per-agent stats
+        agent_stats = tracker.get_success_rate_by_agent(days=days)
+
+        cost_per_1k_input = 0.003
+        cost_per_1k_output = 0.015
+
+        agent_costs = []
+        for agent in agent_stats.get("agents", []):
+            input_tokens = agent.get("avg_input_tokens", 0) * agent.get("total_executions", 0)
+            output_tokens = agent.get("avg_output_tokens", 0) * agent.get("total_executions", 0)
+
+            estimated_cost = (input_tokens / 1000) * cost_per_1k_input + \
+                           (output_tokens / 1000) * cost_per_1k_output
+
+            agent_costs.append({
+                "agent_name": agent.get("agent_name"),
+                "executions": agent.get("total_executions", 0),
+                "total_input_tokens": int(input_tokens),
+                "total_output_tokens": int(output_tokens),
+                "estimated_cost_usd": round(estimated_cost, 4)
+            })
+
+        # Sort by cost descending
+        agent_costs.sort(key=lambda x: x["estimated_cost_usd"], reverse=True)
+
+        return {
+            "period_days": days,
+            "agents": agent_costs,
+            "total_agents": len(agent_costs)
+        }
+    except Exception as e:
+        logger.error(f"Error getting costs by agent: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/costs/by-model")
+async def get_costs_by_model(days: int = 30):
+    """Get cost breakdown by model used."""
+    try:
+        from src.runtime.agents.runtime import AgentRuntime
+        tracker = AgentRuntime.get_metrics_tracker()
+
+        model_stats = tracker.get_success_rate_by_model(days=days)
+
+        # Model-specific pricing (approximate)
+        model_pricing = {
+            "claude-sonnet-4-20250514": {"input": 0.003, "output": 0.015},
+            "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
+            "claude-3-5-haiku-20241022": {"input": 0.001, "output": 0.005},
+            "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
+            "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},
+            "default": {"input": 0.003, "output": 0.015}
+        }
+
+        model_costs = []
+        for model in model_stats.get("models", []):
+            model_id = model.get("model_id", "unknown")
+            pricing = model_pricing.get(model_id, model_pricing["default"])
+
+            input_tokens = model.get("total_input_tokens", 0)
+            output_tokens = model.get("total_output_tokens", 0)
+
+            estimated_cost = (input_tokens / 1000) * pricing["input"] + \
+                           (output_tokens / 1000) * pricing["output"]
+
+            model_costs.append({
+                "model_id": model_id,
+                "executions": model.get("total_executions", 0),
+                "total_input_tokens": input_tokens,
+                "total_output_tokens": output_tokens,
+                "estimated_cost_usd": round(estimated_cost, 4),
+                "pricing": pricing
+            })
+
+        model_costs.sort(key=lambda x: x["estimated_cost_usd"], reverse=True)
+
+        return {
+            "period_days": days,
+            "models": model_costs,
+            "total_models": len(model_costs)
+        }
+    except Exception as e:
+        logger.error(f"Error getting costs by model: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/costs/trends")
+async def get_cost_trends(days: int = 30, granularity: str = "day"):
+    """Get cost trends over time."""
+    try:
+        from src.runtime.agents.runtime import AgentRuntime
+        tracker = AgentRuntime.get_metrics_tracker()
+
+        trends = tracker.get_performance_trends(days=days)
+
+        cost_per_1k_input = 0.003
+        cost_per_1k_output = 0.015
+
+        cost_trends = []
+        for point in trends.get("trends", []):
+            input_tokens = point.get("total_input_tokens", 0)
+            output_tokens = point.get("total_output_tokens", 0)
+
+            estimated_cost = (input_tokens / 1000) * cost_per_1k_input + \
+                           (output_tokens / 1000) * cost_per_1k_output
+
+            cost_trends.append({
+                "date": point.get("date"),
+                "executions": point.get("executions", 0),
+                "total_tokens": input_tokens + output_tokens,
+                "estimated_cost_usd": round(estimated_cost, 4)
+            })
+
+        return {
+            "period_days": days,
+            "granularity": granularity,
+            "trends": cost_trends
+        }
+    except Exception as e:
+        logger.error(f"Error getting cost trends: {e}")
+        return {"error": str(e)}
+
+# ========== Data Retention Endpoints ==========
+
+@app.get("/api/retention/status")
+async def get_retention_status():
+    """Get current data retention status and database size."""
+    try:
+        from src.runtime.agents.data_retention import DataRetentionManager
+        manager = DataRetentionManager()
+
+        status = manager.get_status()
+        return status
+    except Exception as e:
+        logger.error(f"Error getting retention status: {e}")
+        return {"error": str(e)}
+
+@app.post("/api/retention/cleanup")
+async def trigger_cleanup(dry_run: bool = True):
+    """Trigger data cleanup based on retention policies."""
+    try:
+        from src.runtime.agents.data_retention import DataRetentionManager
+        manager = DataRetentionManager()
+
+        result = manager.run_cleanup(dry_run=dry_run)
+        return {
+            "dry_run": dry_run,
+            "result": result
+        }
+    except Exception as e:
+        logger.error(f"Error running cleanup: {e}")
+        return {"error": str(e)}
+
+@app.post("/api/retention/archive/{session_id}")
+async def archive_session(session_id: str):
+    """Archive a completed session."""
+    try:
+        from src.runtime.agents.data_retention import DataArchiver
+        archiver = DataArchiver()
+
+        result = archiver.archive_session_by_id(session_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error archiving session {session_id}: {e}")
+        return {"error": str(e)}
+
+# ========== Streaming Control Endpoints ==========
+
+class StreamingConfig(BaseModel):
+    enabled: bool = True
+    poll_interval_ms: int = 2000  # Default 2 seconds
+    event_types: list = None  # Filter specific event types
+
+# Global streaming configuration
+_streaming_config = {
+    "enabled": True,
+    "poll_interval_ms": 2000,
+    "event_types": None
+}
+
+@app.get("/api/streaming/config")
+async def get_streaming_config():
+    """Get current streaming/polling configuration."""
+    return _streaming_config
+
+@app.post("/api/streaming/config")
+async def update_streaming_config(config: StreamingConfig):
+    """Update streaming/polling configuration."""
+    global _streaming_config
+    _streaming_config["enabled"] = config.enabled
+    _streaming_config["poll_interval_ms"] = max(500, min(config.poll_interval_ms, 30000))  # Clamp between 500ms and 30s
+    _streaming_config["event_types"] = config.event_types
+
+    logger.info(f"Streaming config updated: enabled={config.enabled}, interval={_streaming_config['poll_interval_ms']}ms")
+
+    return _streaming_config
+
+@app.post("/api/streaming/start")
+async def start_streaming():
+    """Enable real-time streaming updates."""
+    global _streaming_config
+    _streaming_config["enabled"] = True
+    return {"status": "streaming_enabled", "config": _streaming_config}
+
+@app.post("/api/streaming/stop")
+async def stop_streaming():
+    """Disable real-time streaming updates."""
+    global _streaming_config
+    _streaming_config["enabled"] = False
+    return {"status": "streaming_disabled", "config": _streaming_config}
+
+# ========== System Polish Endpoints ==========
+
+class SystemPolishRequest(BaseModel):
+    scope: str = "full"  # full|agents|codebase|documentation|tests
+    iterations_per_agent: int = 100
+    time_range_days: int = 30
+    auto_apply: bool = False
+    focus_areas: list = None
+
+@app.post("/api/system-polish/start")
+async def start_system_polish(request: SystemPolishRequest, background_tasks: BackgroundTasks):
+    """Start a System Polish Refresh task."""
+    import uuid
+    polish_id = str(uuid.uuid4())[:8]
+
+    # Store the request for the background task
+    polish_config = {
+        "polish_id": polish_id,
+        "scope": request.scope,
+        "iterations_per_agent": request.iterations_per_agent,
+        "time_range_days": request.time_range_days,
+        "auto_apply": request.auto_apply,
+        "focus_areas": request.focus_areas or ["performance", "costs", "quality", "focus", "redundancy"],
+        "started_at": datetime.now().isoformat(),
+        "status": "running"
+    }
+
+    # Store config for status tracking
+    config_path = Path.home() / ".ensemble" / "polish_results" / f"{polish_id}_config.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, 'w') as f:
+        json.dump(polish_config, f, indent=2)
+
+    logger.info(f"Started System Polish Refresh: {polish_id}")
+    return {
+        "polish_id": polish_id,
+        "status": "started",
+        "message": "System Polish Refresh initiated. Check /api/system-polish/status for progress."
+    }
+
+@app.get("/api/system-polish/status/{polish_id}")
+async def get_polish_status(polish_id: str):
+    """Get status of a System Polish Refresh task."""
+    result_path = Path.home() / ".ensemble" / "polish_results" / f"{polish_id}.json"
+    config_path = Path.home() / ".ensemble" / "polish_results" / f"{polish_id}_config.json"
+
+    if result_path.exists():
+        with open(result_path) as f:
+            data = json.load(f)
+        if "error" in data:
+            return {"polish_id": polish_id, "status": "failed", "error": data["error"]}
+        return {
+            "polish_id": polish_id,
+            "status": "completed",
+            "result": data.get("result"),
+            "completed_at": data.get("completed_at")
+        }
+
+    if config_path.exists():
+        with open(config_path) as f:
+            config = json.load(f)
+        return {"polish_id": polish_id, "status": "running", "config": config}
+
+    return {"polish_id": polish_id, "status": "not_found"}
+
+@app.get("/api/system-polish/history")
+async def get_polish_history(limit: int = 10):
+    """Get history of System Polish Refresh executions."""
+    results_dir = Path.home() / ".ensemble" / "polish_results"
+    if not results_dir.exists():
+        return {"history": [], "count": 0}
+
+    history = []
+    for result_file in sorted(results_dir.glob("*_config.json"), reverse=True)[:limit]:
+        polish_id = result_file.stem.replace("_config", "")
+        with open(result_file) as f:
+            config = json.load(f)
+
+        # Check if completed
+        completed_path = results_dir / f"{polish_id}.json"
+        status = "completed" if completed_path.exists() else "running"
+
+        history.append({
+            "polish_id": polish_id,
+            "scope": config.get("scope"),
+            "status": status,
+            "started_at": config.get("started_at")
+        })
+
+    return {"history": history, "count": len(history)}
+
+# ========== Guardrail System Endpoints ==========
+
+@app.get("/api/guardrails/stats")
+async def get_guardrail_stats():
+    """Get guardrail system statistics."""
+    try:
+        from src.runtime.agents.guardrail_system import get_guardrail_system
+        system = get_guardrail_system()
+        return system.get_guardrail_stats()
+    except Exception as e:
+        logger.error(f"Error getting guardrail stats: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/guardrails/agent/{agent_type:path}")
+async def get_guardrails_for_agent(agent_type: str):
+    """Get guardrails applicable to a specific agent type."""
+    try:
+        from src.runtime.agents.guardrail_system import get_guardrail_system
+        system = get_guardrail_system()
+        guardrails = system.get_guardrails_for_agent(agent_type)
+        return {
+            "agent_type": agent_type,
+            "guardrails": [
+                {
+                    "id": g.id,
+                    "text": g.text,
+                    "category": g.category.value,
+                    "severity": g.severity,
+                    "success_rate": g.success_rate
+                }
+                for g in guardrails
+            ],
+            "count": len(guardrails)
+        }
+    except Exception as e:
+        logger.error(f"Error getting guardrails for {agent_type}: {e}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     # Development mode with auto-reload

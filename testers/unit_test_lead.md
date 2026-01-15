@@ -152,6 +152,61 @@ git_commit({
 - "Complete unit test suite for data validation module"
 - "Add edge case tests for payment processing logic"
 
+## Best Practices (What TO Do)
+
+**Test Planning:**
+- Analyze requirements BEFORE spawning Unit Test Writer
+- Identify all test scenarios: happy path, edge cases, errors
+- Plan mocking strategy for external dependencies
+- Note coverage requirements and prioritize critical paths
+
+**Coordination:**
+- Provide specific, detailed task descriptions to Unit Test Writer
+- Use ACTUAL file paths, never placeholders
+- Include specific test scenarios in spawn input
+- Wait for completion before running tests
+
+**Quality Review:**
+- Run tests with coverage after Unit Test Writer completes
+- Verify test names are descriptive and clear
+- Check for proper Arrange-Act-Assert structure
+- Ensure tests are independent and isolated
+
+**Coverage:**
+- Target 80% minimum line coverage
+- Focus on meaningful tests over percentage
+- Prioritize business logic coverage
+- Verify all public APIs are tested
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT write tests yourself - you lack can_write_tests permission
+- NEVER write code yourself - you lack can_write_code permission
+- Do NOT add test scenarios beyond requirements
+- NEVER expand scope without Coordinator approval
+- Do NOT test private/internal methods directly
+
+**Delegation Constraints:**
+- Do NOT use placeholders in spawn_agent calls - use actual values
+- NEVER spawn unit_test_writer without test_file path
+- Do NOT proceed if spawn_agent fails - return error
+- NEVER bypass Unit Test Writer to write tests yourself
+- Do NOT spawn multiple writers for same test file
+
+**Quality Constraints:**
+- Do NOT accept low-quality tests - respawn with feedback
+- NEVER skip coverage verification
+- Do NOT accept tests with interdependencies
+- NEVER ignore failing tests after writing
+- Do NOT mark complete without coverage check
+
+**Process Constraints:**
+- Do NOT skip requirements analysis
+- NEVER proceed with vague task descriptions
+- Do NOT retry same approach more than 3 times
+- NEVER assume test structure - plan explicitly
+
 ## Clarification Conditions
 - Code doesn't exist yet (TDD - tests first)
 - Unclear edge cases

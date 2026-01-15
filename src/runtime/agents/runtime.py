@@ -2,6 +2,7 @@
 import json
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
@@ -19,6 +20,11 @@ from .validation import ResponseValidator
 from .naming.name_generator import generate_agent_name
 from .self_improvement import get_improvement_loop
 from .achievements import get_achievement_tracker
+
+# New system integrations
+from .swarm_state import get_swarm_state
+from .event_bus import get_event_bus, EventType
+from .model_router import get_model_router, TaskProfile
 
 # Set up structured logging
 logging.basicConfig(
@@ -65,6 +71,21 @@ class AgentRuntime:
             )
         return cls._circuit_breaker
 
+    @classmethod
+    def get_swarm_state(cls):
+        """Get the swarm state manager."""
+        return get_swarm_state()
+
+    @classmethod
+    def get_event_bus(cls):
+        """Get the event bus for real-time communication."""
+        return get_event_bus()
+
+    @classmethod
+    def get_model_router(cls, api_key: Optional[str] = None):
+        """Get the model router for dynamic model selection."""
+        return get_model_router(anthropic_key=api_key)
+
     def __init__(
         self,
         definition: AgentDefinition,
@@ -74,7 +95,9 @@ class AgentRuntime:
         budget_tier: str = "balanced",
         agent_id: Optional[str] = None,
         request_id: Optional[str] = None,
-        parent_agent_id: Optional[str] = None
+        parent_agent_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        use_dynamic_model_selection: bool = True
     ):
         """
         Initialize agent runtime.
@@ -84,17 +107,21 @@ class AgentRuntime:
             api_key: Anthropic API key
             tools: Optional tool registry for agent capabilities
             state_file: Optional path to state file for persistence/resume
-            budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
+            budget_tier: Budget tier for model selection (full_firepower, balanced, economical, dynamic)
             agent_id: Optional agent ID for metrics tracking
             request_id: Optional request ID for tracing
             parent_agent_id: Optional parent agent ID for hierarchy tracking
+            session_id: Optional session ID for swarm state tracking
+            use_dynamic_model_selection: Whether to use dynamic model router with fuzzing
         """
         self.definition = definition
+        self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
         self.tools = tools
         self.iteration_count = 0
         self.state_manager = StateManager(state_file) if state_file else None
         self.budget_tier = budget_tier
+        self.use_dynamic_model_selection = use_dynamic_model_selection
         # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
         self.agent_id = agent_id or generate_agent_name(
             agent_type=definition.name,
@@ -102,6 +129,7 @@ class AgentRuntime:
             use_whimsical=True
         )
         self.request_id = request_id or "unknown"
+        self.session_id = session_id
         self.parent_agent_id = parent_agent_id
         self.spawned_agents_count = 0
         self.start_time = None
@@ -114,6 +142,86 @@ class AgentRuntime:
         self.prune_frequency = 10  # Prune every 10 iterations
         # User input for resume
         self.user_answer = None
+
+        # Register with swarm state if session exists
+        if self.session_id:
+            self._register_with_swarm_state()
+
+    def _register_with_swarm_state(self):
+        """Register this agent with the swarm state manager."""
+        try:
+            swarm_state = self.get_swarm_state()
+            swarm_state.register_agent(
+                agent_id=self.agent_id,
+                session_id=self.session_id,
+                agent_type=self.definition.category,
+                agent_name=self.definition.name,
+                request_id=self.request_id,
+                parent_agent_id=self.parent_agent_id,
+                max_iterations=self.definition.max_iterations
+            )
+
+            # Emit agent spawned event
+            event_bus = self.get_event_bus()
+            event_bus.publish_agent_spawned(
+                session_id=self.session_id,
+                agent_id=self.agent_id,
+                agent_type=self.definition.category,
+                agent_name=self.definition.name,
+                parent_agent_id=self.parent_agent_id
+            )
+        except Exception as e:
+            logger.warning(f"Failed to register with swarm state: {e}")
+
+    def _select_model_dynamic(self, input_data: Dict[str, Any]) -> str:
+        """
+        Select model using dynamic model router with quality fuzzing.
+
+        Args:
+            input_data: Input data to analyze for complexity
+
+        Returns:
+            Selected model ID
+        """
+        try:
+            router = self.get_model_router(self.api_key)
+
+            # Build task description from input
+            task_desc = ""
+            for key in ["problem_description", "task", "user_vision", "milestone"]:
+                if key in input_data:
+                    task_desc = str(input_data[key])
+                    break
+
+            # Analyze task profile
+            profile = router.analyze_task_profile(
+                task_description=task_desc or self.definition.purpose,
+                agent_type=self.definition.name,
+                context_size=len(str(input_data))
+            )
+
+            # Determine mode based on budget_tier
+            if self.budget_tier == "full_firepower":
+                mode = "full_power"
+            elif self.budget_tier == "economical":
+                mode = "economical"
+            else:
+                mode = "dynamic"
+
+            # Select model
+            result = router.select_model(task_profile=profile, mode=mode)
+
+            logger.info(f"Dynamic model selection: {result.selection_reason}")
+
+            return result.model_id
+
+        except Exception as e:
+            logger.warning(f"Dynamic model selection failed, falling back to static: {e}")
+            return ModelSelector.select_model(
+                budget_tier=self.budget_tier,
+                task_complexity=self.definition.task_complexity,
+                agent_name=self.definition.name
+            )
 
     def set_user_answer(self, answer: str):
         """
@@ -147,18 +255,33 @@ class AgentRuntime:
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(input_data)
 
-        # Select model using ModelSelector based on budget tier and task complexity
-        model = ModelSelector.select_model(
-            budget_tier=self.budget_tier,
-            task_complexity=self.definition.task_complexity,
-            agent_name=self.definition.name
-        )
+        # Select model - use dynamic router if enabled, otherwise static selection
+        if self.use_dynamic_model_selection and self.budget_tier != "full_firepower":
+            model = self._select_model_dynamic(input_data)
+        else:
+            model = ModelSelector.select_model(
+                budget_tier=self.budget_tier,
+                task_complexity=self.definition.task_complexity,
+                agent_name=self.definition.name
+            )
 
         # Store model for metrics
         self.model_used = model
 
         logger.info(f"Executing agent: {self.definition.name}")
         logger.info(f"Using model: {model} (tier={self.budget_tier}, complexity={self.definition.task_complexity})")
+
+        # Update swarm state with model info
+        if self.session_id:
+            try:
+                swarm_state = self.get_swarm_state()
+                swarm_state.update_agent_status(
+                    self.agent_id,
+                    status="running",
+                    iteration=0
+                )
+            except Exception as e:
+                logger.warning(f"Failed to update swarm state: {e}")
 
         # Record agent start in activity tracker
         activity_tracker = self.get_activity_tracker()

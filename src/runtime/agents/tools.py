@@ -915,7 +915,15 @@ class ToolRegistry:
         return [tool.to_anthropic_format() for tool in self._tools.values()]
 
     @classmethod
-    def default(cls, agent_definition: Optional["AgentDefinition"] = None, request_id: Optional[str] = None, output_directory: Optional[str] = None) -> "ToolRegistry":
+    def default(
+        cls,
+        agent_definition: Optional["AgentDefinition"] = None,
+        request_id: Optional[str] = None,
+        output_directory: Optional[str] = None,
+        session_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        working_directory: Optional[Path] = None
+    ) -> "ToolRegistry":
         """
         Create a registry with default tools.
 
@@ -923,11 +931,34 @@ class ToolRegistry:
             agent_definition: Optional agent definition for permission checking
             request_id: Optional request ID for project tracking
             output_directory: Optional output directory for project tracking
+            session_id: Optional session ID for tracking
+            agent_id: Optional agent ID for tracking
+            working_directory: Optional working directory for git operations
         """
+        from .git_tools import GitBranchTool, GitMergeTool, GitStatusTool
+
         registry = cls()
         registry.register(WriteFileTool(agent_definition))
         registry.register(ReadFileTool())
         registry.register(RunCommandTool())
-        registry.register(GitCommitTool())  # Add git commit capability
-        registry.register(ProjectTrackingTool(request_id=request_id, output_directory=output_directory))  # Add project tracking
+        registry.register(GitCommitTool(
+            working_directory=working_directory,
+            agent_id=agent_id,
+            request_id=request_id
+        ))
+        registry.register(GitBranchTool(
+            working_directory=working_directory,
+            agent_id=agent_id,
+            session_id=session_id
+        ))
+        registry.register(GitMergeTool(
+            working_directory=working_directory,
+            agent_id=agent_id,
+            session_id=session_id
+        ))
+        registry.register(GitStatusTool(working_directory=working_directory))
+        registry.register(ProjectTrackingTool(
+            request_id=request_id,
+            output_directory=output_directory
+        ))
         return registry

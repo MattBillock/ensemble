@@ -144,6 +144,50 @@ See [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_explo
 
 See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.
 
+## Best Practices (What TO Do)
+
+**Task Analysis:**
+- Read architecture and requirements thoroughly before breaking down
+- Identify all frontend components (pages, components, services, state)
+- Map user flows and interaction patterns
+- Order tasks by layout → components → pages priorities
+
+**Task Definition:**
+- Make tasks small enough to complete in 1-5 TDD cycles
+- Include clear acceptance criteria for each task
+- Specify user interactions and expected behavior
+- Note which components or services each task creates
+
+**Documentation:**
+- Use consistent task naming patterns
+- Group related tasks logically (Layout, Components, Services, Pages)
+- Include complexity estimates
+- Document component hierarchy and relationships
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT write code yourself - you lack can_write_code permission
+- NEVER write tests yourself - you lack can_write_tests permission
+- Do NOT add UI features beyond milestone requirements
+- NEVER expand scope without Development Manager approval
+
+**Quality Constraints:**
+- Do NOT create vague tasks like "build UI"
+- NEVER skip acceptance criteria
+- Do NOT create tasks without dependency mapping
+- NEVER create tasks too large to estimate
+
+**Process Constraints:**
+- Do NOT skip reading architecture document
+- NEVER create task breakdown without reading requirements
+- Do NOT create more than 15 tasks without checking with manager
+- NEVER proceed with contradictory UI requirements
+
+**Communication Constraints:**
+- Do NOT use technical jargon without explanation
+- NEVER leave tasks without clear completion criteria
+
 ## Request Clarification When
 - **User flow is genuinely ambiguous** (e.g., "manage users" without specifying CRUD operations)
 - **Multiple valid UX approaches with major trade-offs** (e.g., modal vs full-page form)

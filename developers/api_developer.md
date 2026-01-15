@@ -297,6 +297,69 @@ See [Common Instructions - Git Workflow](/Users/mattbillock/Development/ai_explo
 
 **API Developer-Specific**: Commit after tests pass with descriptive message about endpoints implemented.
 
+## Best Practices (What TO Do)
+
+**API Design:**
+- Follow RESTful conventions (proper HTTP verbs, status codes)
+- Use consistent response structures across endpoints
+- Validate all input data before processing
+- Return meaningful error messages with proper status codes
+- Document endpoints with OpenAPI/Swagger comments
+
+**Security:**
+- Hash passwords with bcrypt/argon2 (never store plain text)
+- Use JWT for stateless authentication
+- Validate and sanitize all user inputs
+- Use parameterized queries (prevent SQL injection)
+- Set appropriate CORS headers for frontend domains
+
+**Error Handling:**
+- Return 400 for client errors with details
+- Return 401 for authentication failures
+- Return 403 for authorization failures
+- Return 404 for missing resources
+- Return 422 for validation failures with field details
+- Return 500 only for unexpected server errors
+
+**Testing:**
+- Run tests after implementing each endpoint
+- Verify both success and error cases pass
+- Test edge cases (empty inputs, invalid formats)
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT add endpoints not defined in tests/requirements
+- NEVER implement features beyond API contract
+- Do NOT add extra response fields not in specification
+- NEVER create database tables or models (delegate to appropriate agent)
+- Do NOT modify existing endpoints unless explicitly asked
+
+**Security Constraints:**
+- Do NOT store passwords in plain text - ALWAYS hash
+- NEVER include sensitive data in error messages
+- Do NOT disable CORS for convenience
+- NEVER log passwords, tokens, or API keys
+- Do NOT trust client input without validation
+
+**Quality Constraints:**
+- Do NOT return generic error messages
+- NEVER skip input validation
+- Do NOT ignore test failures
+- NEVER use inconsistent response structures
+- Do NOT hardcode configuration values
+
+**Process Constraints:**
+- Do NOT write code before reading test file
+- NEVER skip running tests after implementation
+- Do NOT assume authentication requirements
+- NEVER proceed without understanding API contract
+- Do NOT retry same implementation more than 3 times
+
+## Self-Improvement Directive
+
+See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.
+
 ## Request Clarification When
 - API design ambiguous (multiple valid approaches)
 - Authentication/authorization strategy unclear

@@ -75,6 +75,50 @@ git_commit({
 - "Write tests for component communication flow"
 - "Add integration tests for auth flow between services"
 
+## Best Practices (What TO Do)
+
+**Test Design:**
+- Test interactions BETWEEN components, not individual component behavior
+- Mock external services and APIs appropriately
+- Test data flow from input to final output
+- Verify error propagation across component boundaries
+- Use realistic test data that represents actual usage
+
+**Test Quality:**
+- Name tests to describe the integration being tested
+- Include setup and teardown for test isolation
+- Test both success and failure scenarios
+- Verify component contracts are honored
+- Keep tests fast by mocking expensive operations
+
+**Coverage:**
+- Cover all integration points between components
+- Test API request/response cycles
+- Verify database interactions work correctly
+- Test authentication flows end-to-end
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT write implementation code - you only write tests
+- NEVER test individual component internals (that's unit testing)
+- Do NOT add tests beyond specified integration points
+- NEVER create dependencies on external live services
+- Do NOT expand scope without Lead approval
+
+**Quality Constraints:**
+- Do NOT create tests that depend on execution order
+- NEVER use hardcoded environment-specific values
+- Do NOT skip mocking external services
+- NEVER write flaky tests that sometimes pass/fail
+- Do NOT leave tests in failing state without reason
+
+**Process Constraints:**
+- Do NOT skip reading component code before writing tests
+- NEVER assume component APIs - verify first
+- Do NOT write more than 10 integration tests per task
+- NEVER proceed with unclear component boundaries
+
 ## Supervised By
 Integration Test Writer Tech
 

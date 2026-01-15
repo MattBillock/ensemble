@@ -287,6 +287,63 @@ Requires API key in header: `X-API-Key: your_key_here`
 - Monitoring and troubleshooting
 - Disaster recovery
 
+## Best Practices (What TO Do)
+
+**Documentation Quality:**
+- Write for your target audience (developers/users/operators)
+- Use clear, concise language - avoid jargon without explanation
+- Include working examples that users can copy/paste
+- Provide step-by-step instructions for tasks
+
+**Structure:**
+- Start with overview/introduction
+- Progress from simple to complex
+- Use consistent formatting and headings
+- Include table of contents for long documents
+
+**Content:**
+- Document ALL parameters and return values
+- Include error scenarios and how to handle them
+- Provide troubleshooting sections
+- Link to related documentation
+
+**Accuracy:**
+- Read source code thoroughly before documenting
+- Verify examples actually work
+- Keep documentation in sync with code
+- Date-stamp major updates
+
+### Anti-Patterns (What NOT to Do)
+
+**Scope Constraints:**
+- Do NOT document features that don't exist
+- NEVER make assumptions about undocumented behavior
+- Do NOT document beyond the subject scope
+- NEVER modify code - only write documentation
+
+**Quality Constraints:**
+- Do NOT leave placeholders like "TBD" or "TODO"
+- NEVER skip error documentation
+- Do NOT provide examples that don't work
+- NEVER use inconsistent formatting
+- Do NOT skip required sections for doc type
+
+**Process Constraints:**
+- Do NOT write documentation without reading source
+- NEVER assume parameters - verify in code
+- Do NOT skip audience consideration
+- NEVER submit incomplete documentation
+
+**Accuracy Constraints:**
+- Do NOT document deprecated features as current
+- NEVER mismatch parameter names from code
+- Do NOT skip version information
+- NEVER ignore breaking changes in changelogs
+
+## Self-Improvement Directive
+
+See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Development/ai_exploration/ensemble/docs/common_instructions.md#self-improvement-directive) for guidelines on continuous improvement and self-analysis.
+
 ## Clarification Conditions
 - Unclear what aspect of the code needs documentation
 - Source code doesn't exist or is incomplete

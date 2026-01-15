@@ -342,3 +342,347 @@ export const getAgentAchievements = async (agentClass) => {
     throw error;
   }
 };
+
+// ========== Swarm State Management API ==========
+
+export const getSwarmSessions = async (limit = 50, status = null) => {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (status) params.append('status', status);
+    const response = await fetch(`${API_BASE_URL}/api/swarm/sessions?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch swarm sessions');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm sessions error:', error);
+    throw error;
+  }
+};
+
+export const getSwarmSession = async (sessionId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/sessions/${sessionId}`);
+    if (!response.ok) throw new Error('Failed to fetch session');
+    return await response.json();
+  } catch (error) {
+    console.error('Get session error:', error);
+    throw error;
+  }
+};
+
+export const getSwarmAgents = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.session_id) params.append('session_id', filters.session_id);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    const response = await fetch(`${API_BASE_URL}/api/swarm/agents?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch swarm agents');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm agents error:', error);
+    throw error;
+  }
+};
+
+export const getSwarmAgent = async (agentId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/agents/${agentId}`);
+    if (!response.ok) throw new Error('Failed to fetch agent');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm agent error:', error);
+    throw error;
+  }
+};
+
+export const getSwarmStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/stats`);
+    if (!response.ok) throw new Error('Failed to fetch swarm stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm stats error:', error);
+    throw error;
+  }
+};
+
+export const getSwarmEvents = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.session_id) params.append('session_id', filters.session_id);
+    if (filters.agent_id) params.append('agent_id', filters.agent_id);
+    if (filters.event_type) params.append('event_type', filters.event_type);
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    const response = await fetch(`${API_BASE_URL}/api/swarm/events?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch swarm events');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm events error:', error);
+    throw error;
+  }
+};
+
+// ========== Recovery System API ==========
+
+export const getStalledAgents = async (thresholdMinutes = 5) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/recovery/stalled?threshold_minutes=${thresholdMinutes}`);
+    if (!response.ok) throw new Error('Failed to fetch stalled agents');
+    return await response.json();
+  } catch (error) {
+    console.error('Get stalled agents error:', error);
+    throw error;
+  }
+};
+
+export const getRecoveryQueue = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/recovery/queue`);
+    if (!response.ok) throw new Error('Failed to fetch recovery queue');
+    return await response.json();
+  } catch (error) {
+    console.error('Get recovery queue error:', error);
+    throw error;
+  }
+};
+
+export const triggerRecovery = async (agentId, strategy = 'retry') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/recovery/trigger/${agentId}?strategy=${strategy}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to trigger recovery');
+    return await response.json();
+  } catch (error) {
+    console.error('Trigger recovery error:', error);
+    throw error;
+  }
+};
+
+export const scanForStalledAgents = async (thresholdMinutes = 5) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/recovery/scan?threshold_minutes=${thresholdMinutes}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to scan for stalled agents');
+    return await response.json();
+  } catch (error) {
+    console.error('Scan for stalled agents error:', error);
+    throw error;
+  }
+};
+
+export const getRecoveryHistory = async (limit = 50) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/recovery/history?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch recovery history');
+    return await response.json();
+  } catch (error) {
+    console.error('Get recovery history error:', error);
+    throw error;
+  }
+};
+
+// ========== Cost Tracking API ==========
+
+export const getCostSummary = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/costs/summary?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch cost summary');
+    return await response.json();
+  } catch (error) {
+    console.error('Get cost summary error:', error);
+    throw error;
+  }
+};
+
+export const getCostsByAgent = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/costs/by-agent?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch costs by agent');
+    return await response.json();
+  } catch (error) {
+    console.error('Get costs by agent error:', error);
+    throw error;
+  }
+};
+
+export const getCostsByModel = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/costs/by-model?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch costs by model');
+    return await response.json();
+  } catch (error) {
+    console.error('Get costs by model error:', error);
+    throw error;
+  }
+};
+
+export const getCostTrends = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/costs/trends?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch cost trends');
+    return await response.json();
+  } catch (error) {
+    console.error('Get cost trends error:', error);
+    throw error;
+  }
+};
+
+// ========== Data Retention API ==========
+
+export const getRetentionStatus = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/retention/status`);
+    if (!response.ok) throw new Error('Failed to fetch retention status');
+    return await response.json();
+  } catch (error) {
+    console.error('Get retention status error:', error);
+    throw error;
+  }
+};
+
+export const triggerCleanup = async (dryRun = true) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/retention/cleanup?dry_run=${dryRun}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to trigger cleanup');
+    return await response.json();
+  } catch (error) {
+    console.error('Trigger cleanup error:', error);
+    throw error;
+  }
+};
+
+export const archiveSession = async (sessionId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/retention/archive/${sessionId}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to archive session');
+    return await response.json();
+  } catch (error) {
+    console.error('Archive session error:', error);
+    throw error;
+  }
+};
+
+// ========== Streaming Control API ==========
+
+export const getStreamingConfig = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streaming/config`);
+    if (!response.ok) throw new Error('Failed to fetch streaming config');
+    return await response.json();
+  } catch (error) {
+    console.error('Get streaming config error:', error);
+    throw error;
+  }
+};
+
+export const updateStreamingConfig = async (config) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streaming/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (!response.ok) throw new Error('Failed to update streaming config');
+    return await response.json();
+  } catch (error) {
+    console.error('Update streaming config error:', error);
+    throw error;
+  }
+};
+
+export const startStreaming = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streaming/start`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to start streaming');
+    return await response.json();
+  } catch (error) {
+    console.error('Start streaming error:', error);
+    throw error;
+  }
+};
+
+export const stopStreaming = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streaming/stop`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to stop streaming');
+    return await response.json();
+  } catch (error) {
+    console.error('Stop streaming error:', error);
+    throw error;
+  }
+};
+
+// ========== System Polish API ==========
+
+export const startSystemPolish = async (config = {}) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/system-polish/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scope: config.scope || 'full',
+        iterations_per_agent: config.iterationsPerAgent || 100,
+        time_range_days: config.timeRangeDays || 30,
+        auto_apply: config.autoApply || false,
+        focus_areas: config.focusAreas || ['performance', 'costs', 'quality', 'focus', 'redundancy']
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to start system polish');
+    return await response.json();
+  } catch (error) {
+    console.error('Start system polish error:', error);
+    throw error;
+  }
+};
+
+export const getPolishStatus = async (polishId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/system-polish/status/${polishId}`);
+    if (!response.ok) throw new Error('Failed to get polish status');
+    return await response.json();
+  } catch (error) {
+    console.error('Get polish status error:', error);
+    throw error;
+  }
+};
+
+export const getPolishHistory = async (limit = 10) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/system-polish/history?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to get polish history');
+    return await response.json();
+  } catch (error) {
+    console.error('Get polish history error:', error);
+    throw error;
+  }
+};
+
+// ========== Guardrail System API ==========
+
+export const getGuardrailStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/guardrails/stats`);
+    if (!response.ok) throw new Error('Failed to get guardrail stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Get guardrail stats error:', error);
+    throw error;
+  }
+};
+
+export const getGuardrailsForAgent = async (agentType) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/guardrails/agent/${encodeURIComponent(agentType)}`);
+    if (!response.ok) throw new Error('Failed to get guardrails for agent');
+    return await response.json();
+  } catch (error) {
+    console.error('Get guardrails for agent error:', error);
+    throw error;
+  }
+};
