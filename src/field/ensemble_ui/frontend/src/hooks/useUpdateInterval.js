@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const STORAGE_KEY = 'ensemble_poll_interval';
 const DEFAULT_INTERVAL = 1000;
 const MIN_INTERVAL = 200;
-const MAX_INTERVAL = 30000;
+const MAX_INTERVAL = 300000;
 const FAST_THRESHOLD = 500;
 const SLOW_THRESHOLD = 5000;
 const DEBOUNCE_DELAY = 300;
@@ -40,7 +40,7 @@ const useUpdateInterval = () => {
       setWarning('');
       return false;
     } else if (value > MAX_INTERVAL) {
-      setError('Interval too high - maximum is 30000ms');
+      setError('Interval too high - maximum is 300000ms');
       setWarning('');
       return false;
     } else {
@@ -95,7 +95,7 @@ const useUpdateInterval = () => {
             setError('Interval too low - minimum is 200ms');
             setWarning('');
           } else if (parsed > MAX_INTERVAL) {
-            setError('Interval too high - maximum is 30000ms');
+            setError('Interval too high - maximum is 300000ms');
             setWarning('');
           } else {
             setError('');
