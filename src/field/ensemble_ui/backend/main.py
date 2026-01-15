@@ -400,6 +400,9 @@ class AgentOrchestrator:
             output_dir = self.project_root / "src" / "field" / "ensemble_ui" / "output"
             output_dir.mkdir(parents=True, exist_ok=True)
 
+            # Generate project_id for this execution
+            project_id = str(uuid.uuid4())[:8]
+
             # Store agent info with tracing metadata
             self.active_agents[agent_id] = {
                 "type": "executive_director",
@@ -408,6 +411,8 @@ class AgentOrchestrator:
                 "budget_tier": budget_tier,
                 "messages": [],  # Conversation history
                 "request_id": request_id,
+                "project_id": project_id,  # Project grouping
+                "current_stage": "requirements",  # Stage tracking
                 "created_at": datetime.now().isoformat(),
                 "parent_agent_id": None,  # Top-level agent
                 "spawned_agents": [],  # Track children
@@ -1187,6 +1192,60 @@ async def get_git_repo_info():
     """Get auto-detected GitHub repository information."""
     repo_info = GitHubIntegration.get_repo_info(str(orchestrator.project_root))
     return repo_info
+
+
+# ========== Project Summary Endpoints ==========
+
+@app.get("/api/projects/summary")
+async def get_projects_summary():
+    """Get summary of all projects grouped by project_id."""
+    projects = {}
+
+    for agent_id, agent_info in orchestrator.active_agents.items():
+        project_id = agent_info.get("project_id", agent_info.get("request_id", "default"))
+        if project_id not in projects:
+            projects[project_id] = {
+                "project_id": project_id,
+                "project_name": agent_info.get("problem", "")[:50],
+                "total_agents": 0,
+                "active_agents": 0,
+                "completed_agents": 0,
+                "failed_agents": 0,
+                "awaiting_input": 0,
+                "current_stage": "unknown",
+                "created_at": agent_info.get("created_at"),
+            }
+
+        projects[project_id]["total_agents"] += 1
+        status = agent_info.get("status", "unknown")
+        if status == "running":
+            projects[project_id]["active_agents"] += 1
+        elif status == "completed":
+            projects[project_id]["completed_agents"] += 1
+        elif status in ("error", "forever_failed"):
+            projects[project_id]["failed_agents"] += 1
+        elif status == "awaiting_user_input":
+            projects[project_id]["awaiting_input"] += 1
+
+        # Update stage from top-level agent (executive_director)
+        if agent_info.get("type") == "executive_director":
+            projects[project_id]["current_stage"] = agent_info.get("current_stage", "unknown")
+            projects[project_id]["project_name"] = agent_info.get("problem", "")[:50]
+
+    # Calculate stage distribution
+    stage_counts = {}
+    for p in projects.values():
+        stage = p.get("current_stage", "unknown")
+        stage_counts[stage] = stage_counts.get(stage, 0) + 1
+
+    return {
+        "projects": list(projects.values()),
+        "summary": {
+            "total_projects": len(projects),
+            "active_projects": sum(1 for p in projects.values() if p["active_agents"] > 0),
+            "stage_distribution": stage_counts,
+        }
+    }
 
 @app.get("/api/deliverables/{request_id}")
 async def get_deliverables(request_id: str):

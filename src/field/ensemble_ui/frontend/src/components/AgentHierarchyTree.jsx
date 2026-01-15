@@ -1,8 +1,29 @@
 import React, { useState } from 'react';
 import { Badge } from 'react-bootstrap';
 
+const STAGE_ICONS = {
+  'requirements': '📋',
+  'architecture': '🏗️',
+  'planning': '📝',
+  'implementation': '💻',
+  'testing': '🧪',
+  'complete': '✅',
+  'unknown': '❓'
+};
+
+const STAGE_COLORS = {
+  'requirements': 'bg-purple-500/30 text-purple-200',
+  'architecture': 'bg-blue-500/30 text-blue-200',
+  'planning': 'bg-yellow-500/30 text-yellow-200',
+  'implementation': 'bg-orange-500/30 text-orange-200',
+  'testing': 'bg-cyan-500/30 text-cyan-200',
+  'complete': 'bg-green-500/30 text-green-200',
+  'unknown': 'bg-gray-500/30 text-gray-300'
+};
+
 const AgentHierarchyTree = ({ hierarchy = {} }) => {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const [expandedProjects, setExpandedProjects] = useState(new Set());
 
   const toggleNode = (agentId) => {
     const newExpanded = new Set(expandedNodes);
@@ -12,6 +33,16 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
       newExpanded.add(agentId);
     }
     setExpandedNodes(newExpanded);
+  };
+
+  const toggleProject = (projectId) => {
+    const newExpanded = new Set(expandedProjects);
+    if (newExpanded.has(projectId)) {
+      newExpanded.delete(projectId);
+    } else {
+      newExpanded.add(projectId);
+    }
+    setExpandedProjects(newExpanded);
   };
 
   const getStatusBadge = (status) => {
@@ -110,14 +141,124 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
     return !node.parent_agent_id || !hierarchy[node.parent_agent_id];
   });
 
+  // Group agents by project
+  const projectGroups = {};
+  rootNodes.forEach(agentId => {
+    const node = hierarchy[agentId];
+    const projectId = node.project_id || node.request_id || 'default';
+    if (!projectGroups[projectId]) {
+      projectGroups[projectId] = {
+        projectId,
+        projectName: node.problem || node.agent_name || 'Unknown Project',
+        stage: node.current_stage || 'unknown',
+        agents: [],
+        stats: { running: 0, completed: 0, failed: 0, awaiting: 0 }
+      };
+    }
+    projectGroups[projectId].agents.push(agentId);
+    // Count status across all agents in project (including children)
+    const countStats = (aid) => {
+      const n = hierarchy[aid];
+      if (!n) return;
+      const status = n.status;
+      if (status === 'running') projectGroups[projectId].stats.running++;
+      else if (status === 'completed') projectGroups[projectId].stats.completed++;
+      else if (status === 'failed' || status === 'error' || status === 'forever_failed') projectGroups[projectId].stats.failed++;
+      else if (status === 'awaiting_user_input') projectGroups[projectId].stats.awaiting++;
+      (n.children || []).forEach(countStats);
+    };
+    countStats(agentId);
+  });
+
+  const renderProjectGroup = (project) => {
+    const isExpanded = expandedProjects.has(project.projectId);
+    const stageIcon = STAGE_ICONS[project.stage] || STAGE_ICONS.unknown;
+    const stageColor = STAGE_COLORS[project.stage] || STAGE_COLORS.unknown;
+    const totalAgents = project.stats.running + project.stats.completed + project.stats.failed + project.stats.awaiting;
+
+    return (
+      <div key={project.projectId} style={{ marginBottom: '12px' }}>
+        {/* Project Header */}
+        <div
+          onClick={() => toggleProject(project.projectId)}
+          style={{
+            padding: '10px 14px',
+            backgroundColor: '#242836',
+            borderRadius: '6px',
+            border: '2px solid #3a3f52',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5a5f72'}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#3a3f52'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '12px', color: '#6b7280', width: '12px' }}>
+              {isExpanded ? '▼' : '▶'}
+            </span>
+            <span style={{ fontSize: '18px' }}>{stageIcon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <strong style={{ fontSize: '14px', color: '#fff' }}>
+                  {project.projectName.length > 40 ? project.projectName.slice(0, 40) + '...' : project.projectName}
+                </strong>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${stageColor}`}>
+                  {project.stage}
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                Project ID: {project.projectId}
+              </div>
+            </div>
+            {/* Stats badges */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {project.stats.running > 0 && (
+                <Badge bg="warning" pill style={{ fontSize: '10px' }}>
+                  {project.stats.running} running
+                </Badge>
+              )}
+              {project.stats.completed > 0 && (
+                <Badge bg="success" pill style={{ fontSize: '10px' }}>
+                  {project.stats.completed} done
+                </Badge>
+              )}
+              {project.stats.failed > 0 && (
+                <Badge bg="danger" pill style={{ fontSize: '10px' }}>
+                  {project.stats.failed} failed
+                </Badge>
+              )}
+              {project.stats.awaiting > 0 && (
+                <Badge bg="info" pill style={{ fontSize: '10px' }}>
+                  {project.stats.awaiting} waiting
+                </Badge>
+              )}
+              <Badge bg="secondary" pill style={{ fontSize: '10px' }}>
+                {totalAgents} total
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded agent list */}
+        {isExpanded && (
+          <div style={{ marginTop: '8px', marginLeft: '20px' }}>
+            {project.agents.map(agentId => renderNode(agentId))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const projects = Object.values(projectGroups);
+
   return (
     <div>
-      {rootNodes.length === 0 ? (
+      {projects.length === 0 ? (
         <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
           No agents running. Start a task to see the agent hierarchy here.
         </div>
       ) : (
-        rootNodes.map(agentId => renderNode(agentId))
+        projects.map(project => renderProjectGroup(project))
       )}
     </div>
   );

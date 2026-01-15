@@ -12,6 +12,7 @@ import {
 } from './services/api';
 import ActivityFeed from './components/ActivityFeed';
 import AgentHierarchyTree from './components/AgentHierarchyTree';
+import StatusSummaryBar from './components/StatusSummaryBar';
 import PendingQuestions from './components/PendingQuestions';
 import GeneratedFiles from './components/GeneratedFiles';
 import MetricsDashboard from './components/MetricsDashboard';
@@ -361,7 +362,8 @@ function App() {
                 </div>
               </Card.Header>
               {!sectionsCollapsed.hierarchy && (
-                <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: '12px' }}>
+                <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: '12px' }}>
+                  <StatusSummaryBar agentStatus={agentStatus} />
                   <AgentHierarchyTree hierarchy={hierarchy} />
                 </Card.Body>
               )}
