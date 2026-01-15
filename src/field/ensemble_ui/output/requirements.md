@@ -1,58 +1,28 @@
-# Activity Tracker Cleanup System Requirements
+# Agent Configuration Restoration Requirements
 
-## Problem Statement
-Memory growth issues in the request cleanup system due to incomplete implementation of clear_request() and lack of activity filtering.
+## Objective
+Restore and verify the configuration of code implementation agents, specifically:
+1. code_writer agent
+2. development_manager agent
 
-## Objectives
-1. Complete the clear_request() method in ActivityTracker
-2. Implement request-based activity filtering
-3. Add configurable activity retention and cleanup mechanism
-4. Prevent memory leaks during long-running sessions
+## Specific Concerns
+- Current system prevents automatic code generation
+- Project progression is blocked
+- Agents are not properly configured or missing
 
-## Detailed Requirements
-### 1. Request Cleanup
-- Fully remove request-specific data when clear_request() is called
-- Ensure no orphaned data remains after cleanup
-- Preserve data for active requests
+## Verification Steps
+1. Check existing agent configurations
+2. Identify missing or misconfigured components
+3. Restore/reconfigure necessary agents
+4. Validate agent functionality
 
-### 2. Activity Filtering
-- Enable filtering activities by request_id
-- Support complex filter conditions (date, status, type)
-- Minimal performance overhead
-
-### 3. Retention Mechanism
-- Configurable retention period for activities
-- Automatic cleanup of old activities
-- Configurable retention policies (time-based, count-based)
-
-## Acceptance Criteria
-- ✓ clear_request() removes all associated request data
-- ✓ Activities can be filtered by request_id
-- ✓ Old activities automatically cleaned up
-- ✓ Memory usage remains stable
-- ✓ No impact on existing system functionality
-
-## Files to Modify
-- src/runtime/agents/activity_tracker.py
-- Related test files in test/ directory
-
-## Constraints
-- Use TDD approach: Write tests first, then implementation
-- Maintain existing API contract
-- Minimal performance impact
-- No data loss for active requests
+## Success Criteria
+- code_writer agent can generate code automatically
+- development_manager can coordinate project tasks
+- No blocking errors prevent code generation
+- Agents can be spawned successfully
 
 ## Assumptions
-- Retention configuration will be handled via configuration file
-- Default retention period of 30 days for inactive requests
-- Cleanup process runs periodically in background
-
-## Out of Scope
-- Complete rewrite of activity tracking system
-- Changes to core logging mechanisms
-- Performance optimizations beyond cleanup
-
-## Risks
-- Potential data loss if cleanup logic is incorrect
-- Performance overhead from filtering/cleanup
-- Compatibility with existing integrations
+- Agent configurations are stored in a centralized location
+- Underlying infrastructure supports agent spawning
+- No major system-level blockers exist
