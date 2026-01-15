@@ -788,7 +788,8 @@ class SpawnAgentTool:
         tools: Optional["ToolRegistry"] = None,
         budget_tier: str = "balanced",
         parent_agent_id: Optional[str] = None,
-        request_id: Optional[str] = None
+        request_id: Optional[str] = None,
+        session_id: Optional[str] = None
     ):
         """
         Initialize spawn agent tool.
@@ -800,6 +801,7 @@ class SpawnAgentTool:
             budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
             parent_agent_id: ID of the agent spawning this tool (for metrics)
             request_id: Request ID for tracing (for metrics)
+            session_id: Session ID for swarm state tracking
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
@@ -807,6 +809,7 @@ class SpawnAgentTool:
         self.budget_tier = budget_tier
         self.parent_agent_id = parent_agent_id
         self.request_id = request_id or "unknown"
+        self.session_id = session_id
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
@@ -852,7 +855,8 @@ class SpawnAgentTool:
                 budget_tier=self.budget_tier,
                 agent_id=spawned_agent_id,
                 request_id=self.request_id,
-                parent_agent_id=self.parent_agent_id
+                parent_agent_id=self.parent_agent_id,
+                session_id=self.session_id  # Pass session ID for swarm state tracking
             )
 
             # Execute the agent

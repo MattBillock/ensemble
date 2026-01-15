@@ -313,6 +313,22 @@ class AgentOrchestrator:
             'problem_length': len(problem_description)
         })
 
+        # Create a swarm session for tracking
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm_state = get_swarm_state()
+        session_id = swarm_state.create_session(
+            request_id=request_id,
+            user_prompt=problem_description,
+            budget_tier=budget_tier,
+            title=f"Task {self.request_count}"  # Will be updated by title generator
+        )
+
+        self.logger.info(f"Created swarm session: {session_id}", extra={
+            'request_id': request_id,
+            'agent_id': agent_id,
+            'session_id': session_id
+        })
+
         # Detect GitHub repo URL (cached after first call)
         github_repo_url = GitHubIntegration.detect_repo_url(str(self.project_root))
 
@@ -342,7 +358,8 @@ class AgentOrchestrator:
                 tools=tools,
                 budget_tier=budget_tier,  # Pass budget tier to spawned agents
                 parent_agent_id=agent_id,  # This agent is the parent for spawned agents
-                request_id=request_id  # Pass request ID for tracing
+                request_id=request_id,  # Pass request ID for tracing
+                session_id=session_id  # Pass session ID for swarm state tracking
             )
             tools.register(spawn_tool)
 
@@ -375,7 +392,8 @@ class AgentOrchestrator:
                 budget_tier=budget_tier,
                 agent_id=agent_id,
                 request_id=request_id,
-                parent_agent_id=None  # Top-level agent
+                parent_agent_id=None,  # Top-level agent
+                session_id=session_id  # For swarm state tracking
             )
 
             # Prepare input data
@@ -597,7 +615,7 @@ async def generate_solution(request: ProblemRequest):
 
 @app.websocket("/ws/agent-status")
 async def agent_status_ws(websocket: WebSocket):
-    """WebSocket endpoint for real-time agent status updates"""
+    """WebSocket endpoint for real-time agent status updates (legacy)"""
     await websocket.accept()
     orchestrator.active_connections.append(websocket)
     orchestrator.logger.info(f"WebSocket connected",
@@ -646,6 +664,150 @@ async def agent_status_ws(websocket: WebSocket):
                                     'agent_id': 'websocket',
                                     'remaining_connections': len(orchestrator.active_connections)
                                 })
+
+
+@app.websocket("/ws/events")
+async def events_ws(websocket: WebSocket):
+    """
+    Enhanced WebSocket endpoint for real-time event streaming.
+
+    Supports subscriptions and filtering. Send a JSON message to configure:
+    {
+        "action": "subscribe",
+        "event_types": ["agent_spawned", "agent_completed", "tool_use"],
+        "filters": {"request_id": "abc123"}
+    }
+    """
+    from src.runtime.agents.websocket_manager import get_websocket_manager, EventType
+
+    await websocket.accept()
+    ws_manager = get_websocket_manager()
+
+    # Default subscriptions (all events)
+    subscriptions = set(EventType)
+    filters = {}
+
+    # Register client
+    client_id = await ws_manager.register_client(
+        websocket=websocket,
+        subscriptions=subscriptions,
+        filters=filters
+    )
+
+    orchestrator.logger.info(f"Enhanced WebSocket connected: {client_id}",
+                            extra={
+                                'request_id': 'ws',
+                                'agent_id': 'websocket',
+                                'client_id': client_id
+                            })
+
+    try:
+        # Send connection confirmation
+        await websocket.send_json({
+            "type": "connected",
+            "timestamp": datetime.now().isoformat(),
+            "data": {
+                "client_id": client_id,
+                "subscriptions": [s.value for s in subscriptions],
+                "message": "Connected to Ensemble event stream"
+            }
+        })
+
+        # Listen for subscription updates
+        while True:
+            try:
+                message = await websocket.receive_json()
+
+                action = message.get("action")
+
+                if action == "subscribe":
+                    # Update subscriptions
+                    event_types = message.get("event_types", [])
+                    if event_types:
+                        subscriptions = {
+                            EventType(et) for et in event_types
+                            if et in [e.value for e in EventType]
+                        }
+
+                    new_filters = message.get("filters", {})
+                    await ws_manager.update_subscriptions(
+                        client_id,
+                        subscriptions,
+                        new_filters
+                    )
+
+                    await websocket.send_json({
+                        "type": "subscription_updated",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": {
+                            "subscriptions": [s.value for s in subscriptions],
+                            "filters": new_filters
+                        }
+                    })
+
+                elif action == "ping":
+                    # Respond to ping
+                    await websocket.send_json({
+                        "type": "pong",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": {}
+                    })
+
+                elif action == "get_buffer":
+                    # Send buffered events
+                    buffer_data = list(ws_manager.event_buffer)
+                    await websocket.send_json({
+                        "type": "buffered_events",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": {
+                            "events": buffer_data,
+                            "count": len(buffer_data)
+                        }
+                    })
+
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                orchestrator.logger.warning(f"WebSocket message error: {e}",
+                                          extra={
+                                              'request_id': 'ws',
+                                              'agent_id': 'websocket',
+                                              'client_id': client_id
+                                          })
+                # Send error but don't disconnect
+                try:
+                    await websocket.send_json({
+                        "type": "error",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": {"message": str(e)}
+                    })
+                except:
+                    break
+
+    except WebSocketDisconnect:
+        orchestrator.logger.info(f"Enhanced WebSocket disconnected: {client_id}",
+                                extra={
+                                    'request_id': 'ws',
+                                    'agent_id': 'websocket',
+                                    'client_id': client_id
+                                })
+    finally:
+        await ws_manager.unregister_client(client_id)
+        orchestrator.logger.info(f"Enhanced WebSocket cleanup complete: {client_id}",
+                                extra={
+                                    'request_id': 'ws',
+                                    'agent_id': 'websocket',
+                                    'client_id': client_id
+                                })
+
+
+@app.get("/api/websocket/stats")
+async def get_websocket_stats():
+    """Get WebSocket connection statistics."""
+    from src.runtime.agents.websocket_manager import get_websocket_manager
+
+    ws_manager = get_websocket_manager()
+    return ws_manager.get_stats()
 
 @app.get("/api/status")
 async def get_application_status():

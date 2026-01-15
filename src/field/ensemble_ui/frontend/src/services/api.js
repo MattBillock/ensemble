@@ -85,6 +85,204 @@ export const connectWebSocket = (onMessage, onError) => {
   return ws;
 };
 
+/**
+ * Enhanced WebSocket connection with subscriptions, reconnection, and event filtering.
+ *
+ * @param {Object} options - Connection options
+ * @param {Function} options.onEvent - Callback for events: (event) => void
+ * @param {Function} options.onConnect - Called when connected: (clientId) => void
+ * @param {Function} options.onDisconnect - Called when disconnected: () => void
+ * @param {Function} options.onError - Called on error: (error) => void
+ * @param {string[]} options.eventTypes - Event types to subscribe to (default: all)
+ * @param {Object} options.filters - Event filters like {request_id: "abc123"}
+ * @param {boolean} options.autoReconnect - Auto-reconnect on disconnect (default: true)
+ * @param {number} options.maxRetries - Max reconnection attempts (default: 10)
+ * @returns {Object} - Connection controller with methods: close(), subscribe(), ping()
+ */
+export const connectEnhancedWebSocket = (options = {}) => {
+  const {
+    onEvent = () => {},
+    onConnect = () => {},
+    onDisconnect = () => {},
+    onError = () => {},
+    eventTypes = null,
+    filters = {},
+    autoReconnect = true,
+    maxRetries = 10,
+  } = options;
+
+  let ws = null;
+  let clientId = null;
+  let reconnectAttempts = 0;
+  let reconnectTimeout = null;
+  let isClosing = false;
+  let currentSubscriptions = eventTypes;
+  let currentFilters = filters;
+
+  const connect = () => {
+    if (isClosing) return;
+
+    ws = new WebSocket('ws://localhost:8001/ws/events');
+
+    ws.onopen = () => {
+      console.log('✅ Enhanced WebSocket connected');
+      reconnectAttempts = 0;
+
+      // Subscribe to specific event types if provided
+      if (currentSubscriptions) {
+        ws.send(JSON.stringify({
+          action: 'subscribe',
+          event_types: currentSubscriptions,
+          filters: currentFilters
+        }));
+      }
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+
+        // Handle connection confirmation
+        if (message.type === 'connected') {
+          clientId = message.data?.client_id;
+          onConnect(clientId);
+          return;
+        }
+
+        // Handle subscription updates
+        if (message.type === 'subscription_updated') {
+          console.log('📬 Subscriptions updated:', message.data);
+          return;
+        }
+
+        // Handle pong (keep-alive response)
+        if (message.type === 'pong') {
+          return;
+        }
+
+        // Handle buffered events
+        if (message.type === 'buffered_events') {
+          const events = message.data?.events || [];
+          events.forEach(e => onEvent(e));
+          return;
+        }
+
+        // Handle errors
+        if (message.type === 'error') {
+          onError(new Error(message.data?.message || 'Unknown error'));
+          return;
+        }
+
+        // Regular event
+        onEvent(message);
+
+      } catch (error) {
+        console.error('WebSocket message parse error:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('❌ Enhanced WebSocket error:', error);
+    };
+
+    ws.onclose = (event) => {
+      console.log('🔌 Enhanced WebSocket disconnected', event.code, event.reason);
+      clientId = null;
+      onDisconnect();
+
+      // Attempt reconnection with exponential backoff
+      if (autoReconnect && !isClosing && reconnectAttempts < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        console.log(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${maxRetries})`);
+
+        reconnectTimeout = setTimeout(connect, delay);
+      } else if (reconnectAttempts >= maxRetries) {
+        onError(new Error('Max reconnection attempts reached'));
+      }
+    };
+  };
+
+  // Start connection
+  connect();
+
+  // Return controller object
+  return {
+    /**
+     * Close the WebSocket connection
+     */
+    close: () => {
+      isClosing = true;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.close();
+      }
+    },
+
+    /**
+     * Update subscriptions
+     * @param {string[]} eventTypes - Event types to subscribe to
+     * @param {Object} newFilters - Event filters
+     */
+    subscribe: (eventTypes, newFilters = {}) => {
+      currentSubscriptions = eventTypes;
+      currentFilters = newFilters;
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          action: 'subscribe',
+          event_types: eventTypes,
+          filters: newFilters
+        }));
+      }
+    },
+
+    /**
+     * Send a ping to keep connection alive
+     */
+    ping: () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'ping' }));
+      }
+    },
+
+    /**
+     * Request buffered events
+     */
+    getBuffer: () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'get_buffer' }));
+      }
+    },
+
+    /**
+     * Get connection status
+     */
+    isConnected: () => {
+      return ws && ws.readyState === WebSocket.OPEN;
+    },
+
+    /**
+     * Get client ID
+     */
+    getClientId: () => clientId
+  };
+};
+
+// WebSocket stats API
+export const getWebSocketStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/websocket/stats`);
+    if (!response.ok) throw new Error('Failed to fetch WebSocket stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Get WebSocket stats error:', error);
+    throw error;
+  }
+};
+
 // Activity Tracking API
 export const getRecentActivities = async (filters = {}) => {
   try {

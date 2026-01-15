@@ -18,9 +18,11 @@ import MetricsDashboard from './components/MetricsDashboard';
 import HorizontalTimelineView from './components/HorizontalTimelineView';
 import SelfImprovementDashboard from './components/SelfImprovementDashboard';
 import AchievementsDashboard from './components/AchievementsDashboard';
+import CostTrackingDashboard from './components/CostTrackingDashboard';
+import RecoveryDashboard from './components/RecoveryDashboard';
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', or 'achievements'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', or 'recovery'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,6 +200,18 @@ function App() {
                     >
                       🏆 Achievements
                     </Button>
+                    <Button
+                      variant={currentView === 'costs' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('costs')}
+                    >
+                      💰 Costs
+                    </Button>
+                    <Button
+                      variant={currentView === 'recovery' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('recovery')}
+                    >
+                      🔧 Recovery
+                    </Button>
                   </ButtonGroup>
 
                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>Update Interval:</span>
@@ -246,6 +260,10 @@ function App() {
         <SelfImprovementDashboard />
       ) : currentView === 'achievements' ? (
         <AchievementsDashboard />
+      ) : currentView === 'costs' ? (
+        <CostTrackingDashboard />
+      ) : currentView === 'recovery' ? (
+        <RecoveryDashboard />
       ) : (
         <>
         <Container fluid style={{ padding: '16px' }}>

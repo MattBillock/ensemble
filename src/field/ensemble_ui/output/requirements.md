@@ -1,119 +1,140 @@
-# Project Cleanup and Documentation Refinement Requirements
+# Whimsical Name Generator - Requirements
 
-## Vision
-Comprehensive cleanup of generated code, documentation, and temporary artifacts throughout the ensemble project. This includes reorganizing files, removing unnecessary artifacts, and refining documentation for accuracy.
+## Project Overview
 
-## Objectives
+### Vision
+Create a fun, family-friendly whimsical name generator that produces unique, creative names to replace boring default names like "exec_dir_1". The generator should create names with personality and charm, such as "Whimsy Cloud Strider" or "Edge Citrusy Edge".
 
-### 1. Remove Temporary and Build Artifacts
-- Remove all `__pycache__` directories throughout the project
-- Remove all `.pyc` compiled Python files
-- Clean up log files (keeping logs/ directory structure but clearing old logs)
-- Remove any `.tmp`, `.bak` backup files not needed
+### Core Problem
+Users are tired of boring, generic default names and want something fun and memorable that adds personality to their experience.
 
-### 2. Clean Up Output Directory (`/src/field/ensemble_ui/output/`)
-The output directory has accumulated 90+ files from various project runs. Organize as follows:
+### Solution
+A whimsical name generator that combines creative adjectives, nouns, and descriptors to create unique, family-friendly names on demand.
 
-**Files to Archive** (move to `output/archive/`):
-- Older milestone plans and task breakdowns (keep only most recent versions)
-- Completed project documentation from past work
-- One-off analysis files that are no longer current
+## Functional Requirements
 
-**Files to Keep in Root**:
-- `requirements.md` - Current requirements (this file)
-- `architecture.md` - Current architecture document
-- `milestone_plan.md` - Current milestone plan
-- `README.md` - Output directory readme
-- `.gitignore` - Git ignore rules
+### Core Features
+1. **Random Name Generation**
+   - Generate unique whimsical names on demand
+   - Combine multiple word categories (adjectives, nouns, descriptors)
+   - Ensure family-friendly content only
 
-**Directories to Review**:
-- Consolidate related feature directories
-- Remove empty directories
+2. **Name Components**
+   - Whimsical adjectives (Whimsy, Citrusy, Sparkly, Dreamy, etc.)
+   - Nature/fantasy nouns (Cloud, Edge, Storm, Meadow, etc.)  
+   - Action/descriptor words (Strider, Walker, Keeper, Singer, etc.)
 
-### 3. Clean Up Deprecated Scripts
-The `/scripts/deprecated/` directory contains old pipeline scripts that are no longer used:
-- `add_fail_fast_rules.py`
-- `analyze_milestone.py`
-- `build_milestone2.py`
-- `cleanup_drum_corps.sh`
-- `cli_pipeline.py`
-- `complete_milestone2_frontend.py`
-- `complete_ui_pipeline.py`
-- `consolidate_agents.sh`
-- `continue_ensemble.py`
-- `milestone_0_pipeline.py`
+3. **User Interface**
+   - Simple button to generate new name
+   - Display current generated name prominently
+   - Option to regenerate if user doesn't like current name
+   - Copy-to-clipboard functionality
 
-**Decision**: These should be deleted as they are in a deprecated folder and the functionality has been superseded.
+4. **Name Quality**
+   - All names must be family-friendly
+   - Names should be memorable and fun
+   - Avoid repetitive or boring combinations
+   - 2-3 word combinations for good flow
 
-### 4. Clean Up Log Files
-Log files found:
-- `/backend.log` (15MB+) - Should be rotated/cleared
-- `/logs/backend.log` - Duplicate
-- `/logs/milestone_0_pipeline_run.log` - Old
-- `/logs/cli_pipeline_run.log` - Old
-- `/logs/model_selector_pipeline.log` - Old
-- `/logs/ui_pipeline_run.log` - Old
-- `/src/frontend.log` - Misplaced
-- `/src/field/ensemble_ui/backend/backend.log` - Should be in logs/
+### Technical Requirements
+1. **Frontend (React)**
+   - Responsive design that works on all devices
+   - Clean, playful UI design
+   - Smooth animations for name generation
+   - Accessible controls and text
 
-**Decision**: Clear all old logs, ensure logging goes to `/logs/` directory only.
+2. **Name Generation Logic**
+   - Client-side generation for instant response
+   - Large word pools to ensure variety
+   - Smart combination logic to avoid awkward phrings
+   - Randomization that feels truly random to users
 
-### 5. Clean Up Empty/Unused Directories
-- `/performances/` - Empty directory
-- `/rehearsals/` - Empty directory
-- `/problems/` - Contains old problem definitions, may need archiving
+## Non-Functional Requirements
 
-### 6. Documentation Refinement
+### Performance
+- Instant name generation (< 100ms)
+- Lightweight implementation
+- No external API dependencies needed
 
-**README.md** (root): Current and accurate - no changes needed.
+### Usability
+- One-click name generation
+- Clear, readable typography
+- Intuitive interface requiring no instructions
 
-**QUICKSTART.md**: Verify commands are current and accurate.
+### Content Standards
+- All generated names must be appropriate for all ages
+- No offensive, scary, or inappropriate word combinations
+- Positive, uplifting tone in all generated content
 
-**CLAUDE.md**: Verify project conventions are current.
+## User Stories
 
-**docs/DIRECTORY_STRUCTURE.md**: Comprehensive and accurate - no changes needed.
+1. **As a user**, I want to click a button and instantly get a fun, whimsical name so I can replace boring default names.
 
-**Verify and update if needed**:
-- `/docs/common_instructions.md`
-- `/docs/project_milestones.md`
-- `/docs/FILE_ORGANIZATION_PLAN.md`
+2. **As a user**, I want to regenerate names until I find one I like so I can get the perfect name for my needs.
 
-**Archive old documentation** in `/docs/archive/`:
-- Already properly archived - no action needed
+3. **As a user**, I want to easily copy the generated name so I can use it elsewhere.
 
-### 7. Verify Agent Definitions
-Ensure all agent markdown files in:
-- `/leadership/`
-- `/coordinators/`
-- `/developers/`
-- `/testers/`
-- `/support/`
-- `/designers/`
-
-Are current and match the hierarchy described in README.md.
-
-## Out of Scope
-- No changes to runtime Python code in `/src/runtime/`
-- No changes to UI code in `/frontend/` or `/backend/`
-- No changes to test files in `/tests/`
-- No new feature development
+4. **As a parent**, I want all generated names to be family-friendly so I can safely use this with my children.
 
 ## Success Criteria
-1. All `__pycache__` directories removed
-2. Output directory organized with clear archive structure
-3. Deprecated scripts removed
-4. Log files cleaned up and consolidated to `/logs/`
-5. Documentation verified for accuracy
-6. No broken references or orphaned files
 
-## Execution Notes
-- This is a file organization/cleanup task, not a code development task
-- Use shell commands for bulk operations (rm, mv, find)
-- Create archive directories before moving files
-- Commit changes in logical batches
+1. **Functionality**: Generate unique, whimsical names consistently
+2. **Quality**: All names are family-friendly and creative
+3. **Usability**: Users can generate and use names in under 30 seconds
+4. **Variety**: User sees different names on each generation attempt
+5. **Performance**: Name generation happens instantly without delays
 
-## Assumptions Made
-- Old log files can be safely deleted (not needed for audit)
-- Deprecated scripts can be permanently removed (functionality superseded)
-- Files older than 7 days in output/ can be archived
-- Empty directories with no clear purpose can be removed
+## Scope & Constraints
+
+### In Scope
+- Single-page application with name generation
+- Client-side name generation
+- Basic styling and responsive design
+- Copy-to-clipboard functionality
+
+### Out of Scope
+- User accounts or name saving
+- Name history or favorites
+- Social sharing features
+- Custom word pool management
+- Backend storage or APIs
+
+### Technical Assumptions
+- Modern web browser support (ES6+)
+- Client-side only implementation
+- React with standard tooling
+- No external dependencies for name generation
+
+### Content Assumptions
+- Pre-curated word lists ensure quality
+- English language only
+- PG-rated content standards
+- 50+ words per category for variety
+
+## Implementation Priority
+
+### Phase 1: Core Generation
+1. Create word pools (adjectives, nouns, descriptors)
+2. Implement random combination logic
+3. Basic React component for generation
+
+### Phase 2: User Interface
+1. Clean, playful UI design
+2. Generate button and name display
+3. Copy-to-clipboard functionality
+
+### Phase 3: Polish
+1. Responsive design
+2. Smooth animations
+3. Accessibility improvements
+
+## Acceptance Criteria
+
+The name generator is complete when:
+- [ ] Users can generate whimsical names with one click
+- [ ] All generated names are family-friendly and creative
+- [ ] Names have good variety and don't feel repetitive
+- [ ] UI is clean, responsive, and easy to use
+- [ ] Copy-to-clipboard works on all major browsers
+- [ ] No offensive or inappropriate names can be generated
+- [ ] Performance is instant (< 100ms generation time)
