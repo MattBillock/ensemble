@@ -1,77 +1,147 @@
-# Test Tasks - Milestone 1: Activity Feed Tabbed Interface
+# Test Strategy - Milestone 1: Backend Foundation & Data Models
 
 ## Overview
-Test tab filtering logic, activity type grouping, count badge accuracy, and dark theme styling for the new tabbed interface in ActivityFeed.jsx.
+This test strategy covers comprehensive testing for the backend infrastructure establishing requirements document management, including data models, persistence layer, and core API endpoints.
 
-## Unit Test Tasks
+## Test Types
+1. Unit Tests
+2. Integration Tests
+3. Schema/Validation Tests
+4. API Endpoint Tests
 
-### Test 1: Tab Filter Constants Validation
-**Description**: Verify TAB_FILTERS configuration is correct
-**Test Cases**:
-- All tabs have required structure (label, types)
-- 'all' tab has types: null
-- 'running' tab contains correct activity types
-- 'completed' tab contains correct activity types
-- 'spawned' tab contains correct activity types
-- 'failed' tab contains correct activity types
-- 'other' tab contains all remaining activity types
-- No activity type is missing from all tabs combined
+## Unit Test Coverage (Target: 85%)
 
-### Test 2: Filter Logic Tests
-**Description**: Test filtering function with different tab selections
-**Test Cases**:
-- Filter with 'all' returns all activities
-- Filter with 'running' returns only running activities
-- Filter with empty activities array returns empty
-- Filter handles unknown activity types gracefully
+### Data Model Tests
+1. `RequirementsDocument` Model
+   - Validate model creation with valid data
+   - Test default values and optional fields
+   - Ensure enum types work correctly
+   - Validate nested models (Approval, Revision)
 
-### Test 3: Count Calculation Tests
-**Description**: Test count badge calculations
-**Test Cases**:
-- Count is accurate for each tab
-- Count updates when activities array changes
-- Count is 0 for tabs with no matching activities
+2. `RequirementStatus` Enum
+   - Verify all status transitions
+   - Check string representation
+   - Validate exhaustive state coverage
 
-## Integration Test Tasks
+3. Revision Management
+   - Test revision creation
+   - Validate revision history tracking
+   - Check revision metadata preservation
 
-### Test 4: Tab Switching Behavior
-**Description**: Test tab click changes filtered activities
-**Test Cases**:
-- Clicking tab updates activeTab state
-- Filtered activities list updates immediately
-- Active tab styling changes on click
+### Service Layer Tests
+1. Requirements Service
+   - Create new requirements document
+   - Update existing document
+   - Test status transitions
+   - Validate business logic constraints
 
-### Test 5: Real-time Update Tests
-**Description**: Test counts and filtering with live data updates
-**Test Cases**:
-- New activities update counts
-- Filter results update when new matching activity arrives
-- Tab retains selection after data refresh
+## Integration Tests
 
-## Visual/Manual Test Tasks
+### Persistence Layer Tests
+1. Database Integration
+   - Create document and verify storage
+   - Update document and check persistence
+   - Delete document functionality
+   - Complex query scenarios
 
-### Test 6: Dark Theme Styling Verification
-**Description**: Verify styling matches requirements
-**Checklist**:
-- Tab group background: #242836
-- Inactive tab text: #9ca3af
-- Active tab background: #3a3f52
-- Active tab text: #ffffff
-- Badge styling consistent
-- Hover states work
+### API Endpoint Integration
+1. CRUD Endpoints
+   - POST /requirements (create)
+   - GET /requirements (list)
+   - GET /requirements/{id} (retrieve)
+   - PUT /requirements/{id} (update)
+   - DELETE /requirements/{id} (delete)
 
-### Test 7: Responsive Layout Tests
-**Description**: Verify tabs work on different screen sizes
-**Checklist**:
-- Tabs fit on mobile screens
-- Tabs don't wrap unexpectedly
-- Touch targets are adequate size
+2. State Transition Endpoints
+   - POST /requirements/{id}/submit
+   - POST /requirements/{id}/approve
+   - POST /requirements/{id}/reject
+   - POST /requirements/{id}/request-changes
 
-## Coverage Requirements
-- All TAB_FILTERS combinations tested
-- Filter logic 100% coverage
-- Count calculation 100% coverage
-- Tab click handlers tested
+### Event Integration Tests
+1. Activity Ledger
+   - Verify event emission on document state changes
+   - Check correct activity type generation
+   - Validate event payload completeness
 
-## Test Files to Create
-- `/src/field/ensemble_ui/frontend/src/components/__tests__/ActivityFeed.test.jsx`
+## Schema & Validation Tests
+1. Input Validation
+   - Test invalid input scenarios
+   - Check input sanitization
+   - Validate data type constraints
+   - Test boundary conditions
+
+## Performance & Load Tests
+1. List Endpoint Performance
+   - Load 100+ documents
+   - Measure response time (< 500ms goal)
+   - Test pagination efficiency
+
+2. Concurrent Access
+   - Simulate multiple simultaneous document updates
+   - Verify data consistency
+   - Check for race conditions
+
+## Security Considerations
+1. Input Sanitization
+   - Validate markdown content safety
+   - Test against potential XSS vectors
+   - Verify no sensitive data leakage
+
+## Test Task Breakdown
+
+### Backend Test Tasks
+1. `[UNIT]` RequirementsDocument Model Tests
+2. `[UNIT]` RequirementStatus Enum Validation
+3. `[UNIT]` Revision Management Logic
+4. `[INTEGRATION]` Persistence Layer Verification
+5. `[INTEGRATION]` API Endpoint Functional Tests
+6. `[INTEGRATION]` Event Emission Validation
+7. `[PERFORMANCE]` Endpoint Response Time Tests
+8. `[SECURITY]` Input Validation and Sanitization
+
+### Test Coverage Goals
+- Unit Test Coverage: 85%
+- Integration Test Coverage: 100%
+- Endpoint Coverage: 100%
+- Performance Benchmark: < 500ms response time
+
+## Testing Tools & Frameworks
+- Unit Testing: pytest
+- API Testing: FastAPI TestClient
+- Mocking: unittest.mock
+- Performance: locust
+- Security: bandit
+
+## Recommended Test Execution Order
+1. Unit Tests
+2. Integration Tests
+3. Performance Tests
+4. Security Validation
+5. Endpoint Functional Tests
+
+## Potential Risks & Mitigations
+- Incomplete state transition logic
+- Potential race conditions in concurrent updates
+- Inadequate input validation
+- Performance bottlenecks
+
+## Artifacts to Produce
+- Comprehensive test suite
+- Coverage report
+- Performance benchmark results
+- Security assessment document
+
+## Testing Metrics
+- Passed Test Cases: 100%
+- Code Coverage: ≥ 85%
+- Average API Response Time: < 500ms
+- Critical Defects: 0
+
+---
+
+### Recommended Next Steps
+1. Implement pytest test suite
+2. Configure CI/CD pipeline integration
+3. Set up comprehensive test environment
+4. Conduct thorough manual review of test cases

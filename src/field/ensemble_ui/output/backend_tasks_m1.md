@@ -1,66 +1,142 @@
-# Backend Tasks - Milestone 1: Foundation & Analysis
+# Backend Tasks - Milestone 1: Backend Foundation & Data Models
 
-## Project Context
-**Project Name:** UI Tab State Persistence  
-**Project ID:** ffceacb3  
-**Milestone:** Milestone 1 - Foundation & Analysis
+## Project Goals
+Establish backend infrastructure for requirements document management, including data models, persistence layer, and core API endpoints.
 
-## Backend Task Analysis
+## Task Categories
+1. Data Modeling
+2. Persistence Layer
+3. API Endpoints
+4. Event Integration
+5. Validation & Constraints
 
-### Summary
-After analyzing the architecture document and requirements, **there are no backend tasks** for this milestone or project.
+## Detailed Tasks
 
-### Rationale
+### 1. Data Modeling [Priority: High]
 
-This project is **entirely frontend-focused** with the following characteristics:
+#### Task 1.1: Define Requirements Document Model
+- Create Pydantic models for `RequirementsDocument`
+- Implement status enum (draft, pending_review, approved, rejected)
+- Include nested models for `Approval` and `Revision`
+- Ensure type hints and validation rules
+- **Acceptance Criteria**:
+  - Model covers all fields from requirements spec
+  - Serialization/deserialization works correctly
+  - Enum values match specification
+- **Dependencies**: None
+- **Complexity**: Medium
 
-1. **Problem Domain**: UI state preservation (scroll positions, expanded sections, filters)
-2. **Solution Approach**: React hooks, refs, memoization, and component optimization
-3. **Technology Stack**: React, JavaScript, browser localStorage
-4. **No Backend Changes Required**:
-   - No API endpoint modifications
-   - No database schema changes
-   - No server-side business logic
-   - No authentication/authorization changes
-   - No backend service modifications
+#### Task 1.2: Create New Activity Types
+- Extend existing `ActivityType` enum
+- Add new requirements-related activity types
+- Ensure alignment with architecture specification
+- **Acceptance Criteria**:
+  - All specified activity types implemented
+  - Types can be serialized/deserialized
+- **Dependencies**: Task 1.1
+- **Complexity**: Simple
 
-### Architecture Confirmation
+### 2. Persistence Layer [Priority: High]
 
-From the architecture document:
-- **Core Strategy**: "State Preservation via React Refs + Memoization"
-- **New Files**: All in frontend (`hooks/`, `utils/`)
-- **Modified Files**: All React components (`.jsx` files)
-- **Explicitly Stated**: "No database or API changes required"
+#### Task 2.1: Requirements Document Repository
+- Create SQLAlchemy ORM models matching Pydantic models
+- Implement CRUD repository methods
+- Handle revision history storage
+- Integrate with existing persistence layer
+- **Acceptance Criteria**:
+  - Can create, read, update, delete requirements documents
+  - Revision history is preserved
+  - Performance matches existing data access patterns
+- **Dependencies**: Task 1.1
+- **Complexity**: Complex
 
-### Milestone 1 Deliverables (All Frontend)
+### 3. API Endpoints [Priority: High]
 
-1. **Architecture document** ✓ (Already complete)
-2. **Analysis of current tab implementation** → Frontend code analysis task
-3. **Core state preservation utilities** → Frontend utility functions
-4. **Generic hooks for state preservation** → React hooks (`useScrollPreservation`, `useExpandedState`)
-5. **Unit tests for utility functions** → Frontend JavaScript tests
+#### Task 3.1: Requirements CRUD Endpoints
+- Implement FastAPI routes for:
+  - List requirements
+  - Get single requirement
+  - Create requirement
+  - Update requirement
+  - Delete requirement
+- Add filtering and sorting capabilities
+- **Acceptance Criteria**:
+  - All CRUD operations functional
+  - Filtering works (status, source_agent, etc.)
+  - Pagination implemented
+- **Dependencies**: Task 1.1, Task 2.1
+- **Complexity**: Complex
 
-## Recommendation
+#### Task 3.2: Requirements Status Transition Endpoints
+- Implement status change endpoints:
+  - Submit for review
+  - Approve requirement
+  - Reject requirement
+  - Request changes
+- Validate state transitions
+- **Acceptance Criteria**:
+  - All status transitions work correctly
+  - Appropriate events emitted
+  - State machine rules enforced
+- **Dependencies**: Task 3.1
+- **Complexity**: Complex
 
-This milestone should be handled entirely by the **Frontend Coordinator** or **TDD Coordinator** working on frontend components and hooks.
+### 4. Event Integration [Priority: Medium]
 
-### Frontend Tasks Include:
-- Creating custom React hooks for state preservation
-- Implementing scroll position management utilities
-- Building ref-based state preservation helpers
-- Writing unit tests for utility functions
-- Analyzing current component re-render behavior
+#### Task 4.1: Activity Event Emission
+- Create service to emit events for requirements actions
+- Integrate with existing Action Ledger
+- Ensure all state changes generate appropriate events
+- **Acceptance Criteria**:
+  - Events emitted for all requirements actions
+  - Event payload matches specification
+  - No performance degradation
+- **Dependencies**: Task 1.2, Task 3.2
+- **Complexity**: Medium
 
-## Next Steps
+### 5. Validation & Constraints [Priority: High]
 
-**For this project**: 
-- Route all tasks to Frontend Coordinator
-- Backend Coordinator has no work to perform
-- No backend-related acceptance criteria to validate
+#### Task 5.1: Input Validation
+- Implement Pydantic validation schemas
+- Add custom validation for:
+  - Markdown content
+  - Document metadata
+  - Status transitions
+- **Acceptance Criteria**:
+  - Robust input validation
+  - Meaningful error messages
+  - Prevents invalid data entry
+- **Dependencies**: Task 1.1
+- **Complexity**: Medium
 
----
+### 6. Integration Verification [Priority: High]
 
-**Task Breakdown Status:** Complete (No backend tasks identified)  
-**Created:** 2026-01-14  
-**Backend Tasks Count:** 0  
-**Recommendation:** Proceed with frontend-only implementation
+#### Task 6.1: Compatibility Test Suite
+- Create test suite verifying:
+  - Data model compatibility
+  - API endpoint integration
+  - Event emission
+  - Persistence layer interaction
+- **Acceptance Criteria**:
+  - 90%+ test coverage
+  - All integration points verified
+  - No regressions in existing systems
+- **Dependencies**: All previous tasks
+- **Complexity**: Complex
+
+## Execution Order
+1. Task 1.1 (Data Modeling)
+2. Task 1.2 (Activity Types)
+3. Task 2.1 (Persistence Layer)
+4. Task 5.1 (Input Validation)
+5. Task 3.1 (CRUD Endpoints)
+6. Task 3.2 (Status Transition Endpoints)
+7. Task 4.1 (Event Integration)
+8. Task 6.1 (Integration Verification)
+
+## Success Criteria
+- ✅ Fully functional requirements document management backend
+- ✅ Robust data models and validation
+- ✅ Comprehensive API endpoints
+- ✅ Seamless event integration
+- ✅ High test coverage
