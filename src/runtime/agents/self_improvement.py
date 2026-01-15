@@ -669,6 +669,204 @@ class SelfImprovementLoop:
 
         return {"success": False, "message": "Recommendation not found"}
 
+    def apply_recommendation(self, recommendation_id: str) -> Dict[str, Any]:
+        """Actually apply a recommendation by modifying agent definitions."""
+        # Find the recommendation
+        recommendation = None
+        rec_filepath = None
+
+        for filepath in self.recommendation_engine.recommendations_path.glob("recommendations_*.json"):
+            with open(filepath) as f:
+                data = json.load(f)
+            for item in data:
+                if item["id"] == recommendation_id:
+                    recommendation = item
+                    rec_filepath = filepath
+                    break
+            if recommendation:
+                break
+
+        if not recommendation:
+            return {"success": False, "message": "Recommendation not found"}
+
+        # Get agent definition path
+        agent_name = recommendation["agent_name"]
+        agent_def_path = self._find_agent_definition(agent_name)
+
+        if not agent_def_path:
+            return {"success": False, "message": f"Agent definition not found for {agent_name}"}
+
+        rec_type = recommendation["type"]
+        changes = recommendation.get("suggested_changes", {})
+        applied_changes = []
+
+        try:
+            # Read current definition
+            content = agent_def_path.read_text()
+            original_content = content
+
+            # Apply changes based on recommendation type
+            if rec_type == "model_upgrade":
+                new_model = changes.get("new_model", "sonnet")
+                content = self._update_model_preference(content, new_model)
+                applied_changes.append(f"Updated model to {new_model}")
+
+            elif rec_type == "model_downgrade":
+                new_model = changes.get("new_model", "haiku")
+                content = self._update_model_preference(content, new_model)
+                applied_changes.append(f"Downgraded model to {new_model}")
+
+            elif rec_type == "iteration_increase":
+                new_iterations = changes.get("new_max_iterations", 15)
+                content = self._update_max_iterations(content, new_iterations)
+                applied_changes.append(f"Increased max iterations to {new_iterations}")
+
+            elif rec_type == "iteration_decrease":
+                new_iterations = changes.get("new_max_iterations", 5)
+                content = self._update_max_iterations(content, new_iterations)
+                applied_changes.append(f"Decreased max iterations to {new_iterations}")
+
+            elif rec_type in ["definition_tweak", "definition_major"]:
+                # For definition changes, add guardrails/notes to instructions
+                note = changes.get("note", recommendation.get("description", ""))
+                if note:
+                    content = self._add_performance_note(content, note)
+                    applied_changes.append("Added performance guidance to instructions")
+
+            # Write updated definition if changed
+            if content != original_content:
+                # Backup original
+                backup_path = agent_def_path.with_suffix('.md.pre_improvement')
+                backup_path.write_text(original_content)
+
+                # Write new content
+                agent_def_path.write_text(content)
+                logger.info(f"Applied recommendation {recommendation_id} to {agent_def_path}")
+
+            # Update recommendation status
+            with open(rec_filepath) as f:
+                data = json.load(f)
+            for item in data:
+                if item["id"] == recommendation_id:
+                    item["status"] = "applied"
+                    item["applied_at"] = datetime.now().isoformat()
+                    item["applied_changes"] = applied_changes
+                    break
+            with open(rec_filepath, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            return {
+                "success": True,
+                "message": f"Applied recommendation to {agent_name}",
+                "changes": applied_changes,
+                "agent_path": str(agent_def_path)
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to apply recommendation: {e}")
+            return {"success": False, "message": str(e)}
+
+    def _find_agent_definition(self, agent_name: str) -> Optional[Path]:
+        """Find the agent definition file for a given agent name."""
+        # Agent definitions are in leadership/, coordinators/, developers/, testers/, designers/
+        base_path = Path(__file__).parent.parent.parent.parent
+        search_dirs = ["leadership", "coordinators", "developers", "testers", "designers"]
+
+        # Convert agent name to potential file patterns
+        # e.g., "Executive Director" -> "executive_director.md"
+        file_name = agent_name.lower().replace(" ", "_").replace("-", "_") + ".md"
+
+        for dir_name in search_dirs:
+            potential_path = base_path / dir_name / file_name
+            if potential_path.exists():
+                return potential_path
+
+        # Also try without directory prefix (if agent_name includes path)
+        if "/" in agent_name:
+            potential_path = base_path / f"{agent_name}.md"
+            if potential_path.exists():
+                return potential_path
+
+        return None
+
+    def _update_model_preference(self, content: str, new_model: str) -> str:
+        """Update the model preference in agent definition content."""
+        # Look for ## Model Preference section
+        pattern = r'(## Model Preference\n)(\w+)'
+        replacement = f'\\1{new_model}'
+        return re.sub(pattern, replacement, content)
+
+    def _update_max_iterations(self, content: str, new_iterations: int) -> str:
+        """Update max iterations in agent definition content."""
+        # Look for ## Max Iterations section
+        pattern = r'(## Max Iterations\n)(\d+)'
+        replacement = f'\\g<1>{new_iterations}'
+        return re.sub(pattern, replacement, content)
+
+    def _add_performance_note(self, content: str, note: str) -> str:
+        """Add a performance note to the instructions section."""
+        # Find the Instructions section and add note at the end
+        marker = "## Instructions"
+        if marker in content:
+            # Find next section after Instructions
+            parts = content.split(marker)
+            if len(parts) >= 2:
+                # Find the next ## header in the second part
+                instruction_content = parts[1]
+                next_section_match = re.search(r'\n## [A-Z]', instruction_content)
+                if next_section_match:
+                    insert_pos = next_section_match.start()
+                    note_section = f"\n\n**Performance Insight (Auto-Applied):**\n{note}\n"
+                    new_instruction = instruction_content[:insert_pos] + note_section + instruction_content[insert_pos:]
+                    return parts[0] + marker + new_instruction
+        return content
+
+    def auto_approve_and_apply_all(self) -> Dict[str, Any]:
+        """Auto-approve and apply all pending recommendations."""
+        pending = self.get_pending_recommendations()
+        results = {
+            "approved": 0,
+            "applied": 0,
+            "failed": 0,
+            "details": []
+        }
+
+        for rec in pending:
+            rec_id = rec["id"]
+            # First approve
+            approve_result = self.approve_recommendation(rec_id)
+            if approve_result.get("success"):
+                results["approved"] += 1
+                # Then apply
+                apply_result = self.apply_recommendation(rec_id)
+                if apply_result.get("success"):
+                    results["applied"] += 1
+                    results["details"].append({
+                        "id": rec_id,
+                        "agent": rec["agent_name"],
+                        "status": "applied",
+                        "changes": apply_result.get("changes", [])
+                    })
+                else:
+                    results["failed"] += 1
+                    results["details"].append({
+                        "id": rec_id,
+                        "agent": rec["agent_name"],
+                        "status": "apply_failed",
+                        "error": apply_result.get("message")
+                    })
+            else:
+                results["failed"] += 1
+                results["details"].append({
+                    "id": rec_id,
+                    "agent": rec["agent_name"],
+                    "status": "approve_failed",
+                    "error": approve_result.get("message")
+                })
+
+        logger.info(f"Auto-apply complete: {results['applied']} applied, {results['failed']} failed")
+        return results
+
 
 # Singleton instance for easy access
 _improvement_loop: Optional[SelfImprovementLoop] = None

@@ -23,11 +23,28 @@ function CostTrackingDashboard() {
         fetch(`${API_BASE}/api/metrics/agents?days=${timeRange}`)
       ]);
 
-      setCostSummary(await costRes.json());
-      setModelMetrics(await modelRes.json());
-      setAgentMetrics(await agentRes.json());
+      // Validate responses before parsing
+      if (costRes.ok) {
+        setCostSummary(await costRes.json());
+      } else {
+        setCostSummary(null);
+      }
+      if (modelRes.ok) {
+        setModelMetrics(await modelRes.json());
+      } else {
+        setModelMetrics({ models: [] });
+      }
+      if (agentRes.ok) {
+        setAgentMetrics(await agentRes.json());
+      } else {
+        setAgentMetrics({ agents: [] });
+      }
     } catch (error) {
       console.error('Failed to fetch cost data:', error);
+      // Set safe defaults on error
+      setCostSummary(null);
+      setModelMetrics({ models: [] });
+      setAgentMetrics({ agents: [] });
     } finally {
       setLoading(false);
     }
@@ -215,7 +232,7 @@ function CostTrackingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {modelMetrics?.models?.map((model, idx) => {
+                  {(modelMetrics?.models || []).map((model, idx) => {
                     const tier = getModelCostTier(model.model_used);
                     const costs = MODEL_COSTS[tier];
                     const modelName = model.model_used.includes('sonnet') ? 'Sonnet 4.5' :
@@ -287,7 +304,7 @@ function CostTrackingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {agentMetrics?.agents?.map((agent, idx) => {
+                  {(agentMetrics?.agents || []).map((agent, idx) => {
                     // Rough cost estimate based on iterations and typical token usage
                     const estTokensPerIteration = 2000; // rough estimate
                     const estCostPerRun = ((agent.avg_iterations || 1) * estTokensPerIteration * 0.003 / 1000).toFixed(4);

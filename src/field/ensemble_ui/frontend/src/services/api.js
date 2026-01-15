@@ -1,20 +1,120 @@
 const API_BASE_URL = 'http://localhost:8001';  // Backend on 8001, Firestorm on 8000
 
-export const generateSolution = async (problemDescription, budgetTier = 'balanced') => {
+/**
+ * Custom error class for API errors with status code
+ */
+export class APIError extends Error {
+  constructor(message, status, endpoint) {
+    super(message);
+    this.name = 'APIError';
+    this.status = status;
+    this.endpoint = endpoint;
+  }
+}
+
+/**
+ * Fetch with timeout wrapper
+ * @param {string} url - URL to fetch
+ * @param {Object} options - Fetch options
+ * @param {number} timeoutMs - Timeout in milliseconds (default: 30000)
+ * @returns {Promise<Response>} - Fetch response
+ */
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const response = await fetch(`${API_BASE_URL}/api/generate-solution`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        problem: problemDescription,
-        budget_tier: budgetTier
-      }),
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new APIError(`Request timeout after ${timeoutMs}ms`, 408, url);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetch with automatic response validation and error handling
+ * @param {string} url - URL to fetch
+ * @param {Object} options - Fetch options
+ * @param {*} defaultValue - Default value to return on error (null if not specified)
+ * @returns {Promise<*>} - JSON response or default value
+ */
+async function fetchWithValidation(url, options = {}, defaultValue = null) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new Error('Failed to generate solution');
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new APIError(
+        `HTTP ${response.status}: ${errorText || response.statusText}`,
+        response.status,
+        url
+      );
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return defaultValue;
+    }
+
+    return JSON.parse(text);
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      console.error(`Request timeout: ${url}`);
+      return defaultValue;
+    }
+
+    if (error instanceof APIError) {
+      console.error(`API Error [${error.status}]: ${error.message}`);
+      return defaultValue;
+    }
+
+    console.error(`Request failed: ${url}`, error);
+    return defaultValue;
+  }
+}
+
+export const generateSolution = async (problemDescription, budgetTier = 'balanced') => {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/generate-solution`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          problem: problemDescription,
+          budget_tier: budgetTier
+        }),
+      },
+      60000  // 60 second timeout for solution generation
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new APIError(
+        `Failed to generate solution: ${errorText || response.statusText}`,
+        response.status,
+        '/api/generate-solution'
+      );
     }
 
     return await response.json();
@@ -492,6 +592,65 @@ export const rejectRecommendation = async (recommendationId, reason = '') => {
     return await response.json();
   } catch (error) {
     console.error('Reject recommendation error:', error);
+    throw error;
+  }
+};
+
+// Auto-Apply Mode API
+export const getAutoApplyConfig = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/auto-apply`);
+    if (!response.ok) throw new Error('Failed to fetch auto-apply config');
+    return await response.json();
+  } catch (error) {
+    console.error('Get auto-apply config error:', error);
+    throw error;
+  }
+};
+
+export const setAutoApplyConfig = async (enabled, applyOnAnalysis = true, minPriority = 'medium') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/auto-apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled,
+        apply_on_analysis: applyOnAnalysis,
+        min_priority: minPriority
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to set auto-apply config');
+    return await response.json();
+  } catch (error) {
+    console.error('Set auto-apply config error:', error);
+    throw error;
+  }
+};
+
+export const applyAllRecommendations = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/apply-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to apply all recommendations');
+    return await response.json();
+  } catch (error) {
+    console.error('Apply all recommendations error:', error);
+    throw error;
+  }
+};
+
+export const applySingleRecommendation = async (recommendationId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/self-improvement/recommendations/${recommendationId}/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to apply recommendation');
+    return await response.json();
+  } catch (error) {
+    console.error('Apply recommendation error:', error);
     throw error;
   }
 };

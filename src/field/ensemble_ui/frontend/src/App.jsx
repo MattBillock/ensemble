@@ -505,7 +505,7 @@ function App() {
                             overflow: 'hidden'
                           }}>
                             <div style={{
-                              width: `${(state.current_iteration / state.max_iterations) * 100}%`,
+                              width: `${(state.current_iteration / (state.max_iterations || 1)) * 100}%`,
                               height: '100%',
                               backgroundColor: state.status === 'completed' ? '#10b981' : '#fbbf24',
                               transition: 'width 0.3s ease'
@@ -515,7 +515,9 @@ function App() {
                       )}
 
                       <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '6px' }}>
-                        Started: {new Date(state.started_at).toLocaleTimeString()}
+                        {state.started_at && (
+                          <>Started: {new Date(state.started_at).toLocaleTimeString()}</>
+                        )}
                         {state.status === 'completed' && state.completed_at && (
                           <span> • Completed: {new Date(state.completed_at).toLocaleTimeString()}</span>
                         )}

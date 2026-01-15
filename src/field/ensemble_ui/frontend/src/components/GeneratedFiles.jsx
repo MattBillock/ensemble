@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Collapse, Button } from 'react-bootstrap';
+import { Badge, Collapse } from 'react-bootstrap';
 
 const GeneratedFiles = ({ files }) => {
   const [expandedFiles, setExpandedFiles] = useState(new Set());

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Button, Collapse } from 'react-bootstrap';
-import ReactMarkdown from 'react-markdown';
+import { Badge, Collapse } from 'react-bootstrap';
 
 const ActivityFeed = ({ activities = [] }) => {
   const [expandedActivities, setExpandedActivities] = useState(new Set());

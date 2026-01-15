@@ -22,7 +22,6 @@ Execute these prompts in order. Each phase should be completed before moving to 
 9. `09_agent_definitions_cleanup.md` - Fix terminology and models
 10. `10_frontend_component_cleanup.md` - Remove/integrate unused components
 11. `11_api_service_hardening.md` - Improve API error handling
-12. `12_backend_security.md` - CORS and validation fixes
 
 ### Phase 4: Low Priority Improvements
 13. `13_documentation.md` - Add missing documentation

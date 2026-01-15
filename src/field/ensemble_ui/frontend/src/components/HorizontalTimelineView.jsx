@@ -34,6 +34,7 @@ function HorizontalTimelineView() {
   const fetchRequests = async () => {
     try {
       const response = await fetch('http://localhost:8001/api/requests?limit=20');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setRequests(data.requests || []);
       setLoading(false);
@@ -44,6 +45,7 @@ function HorizontalTimelineView() {
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
+      setRequests([]);
       setLoading(false);
     }
   };
@@ -51,20 +53,24 @@ function HorizontalTimelineView() {
   const fetchTimeline = async (requestId) => {
     try {
       const response = await fetch(`http://localhost:8001/api/requests/${requestId}/timeline`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setTimelineData(data);
     } catch (error) {
       console.error('Error fetching timeline:', error);
+      setTimelineData(null);
     }
   };
 
   const fetchGitHubInfo = async () => {
     try {
       const response = await fetch('http://localhost:8001/api/git/repo-info');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setGithubInfo(data);
     } catch (error) {
       console.error('Error fetching GitHub info:', error);
+      setGithubInfo(null);
     }
   };
 
@@ -505,7 +511,7 @@ function HorizontalTimelineView() {
                   overflow: 'hidden'
                 }}>
                   <div style={{
-                    width: `${(selectedAgent.current_iteration / selectedAgent.max_iterations) * 100}%`,
+                    width: `${(selectedAgent.current_iteration / (selectedAgent.max_iterations || 1)) * 100}%`,
                     height: '100%',
                     backgroundColor: '#fbbf24',
                     transition: 'width 0.3s'
@@ -572,7 +578,9 @@ function HorizontalTimelineView() {
 
             {/* Timestamps */}
             <div style={{ marginTop: '16px', fontSize: '11px', color: '#6b7280' }}>
-              <div>Started: {new Date(selectedAgent.started_at).toLocaleString()}</div>
+              {selectedAgent.started_at && (
+                <div>Started: {new Date(selectedAgent.started_at).toLocaleString()}</div>
+              )}
               {selectedAgent.completed_at && (
                 <div>Completed: {new Date(selectedAgent.completed_at).toLocaleString()}</div>
               )}

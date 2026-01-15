@@ -115,7 +115,7 @@ function AchievementsDashboard() {
               </h6>
               <h3 className="mb-0">{unlockedCount} / {achievements.length}</h3>
               <ProgressBar
-                now={(unlockedCount / achievements.length) * 100}
+                now={achievements.length > 0 ? (unlockedCount / achievements.length) * 100 : 0}
                 className="mt-2"
                 variant="light"
                 style={{ height: '6px' }}

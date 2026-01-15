@@ -123,7 +123,8 @@ class AgentActivityTracker:
             "parent_agent_id": parent_agent_id,
             "children": [],
             "status": "running",
-            "started_at": activity.timestamp
+            "started_at": activity.timestamp,
+            "request_id": request_id  # Track request_id for filtering
         }
 
         # Link to parent
@@ -288,6 +289,7 @@ class AgentActivityTracker:
         self.pending_questions[question_id] = {
             "agent_id": agent_id,
             "agent_name": agent_name,
+            "request_id": request_id,  # Track request_id for answer handling
             "question": question,
             "options": options,
             "asked_at": activity.timestamp,
@@ -318,7 +320,7 @@ class AgentActivityTracker:
             agent_id=question_info["agent_id"],
             agent_name=question_info["agent_name"],
             timestamp=datetime.now().isoformat(),
-            request_id="",  # Would need to track this
+            request_id=question_info.get("request_id", ""),  # Use stored request_id
             data={
                 "question_id": question_id,
                 "question": question_info["question"],
@@ -521,9 +523,12 @@ class AgentActivityTracker:
         if not request_id:
             return self.agent_hierarchy
 
-        # Filter by request_id
-        # This would require storing request_id in hierarchy
-        return self.agent_hierarchy
+        # Filter by request_id - now stored in hierarchy entries
+        return {
+            agent_id: agent_data
+            for agent_id, agent_data in self.agent_hierarchy.items()
+            if agent_data.get("request_id") == request_id
+        }
 
     def get_agent_state(self, agent_id: str) -> Optional[Dict[str, Any]]:
         """Get current state of an agent."""
@@ -545,9 +550,34 @@ class AgentActivityTracker:
         # Remove activities
         self.activities = [a for a in self.activities if a.request_id != request_id]
 
-        # Remove from hierarchy and states
-        # (This is tricky without tracking request_id in hierarchy)
-        # For now, we'll keep the data
+        # Find agent IDs to remove (now that we track request_id in hierarchy)
+        agents_to_remove = [
+            agent_id for agent_id, agent_data in self.agent_hierarchy.items()
+            if agent_data.get("request_id") == request_id
+        ]
+
+        # Remove from hierarchy
+        for agent_id in agents_to_remove:
+            del self.agent_hierarchy[agent_id]
+
+        # Remove from agent states
+        for agent_id in agents_to_remove:
+            if agent_id in self.agent_states:
+                del self.agent_states[agent_id]
+
+        # Remove pending questions for this request
+        questions_to_remove = [
+            qid for qid, qdata in self.pending_questions.items()
+            if qdata.get("request_id") == request_id
+        ]
+        for qid in questions_to_remove:
+            del self.pending_questions[qid]
+
+        # Remove from requests tracking
+        if request_id in self.requests:
+            del self.requests[request_id]
+
+        logger.info(f"Cleared request {request_id}: {len(agents_to_remove)} agents removed")
 
     # ========== Request Tracking for Timeline View ==========
 

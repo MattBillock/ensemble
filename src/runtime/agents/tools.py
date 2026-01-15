@@ -847,11 +847,32 @@ class SpawnAgentTool:
             import time
             spawned_agent_id = f"{agent_type}_{int(time.time()*1000)}"
 
+            # Create NEW tools with the spawned agent's permissions
+            # This is critical - spawned agents need their own permission context
+            spawned_tools = ToolRegistry.default(
+                agent_definition=agent_definition,  # Use spawned agent's permissions!
+                request_id=self.request_id,
+                session_id=self.session_id,
+                agent_id=spawned_agent_id
+            )
+
+            # Add spawn capability to spawned agent's tools
+            spawned_spawn_tool = SpawnAgentTool(
+                agent_types_dir=self.agent_types_dir,
+                api_key=self.api_key,
+                tools=None,  # Will be set by child if needed
+                budget_tier=self.budget_tier,
+                parent_agent_id=spawned_agent_id,
+                request_id=self.request_id,
+                session_id=self.session_id
+            )
+            spawned_tools.register(spawned_spawn_tool)
+
             # Create runtime for the agent with budget tier and metrics parameters
             runtime = AgentRuntime(
                 agent_definition,
                 api_key=self.api_key,
-                tools=self.tools,
+                tools=spawned_tools,  # Use the spawned agent's tools with correct permissions
                 budget_tier=self.budget_tier,
                 agent_id=spawned_agent_id,
                 request_id=self.request_id,

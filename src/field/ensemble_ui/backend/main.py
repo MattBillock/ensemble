@@ -10,7 +10,7 @@ import threading
 from datetime import datetime
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -56,9 +56,8 @@ class RequestLogger(logging.LoggerAdapter):
 
 # Import Ensemble agent runtime
 import sys
-from pathlib import Path
 
-# Add project root to Python path
+# Add project root to Python path (Path already imported above)
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -573,6 +572,33 @@ app.add_middleware(
 
 orchestrator = AgentOrchestrator()
 
+# Start recovery orchestrator on app startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize background services on startup."""
+    try:
+        from src.runtime.agents.swarm_recovery import get_recovery_orchestrator
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if api_key:
+            recovery_orchestrator = get_recovery_orchestrator(api_key=api_key)
+            recovery_orchestrator.start()
+            logger.info("Recovery orchestrator started")
+        else:
+            logger.warning("ANTHROPIC_API_KEY not set - recovery orchestrator not started")
+    except Exception as e:
+        logger.error(f"Failed to start recovery orchestrator: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up on shutdown."""
+    try:
+        from src.runtime.agents.swarm_recovery import get_recovery_orchestrator
+        orchestrator = get_recovery_orchestrator()
+        orchestrator.stop()
+        logger.info("Recovery orchestrator stopped")
+    except Exception as e:
+        logger.error(f"Error stopping recovery orchestrator: {e}")
+
 @app.post("/api/generate-solution")
 async def generate_solution(request: ProblemRequest):
     """HTTP endpoint to trigger solution generation"""
@@ -640,7 +666,8 @@ async def agent_status_ws(websocket: WebSocket):
             except asyncio.TimeoutError:
                 # Timeout is fine, just send status update
                 pass
-            except:
+            except Exception as e:
+                logger.debug(f"WebSocket receive error: {e}")
                 break
 
             # Send current status
@@ -781,7 +808,8 @@ async def events_ws(websocket: WebSocket):
                         "timestamp": datetime.now().isoformat(),
                         "data": {"message": str(e)}
                     })
-                except:
+                except Exception as send_error:
+                    logger.debug(f"Failed to send error to WebSocket: {send_error}")
                     break
 
     except WebSocketDisconnect:
@@ -860,9 +888,25 @@ async def list_agents():
 @app.get("/api/agents/{agent_tier}/{agent_name}")
 async def get_agent_definition(agent_tier: str, agent_name: str):
     """Get agent definition file content"""
+    # Validate input to prevent path traversal attacks
+    valid_tiers = {"leadership", "coordinators", "developers", "testers", "designers"}
+    if agent_tier not in valid_tiers:
+        raise HTTPException(status_code=400, detail=f"Invalid agent tier. Must be one of: {', '.join(valid_tiers)}")
+
+    # Reject path traversal attempts
+    if ".." in agent_name or "/" in agent_name or "\\" in agent_name:
+        raise HTTPException(status_code=400, detail="Invalid agent name")
+
     agent_path = orchestrator.project_root / agent_tier / f"{agent_name}.md"
+
+    # Verify the resolved path is still within project_root
+    try:
+        agent_path.resolve().relative_to(orchestrator.project_root.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
     if not agent_path.exists():
-        return {"error": "Agent not found"}, 404
+        raise HTTPException(status_code=404, detail="Agent not found")
 
     content = agent_path.read_text()
     return {
@@ -889,7 +933,7 @@ async def send_message_to_agent(agent_id: str, message: AgentMessage):
                                        'request_id': request_id,
                                        'agent_id': agent_id
                                    })
-        return {"error": result["error"]}, 404
+        raise HTTPException(status_code=404, detail=result["error"])
 
     orchestrator.logger.info(f"API response: message sent successfully",
                             extra={
@@ -948,7 +992,7 @@ async def get_agent_state(agent_id: str):
     tracker = AgentRuntime.get_activity_tracker()
     state = tracker.get_agent_state(agent_id)
     if state is None:
-        return {"error": "Agent not found"}, 404
+        raise HTTPException(status_code=404, detail="Agent not found")
     return {"agent_state": state}
 
 @app.get("/api/activity/questions")
@@ -966,7 +1010,7 @@ async def answer_question(question_id: str, answer: dict):
     tracker = AgentRuntime.get_activity_tracker()
 
     if "answer" not in answer:
-        return {"error": "Missing 'answer' field"}, 400
+        raise HTTPException(status_code=400, detail="Missing 'answer' field")
 
     tracker.record_answer(question_id, answer["answer"])
     return {"success": True, "question_id": question_id}
@@ -1141,8 +1185,30 @@ async def update_agent_definition(update: AgentFileUpdate):
                                 'agent_path': update.agent_path,
                                 'content_length': len(update.content)
                             })
+
+    # Validate path to prevent path traversal attacks
+    valid_tiers = {"leadership", "coordinators", "developers", "testers", "designers"}
+    path_parts = update.agent_path.split("/")
+    if len(path_parts) != 2 or path_parts[0] not in valid_tiers:
+        raise HTTPException(status_code=400, detail=f"Invalid agent path. Must be <tier>/<name>.md where tier is one of: {', '.join(valid_tiers)}")
+
+    # Reject path traversal attempts
+    if ".." in update.agent_path:
+        raise HTTPException(status_code=400, detail="Invalid agent path")
+
+    # Must be a .md file
+    if not update.agent_path.endswith(".md"):
+        raise HTTPException(status_code=400, detail="Agent path must end with .md")
+
     try:
         agent_path = orchestrator.project_root / update.agent_path
+
+        # Verify the resolved path is within project_root
+        try:
+            agent_path.resolve().relative_to(orchestrator.project_root.resolve())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid agent path - path traversal detected")
+
         if not agent_path.exists():
             orchestrator.logger.warning(f"API error: agent file not found",
                                        extra={
@@ -1150,7 +1216,7 @@ async def update_agent_definition(update: AgentFileUpdate):
                                            'agent_id': 'api',
                                            'agent_path': update.agent_path
                                        })
-            return {"error": "Agent file not found", "path": update.agent_path}, 404
+            raise HTTPException(status_code=404, detail=f"Agent file not found: {update.agent_path}")
 
         # Backup current version
         backup_path = agent_path.with_suffix(".md.backup")
@@ -1192,11 +1258,13 @@ async def update_agent_definition(update: AgentFileUpdate):
                                          'agent_path': update.agent_path,
                                          'error_type': type(e).__name__
                                      })
-            return {
-                "error": f"Failed to update agent: {str(e)}",
-                "backup_restored": True
-            }, 400
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to update agent: {str(e)}. Backup restored."
+            )
 
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions as-is
     except Exception as e:
         orchestrator.logger.error(f"API error: update agent definition failed: {str(e)}",
                                  extra={
@@ -1204,7 +1272,7 @@ async def update_agent_definition(update: AgentFileUpdate):
                                      'agent_id': 'api',
                                      'error_type': type(e).__name__
                                  })
-        return {"error": str(e)}, 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========== Self-Improvement Loop Endpoints ==========
 
@@ -1214,10 +1282,21 @@ class RecommendationAction(BaseModel):
 
 @app.get("/api/self-improvement/analyze")
 async def run_self_improvement_analysis(days: int = 30):
-    """Run self-improvement analysis and generate recommendations."""
+    """Run self-improvement analysis and generate recommendations.
+
+    When auto-apply mode is enabled, recommendations will be automatically applied.
+    """
     from src.runtime.agents.self_improvement import get_improvement_loop
     loop = get_improvement_loop()
     analysis = loop.run_analysis(days)
+
+    # Auto-apply if enabled
+    auto_apply_results = None
+    if _auto_apply_config.get("enabled") and _auto_apply_config.get("apply_on_analysis"):
+        logger.info("Auto-apply mode enabled - applying recommendations automatically")
+        auto_apply_results = loop.auto_approve_and_apply_all()
+        analysis["auto_apply_results"] = auto_apply_results
+
     return analysis
 
 @app.get("/api/self-improvement/recommendations")
@@ -1323,6 +1402,93 @@ async def get_self_improvement_status():
         "rejected_recommendations": rejected_count
     }
 
+# Auto-apply mode configuration (in-memory, persisted to file)
+_auto_apply_config = {
+    "enabled": False,
+    "apply_on_analysis": True,  # Auto-apply when running analysis
+    "min_priority": "medium",   # Only auto-apply recommendations at or above this priority
+}
+_auto_apply_config_path = Path.home() / ".ensemble" / "auto_apply_config.json"
+
+def _load_auto_apply_config():
+    """Load auto-apply config from file if it exists."""
+    global _auto_apply_config
+    if _auto_apply_config_path.exists():
+        try:
+            with open(_auto_apply_config_path) as f:
+                saved = json.load(f)
+                _auto_apply_config.update(saved)
+        except Exception as e:
+            logger.warning(f"Failed to load auto-apply config: {e}")
+
+def _save_auto_apply_config():
+    """Save auto-apply config to file."""
+    try:
+        _auto_apply_config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(_auto_apply_config_path, 'w') as f:
+            json.dump(_auto_apply_config, f, indent=2)
+    except Exception as e:
+        logger.warning(f"Failed to save auto-apply config: {e}")
+
+# Load config on module import
+_load_auto_apply_config()
+
+@app.get("/api/self-improvement/auto-apply")
+async def get_auto_apply_config():
+    """Get current auto-apply configuration."""
+    return _auto_apply_config
+
+class AutoApplyConfig(BaseModel):
+    enabled: bool
+    apply_on_analysis: bool = True
+    min_priority: str = "medium"
+
+@app.post("/api/self-improvement/auto-apply")
+async def set_auto_apply_config(config: AutoApplyConfig):
+    """Set auto-apply configuration. When enabled, recommendations are automatically applied."""
+    global _auto_apply_config
+    _auto_apply_config["enabled"] = config.enabled
+    _auto_apply_config["apply_on_analysis"] = config.apply_on_analysis
+    _auto_apply_config["min_priority"] = config.min_priority
+    _save_auto_apply_config()
+
+    logger.info(f"Auto-apply mode {'ENABLED' if config.enabled else 'disabled'}")
+
+    return {
+        "success": True,
+        "message": f"Auto-apply {'enabled' if config.enabled else 'disabled'}",
+        "config": _auto_apply_config
+    }
+
+@app.post("/api/self-improvement/apply-all")
+async def apply_all_recommendations():
+    """Immediately apply all pending recommendations (bumpers off mode)."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+
+    results = loop.auto_approve_and_apply_all()
+
+    return {
+        "success": True,
+        "message": f"Applied {results['applied']} recommendations",
+        "results": results
+    }
+
+@app.post("/api/self-improvement/recommendations/{recommendation_id}/apply")
+async def apply_single_recommendation(recommendation_id: str):
+    """Apply a single recommendation (approve + apply changes)."""
+    from src.runtime.agents.self_improvement import get_improvement_loop
+    loop = get_improvement_loop()
+
+    # First approve
+    approve_result = loop.approve_recommendation(recommendation_id)
+    if not approve_result.get("success"):
+        return approve_result
+
+    # Then apply
+    apply_result = loop.apply_recommendation(recommendation_id)
+    return apply_result
+
 # ========== Swarm State Management Endpoints ==========
 
 @app.get("/api/swarm/sessions")
@@ -1347,7 +1513,7 @@ async def get_swarm_session(session_id: str):
 
         session = state_manager.get_session(session_id)
         if not session:
-            return {"error": "Session not found"}, 404
+            raise HTTPException(status_code=404, detail="Session not found")
 
         # Get agents for this session
         agents = state_manager.get_session_agents(session_id)
@@ -1387,7 +1553,7 @@ async def get_swarm_agent(agent_id: str):
 
         agent = state_manager.get_agent(agent_id)
         if not agent:
-            return {"error": "Agent not found"}, 404
+            raise HTTPException(status_code=404, detail="Agent not found")
 
         # Get messages and tool executions
         messages = state_manager.get_agent_messages(agent_id, limit=50)
@@ -1457,8 +1623,13 @@ async def get_stalled_agents(threshold_minutes: int = 5):
 async def get_recovery_queue():
     """Get the current recovery queue status."""
     try:
-        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator
-        orchestrator = RecoveryOrchestrator()
+        from src.runtime.agents.swarm_recovery import get_recovery_orchestrator
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        orchestrator = get_recovery_orchestrator(api_key=api_key)
+
+        # Ensure the orchestrator is running
+        if not orchestrator._running:
+            orchestrator.start()
 
         queue = orchestrator.get_queue_status()
         return queue
@@ -1470,8 +1641,13 @@ async def get_recovery_queue():
 async def trigger_agent_recovery(agent_id: str, strategy: str = "retry"):
     """Manually trigger recovery for a specific agent."""
     try:
-        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator, RecoveryStrategy
-        orchestrator = RecoveryOrchestrator()
+        from src.runtime.agents.swarm_recovery import get_recovery_orchestrator, RecoveryStrategy
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        orchestrator = get_recovery_orchestrator(api_key=api_key)
+
+        # Ensure the orchestrator is running
+        if not orchestrator._running:
+            orchestrator.start()
 
         # Map string to enum
         strategy_map = {
@@ -1517,8 +1693,9 @@ async def scan_for_stalled_agents(threshold_minutes: int = 5):
 async def get_recovery_history(limit: int = 50):
     """Get history of recovery operations."""
     try:
-        from src.runtime.agents.swarm_recovery import RecoveryOrchestrator
-        orchestrator = RecoveryOrchestrator()
+        from src.runtime.agents.swarm_recovery import get_recovery_orchestrator
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        orchestrator = get_recovery_orchestrator(api_key=api_key)
 
         history = orchestrator.get_recovery_history(limit)
         return {"history": history, "count": len(history)}

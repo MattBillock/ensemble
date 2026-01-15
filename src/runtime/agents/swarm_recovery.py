@@ -501,13 +501,36 @@ class RecoveryOrchestrator:
             # Create new runtime with potentially escalated model
             new_agent_id = f"{agent_id}_recovery_{int(time.time())}"
 
+            # Create tools with the agent's permissions
+            from .tools import ToolRegistry, SpawnAgentTool
+            tools = ToolRegistry.default(
+                agent_definition=agent_definition,
+                request_id=task.get('request_id'),
+                session_id=task.get('session_id'),
+                agent_id=new_agent_id
+            )
+
+            # Add spawn capability
+            spawn_tool = SpawnAgentTool(
+                agent_types_dir=agent_types_dir,
+                api_key=self.api_key,
+                tools=None,
+                budget_tier=budget_tier,
+                parent_agent_id=new_agent_id,
+                request_id=task.get('request_id'),
+                session_id=task.get('session_id')
+            )
+            tools.register(spawn_tool)
+
             runtime = AgentRuntime(
                 agent_definition,
                 api_key=self.api_key,
+                tools=tools,  # Now includes tools with correct permissions
                 budget_tier=budget_tier,
                 agent_id=new_agent_id,
                 request_id=task.get('request_id'),
-                parent_agent_id=agent_info.get('parent_agent_id')
+                parent_agent_id=agent_info.get('parent_agent_id'),
+                session_id=task.get('session_id')
             )
 
             # Execute

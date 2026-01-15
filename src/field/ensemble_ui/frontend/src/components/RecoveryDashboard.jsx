@@ -29,6 +29,11 @@ function RecoveryDashboard() {
         fetch(`${API_BASE}/api/recovery/history?limit=50`)
       ]);
 
+      // Check all responses
+      if (!stalledRes.ok || !queueRes.ok || !historyRes.ok) {
+        throw new Error('One or more API calls failed');
+      }
+
       const stalledData = await stalledRes.json();
       const queueData = await queueRes.json();
       const historyData = await historyRes.json();
@@ -38,6 +43,10 @@ function RecoveryDashboard() {
       setRecoveryHistory(historyData.history || []);
     } catch (error) {
       console.error('Failed to fetch recovery data:', error);
+      // Set safe defaults on error
+      setStalledAgents([]);
+      setRecoveryQueue({ pending_tasks: [] });
+      setRecoveryHistory([]);
     } finally {
       setLoading(false);
     }
@@ -48,6 +57,7 @@ function RecoveryDashboard() {
     setScanResult(null);
     try {
       const response = await fetch(`${API_BASE}/api/recovery/scan`, { method: 'POST' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
       setScanResult(result);
       await fetchRecoveryData(); // Refresh data
@@ -68,6 +78,7 @@ function RecoveryDashboard() {
         `${API_BASE}/api/recovery/trigger/${selectedAgent}?strategy=${selectedStrategy}`,
         { method: 'POST' }
       );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
       if (result.success) {
         await fetchRecoveryData();

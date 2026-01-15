@@ -5,7 +5,11 @@ import {
   runSelfImprovementAnalysis,
   getRecommendations,
   approveRecommendation,
-  rejectRecommendation
+  rejectRecommendation,
+  getAutoApplyConfig,
+  setAutoApplyConfig,
+  applyAllRecommendations,
+  applySingleRecommendation
 } from '../services/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8001';
@@ -13,6 +17,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8001';
 function SelfImprovementDashboard() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [status, setStatus] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [analysis, setAnalysis] = useState(null);
@@ -20,6 +25,8 @@ function SelfImprovementDashboard() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRec, setSelectedRec] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [autoApplyEnabled, setAutoApplyEnabled] = useState(false);
+  const [autoApplyConfig, setAutoApplyConfigState] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -29,12 +36,15 @@ function SelfImprovementDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [statusRes, recsRes] = await Promise.all([
+      const [statusRes, recsRes, autoApplyRes] = await Promise.all([
         getSelfImprovementStatus(),
-        getRecommendations()
+        getRecommendations(),
+        getAutoApplyConfig()
       ]);
       setStatus(statusRes);
       setRecommendations(recsRes.recommendations || []);
+      setAutoApplyConfigState(autoApplyRes);
+      setAutoApplyEnabled(autoApplyRes?.enabled || false);
     } catch (err) {
       console.error('Failed to fetch self-improvement data:', err);
       setError('Failed to load self-improvement data. Is the backend running?');
@@ -94,6 +104,49 @@ function SelfImprovementDashboard() {
     setShowRejectModal(true);
   };
 
+  const handleToggleAutoApply = async () => {
+    try {
+      const newEnabled = !autoApplyEnabled;
+      await setAutoApplyConfig(newEnabled, true, 'medium');
+      setAutoApplyEnabled(newEnabled);
+      // Refresh config
+      const configRes = await getAutoApplyConfig();
+      setAutoApplyConfigState(configRes);
+    } catch (err) {
+      console.error('Failed to toggle auto-apply:', err);
+      setError('Failed to toggle auto-apply mode');
+    }
+  };
+
+  const handleApplyAll = async () => {
+    setApplying(true);
+    setError(null);
+    try {
+      const result = await applyAllRecommendations();
+      setAnalysis(prev => ({
+        ...prev,
+        auto_apply_results: result.results
+      }));
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to apply all recommendations:', err);
+      setError('Failed to apply recommendations');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const handleApplySingle = async (recId) => {
+    try {
+      await applySingleRecommendation(recId);
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to apply recommendation:', err);
+      setError('Failed to apply recommendation');
+    }
+  };
+
   const getPriorityBadge = (priority) => {
     const colors = {
       critical: 'danger',
@@ -137,7 +190,45 @@ function SelfImprovementDashboard() {
             Feedback is automatically injected into agent prompts to help them learn from past performance.
           </p>
         </Col>
-        <Col xs="auto">
+        <Col xs="auto" className="d-flex align-items-center gap-3">
+          {/* Auto-Apply Toggle */}
+          <div className="d-flex align-items-center">
+            <Form.Check
+              type="switch"
+              id="auto-apply-switch"
+              label=""
+              checked={autoApplyEnabled}
+              onChange={handleToggleAutoApply}
+              className="me-2"
+              style={{ transform: 'scale(1.3)' }}
+            />
+            <span
+              className={`fw-bold ${autoApplyEnabled ? 'text-danger' : 'text-muted'}`}
+              style={{ cursor: 'pointer' }}
+              onClick={handleToggleAutoApply}
+            >
+              {autoApplyEnabled ? 'BUMPERS OFF' : 'Bumpers On'}
+            </span>
+          </div>
+
+          {/* Apply All Button */}
+          {recommendations.length > 0 && (
+            <Button
+              variant={autoApplyEnabled ? "danger" : "warning"}
+              onClick={handleApplyAll}
+              disabled={applying}
+            >
+              {applying ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Applying...
+                </>
+              ) : (
+                `Apply All (${recommendations.length})`
+              )}
+            </Button>
+          )}
+
           <Button
             variant="primary"
             onClick={handleRunAnalysis}
@@ -161,47 +252,75 @@ function SelfImprovementDashboard() {
         </Alert>
       )}
 
+      {autoApplyEnabled && (
+        <Alert variant="danger" className="d-flex align-items-center">
+          <strong className="me-2">BUMPERS OFF MODE ACTIVE</strong>
+          <span>
+            Recommendations will be automatically applied when you run analysis.
+            Agent definitions will be modified without approval.
+          </span>
+        </Alert>
+      )}
+
       {/* Status Cards */}
       <Row className="mb-4">
-        <Col md={3}>
+        <Col md={2}>
+          <Card bg={autoApplyEnabled ? 'danger' : 'secondary'} text="white">
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                Auto-Apply
+              </h6>
+              <h4 className="mb-0">{autoApplyEnabled ? 'BUMPERS OFF' : 'Manual'}</h4>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={2}>
           <Card bg={status?.status === 'active' ? 'success' : 'secondary'} text="white">
-            <Card.Body>
-              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
                 Loop Status
               </h6>
-              <h3 className="mb-0">{status?.status || 'Unknown'}</h3>
+              <h4 className="mb-0">{status?.status || 'Unknown'}</h4>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col md={2}>
           <Card bg="info" text="white">
-            <Card.Body>
-              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                Feedback Injection
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                Feedback
               </h6>
-              <h3 className="mb-0">{status?.feedback_injection || 'N/A'}</h3>
+              <h4 className="mb-0">{status?.feedback_injection || 'N/A'}</h4>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col md={2}>
           <Card bg="warning" text="dark">
-            <Card.Body>
-              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                Pending Recommendations
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                Pending
               </h6>
-              <h3 className="mb-0">{status?.pending_recommendations || 0}</h3>
+              <h4 className="mb-0">{status?.pending_recommendations || 0}</h4>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col md={2}>
           <Card bg="primary" text="white">
-            <Card.Body>
-              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                Total Processed
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                Approved
               </h6>
-              <h3 className="mb-0">
-                {(status?.approved_recommendations || 0) + (status?.rejected_recommendations || 0)}
-              </h3>
+              <h4 className="mb-0">{status?.approved_recommendations || 0}</h4>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={2}>
+          <Card bg="dark" text="white">
+            <Card.Body className="py-2">
+              <h6 className="text-uppercase mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                Applied
+              </h6>
+              <h4 className="mb-0">{analysis?.auto_apply_results?.applied || 0}</h4>
             </Card.Body>
           </Card>
         </Col>
@@ -313,10 +432,20 @@ function SelfImprovementDashboard() {
                         </td>
                         <td>
                           <Button
-                            variant="success"
+                            variant="warning"
+                            size="sm"
+                            className="me-1"
+                            onClick={() => handleApplySingle(rec.id)}
+                            title="Approve AND apply changes to agent definition"
+                          >
+                            Apply
+                          </Button>
+                          <Button
+                            variant="outline-success"
                             size="sm"
                             className="me-1"
                             onClick={() => handleApprove(rec.id)}
+                            title="Approve without applying"
                           >
                             Approve
                           </Button>
@@ -341,17 +470,27 @@ function SelfImprovementDashboard() {
       {/* How It Works */}
       <Row className="mt-4 mb-4">
         <Col>
-          <Card bg="light">
+          <Card bg={autoApplyEnabled ? 'danger' : 'light'} text={autoApplyEnabled ? 'white' : 'dark'}>
             <Card.Body>
-              <h6>How the Self-Improvement Loop Works</h6>
+              <h6>How the Self-Improvement Loop Works {autoApplyEnabled && '(BUMPERS OFF)'}</h6>
               <ol className="mb-0" style={{ fontSize: '0.875rem' }}>
                 <li><strong>Collection:</strong> Every agent execution records metrics (success rate, duration, errors, self-analysis)</li>
                 <li><strong>Analysis:</strong> The system periodically analyzes metrics to identify underperforming agents</li>
                 <li><strong>Recommendations:</strong> Specific improvement suggestions are generated (model changes, definition tweaks)</li>
-                <li><strong>Human Review:</strong> You approve or reject recommendations before they're applied</li>
-                <li><strong>Feedback Injection:</strong> Approved insights are automatically included in agent prompts</li>
+                {autoApplyEnabled ? (
+                  <li><strong>Auto-Apply:</strong> <Badge bg="warning" text="dark">AUTOMATIC</Badge> Changes are immediately applied to agent definitions without human review</li>
+                ) : (
+                  <li><strong>Human Review:</strong> You approve or reject recommendations before they're applied</li>
+                )}
+                <li><strong>Feedback Injection:</strong> Insights are automatically included in agent prompts</li>
                 <li><strong>Continuous Learning:</strong> The loop repeats, tracking whether changes improve performance</li>
               </ol>
+              {autoApplyEnabled && (
+                <div className="mt-3 p-2 bg-dark rounded">
+                  <strong>Warning:</strong> In Bumpers Off mode, agent definitions (.md files) will be automatically modified.
+                  Backups are created before changes. Toggle off to restore human-in-the-loop approval.
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
