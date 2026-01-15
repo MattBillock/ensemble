@@ -1,5 +1,13 @@
 import React from 'react';
 import { generateWhimsicalName, getAgentEmoji } from '../utils/whimsicalNames';
+import {
+  formatDuration,
+  formatCost,
+  getCostColorClass,
+  formatModelName,
+  getModelColorClass,
+  formatTokens
+} from '../utils/metricFormatters';
 
 function AgentSummaryPane({ agentStatus }) {
   const agents = agentStatus?.agents || {};
@@ -8,6 +16,16 @@ function AgentSummaryPane({ agentStatus }) {
   const runningAgents = agentEntries.filter(([_, info]) => info.status === 'running');
   const completedAgents = agentEntries.filter(([_, info]) => info.status === 'completed');
   const errorAgents = agentEntries.filter(([_, info]) => info.status === 'error');
+
+  // Calculate total cost across all agents
+  const totalCost = agentEntries.reduce((sum, [_, info]) => {
+    return sum + (info.cost_estimate || 0);
+  }, 0);
+
+  // Calculate total tokens
+  const totalTokens = agentEntries.reduce((sum, [_, info]) => {
+    return sum + (info.input_tokens || 0) + (info.output_tokens || 0);
+  }, 0);
 
   return (
     <div className="h-full flex flex-col">
@@ -32,6 +50,20 @@ function AgentSummaryPane({ agentStatus }) {
             <div className="text-xs text-red-300">Errors</div>
           </div>
         </div>
+
+        {/* Cost Summary */}
+        {(totalCost > 0 || totalTokens > 0) && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-yellow-500/20 rounded-lg p-3 border border-yellow-400/30">
+              <div className={`text-xl font-bold ${getCostColorClass(totalCost)}`}>{formatCost(totalCost)}</div>
+              <div className="text-xs text-yellow-300">Total Cost</div>
+            </div>
+            <div className="bg-purple-500/20 rounded-lg p-3 border border-purple-400/30">
+              <div className="text-xl font-bold text-purple-200">{formatTokens(totalTokens)}</div>
+              <div className="text-xs text-purple-300">Total Tokens</div>
+            </div>
+          </div>
+        )}
 
         {/* Agent List */}
         <div className="space-y-2">
@@ -94,6 +126,31 @@ function AgentSummaryPane({ agentStatus }) {
                 {agentInfo.generated_files && agentInfo.generated_files.length > 0 && (
                   <div className="text-xs text-purple-300 mt-1">
                     📁 {agentInfo.generated_files.length} file(s) generated
+                  </div>
+                )}
+                {/* Execution Metrics */}
+                {(agentInfo.duration_ms || agentInfo.cost_estimate || agentInfo.model_used) && (
+                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-white/10">
+                    {agentInfo.duration_ms && (
+                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/30 text-gray-200">
+                        ⏱️ {formatDuration(agentInfo.duration_ms)}
+                      </span>
+                    )}
+                    {agentInfo.model_used && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getModelColorClass(agentInfo.model_used)}`}>
+                        {formatModelName(agentInfo.model_used)}
+                      </span>
+                    )}
+                    {agentInfo.cost_estimate !== undefined && agentInfo.cost_estimate !== null && (
+                      <span className={`px-2 py-0.5 rounded text-xs bg-gray-500/30 ${getCostColorClass(agentInfo.cost_estimate)}`}>
+                        💰 {formatCost(agentInfo.cost_estimate)}
+                      </span>
+                    )}
+                    {(agentInfo.input_tokens || agentInfo.output_tokens) && (
+                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/30 text-gray-300">
+                        📊 {formatTokens((agentInfo.input_tokens || 0) + (agentInfo.output_tokens || 0))} tokens
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

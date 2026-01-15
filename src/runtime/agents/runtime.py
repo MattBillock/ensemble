@@ -541,12 +541,32 @@ class AgentRuntime:
             if self.state_manager and response_data:
                 self.state_manager.mark_completed(response_data)
 
-            # Record agent completion in activity tracker
+            # Record agent completion in activity tracker with cost/performance data
+            completion_time = datetime.now()
+            completion_duration_ms = None
+            completion_cost = None
+            if self.start_time:
+                completion_duration_ms = int((completion_time - self.start_time).total_seconds() * 1000)
+                # Calculate cost estimate
+                from .cost_calculator import CostCalculator
+                completion_cost = CostCalculator.calculate_cost(
+                    model=self.model_used or "unknown",
+                    input_tokens=self.total_input_tokens,
+                    output_tokens=self.total_output_tokens
+                )
+
             activity_tracker.record_agent_completed(
                 agent_id=self.agent_id,
                 agent_name=self.definition.name,
                 request_id=self.request_id,
-                result=response_data
+                result=response_data,
+                started_at=self.start_time.isoformat() if self.start_time else None,
+                completed_at=completion_time.isoformat(),
+                duration_ms=completion_duration_ms,
+                model_used=self.model_used,
+                cost_estimate=completion_cost,
+                input_tokens=self.total_input_tokens,
+                output_tokens=self.total_output_tokens
             )
 
             # Record metrics on success

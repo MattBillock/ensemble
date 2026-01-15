@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Badge, Collapse } from 'react-bootstrap';
 import { generateWhimsicalName } from '../utils/whimsicalNames';
+import {
+  formatDuration,
+  formatCost,
+  getCostColorClass,
+  formatModelName,
+  getModelColorClass,
+  formatTokens
+} from '../utils/metricFormatters';
 
 const ActivityFeed = ({ activities = [] }) => {
   const [expandedActivities, setExpandedActivities] = useState(new Set());
@@ -142,6 +150,60 @@ const ActivityFeed = ({ activities = [] }) => {
       case 'agent_completed':
         return (
           <div>
+            {/* Execution Metrics */}
+            {(data.duration_ms || data.cost_estimate || data.model_used) && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #3a3f52'
+              }}>
+                {data.duration_ms && (
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(107, 114, 128, 0.3)',
+                    color: '#d1d5db'
+                  }}>
+                    ⏱️ {formatDuration(data.duration_ms)}
+                  </span>
+                )}
+                {data.model_used && (
+                  <span className={getModelColorClass(data.model_used)} style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '500'
+                  }}>
+                    {formatModelName(data.model_used)}
+                  </span>
+                )}
+                {data.cost_estimate !== undefined && data.cost_estimate !== null && (
+                  <span className={getCostColorClass(data.cost_estimate)} style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(107, 114, 128, 0.3)'
+                  }}>
+                    💰 {formatCost(data.cost_estimate)}
+                  </span>
+                )}
+                {(data.input_tokens || data.output_tokens) && (
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(107, 114, 128, 0.3)',
+                    color: '#d1d5db'
+                  }}>
+                    📊 {formatTokens((data.input_tokens || 0) + (data.output_tokens || 0))} tokens
+                  </span>
+                )}
+              </div>
+            )}
             {data.result && data.result.summary && (
               <div style={{
                 marginBottom: '8px',

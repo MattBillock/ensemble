@@ -370,30 +370,57 @@ class AgentActivityTracker:
         agent_id: str,
         agent_name: str,
         request_id: str,
-        result: Optional[Dict[str, Any]] = None
+        result: Optional[Dict[str, Any]] = None,
+        started_at: Optional[str] = None,
+        completed_at: Optional[str] = None,
+        duration_ms: Optional[int] = None,
+        model_used: Optional[str] = None,
+        cost_estimate: Optional[float] = None,
+        input_tokens: Optional[int] = None,
+        output_tokens: Optional[int] = None
     ):
-        """Record agent completion."""
+        """Record agent completion with cost and performance metrics."""
+        completion_time = completed_at or datetime.now().isoformat()
+
         activity = Activity(
             activity_type=ActivityType.AGENT_COMPLETED,
             agent_id=agent_id,
             agent_name=agent_name,
-            timestamp=datetime.now().isoformat(),
+            timestamp=completion_time,
             request_id=request_id,
             data={
-                "result": result
+                "result": result,
+                "started_at": started_at,
+                "completed_at": completion_time,
+                "duration_ms": duration_ms,
+                "model_used": model_used,
+                "cost_estimate": cost_estimate,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens
             }
         )
 
         # Update agent hierarchy
         if agent_id in self.agent_hierarchy:
             self.agent_hierarchy[agent_id]["status"] = "completed"
-            self.agent_hierarchy[agent_id]["completed_at"] = activity.timestamp
+            self.agent_hierarchy[agent_id]["completed_at"] = completion_time
+            self.agent_hierarchy[agent_id]["duration_ms"] = duration_ms
+            self.agent_hierarchy[agent_id]["model_used"] = model_used
+            self.agent_hierarchy[agent_id]["cost_estimate"] = cost_estimate
 
         # Update agent state
         if agent_id in self.agent_states:
             self.agent_states[agent_id]["status"] = "completed"
             self.agent_states[agent_id]["current_task"] = "Completed"
-            self.agent_states[agent_id]["completed_at"] = activity.timestamp
+            self.agent_states[agent_id]["completed_at"] = completion_time
+
+            # Cost and performance metrics
+            self.agent_states[agent_id]["started_at"] = started_at
+            self.agent_states[agent_id]["duration_ms"] = duration_ms
+            self.agent_states[agent_id]["model_used"] = model_used
+            self.agent_states[agent_id]["cost_estimate"] = cost_estimate
+            self.agent_states[agent_id]["input_tokens"] = input_tokens
+            self.agent_states[agent_id]["output_tokens"] = output_tokens
 
             # Extract completion details for UI visibility
             if result:
