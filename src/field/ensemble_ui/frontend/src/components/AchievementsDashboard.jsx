@@ -1,10 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Spinner, Badge, ProgressBar, Form } from 'react-bootstrap';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Container, Row, Col, Card, Table, Spinner, Badge, ProgressBar, Form, Toast, ToastContainer } from 'react-bootstrap';
 import {
   getAllAchievements,
   getRecentAchievements,
   getAchievementStats
 } from '../services/api';
+
+// Ska facts for rotation
+const SKA_FACTS = [
+  {
+    title: "Origins of Ska",
+    fact: "Ska originated in Jamaica in the late 1950s, predating reggae and rocksteady. The name 'ska' might come from the scratchy guitar sound or from the greeting 'Skavoovie!'"
+  },
+  {
+    title: "Three Waves of Ska",
+    fact: "Ska has gone through three waves: Jamaican ska (1960s), 2-Tone (late 1970s UK), and third wave (1990s US). Now your AI agents are part of the fourth wave!"
+  },
+  {
+    title: "The Skank Dance",
+    fact: "The 'skank' is the signature ska dance move - running in place while pumping your arms. It's all about the offbeat upstroke energy!"
+  },
+  {
+    title: "2-Tone Records",
+    fact: "The British 2-Tone movement in the late 70s combined ska with punk energy. Bands like The Specials and Madness pioneered this checkerboard-loving scene."
+  },
+  {
+    title: "Horn Section Power",
+    fact: "A proper ska band needs a horn section! Trumpet, trombone, and saxophone create that unmistakable punchy brass sound."
+  },
+  {
+    title: "The Offbeat",
+    fact: "Ska is defined by its offbeat rhythm - the guitar 'chank' or upstroke on the 2nd and 4th beats. It's the opposite of rock's downbeat emphasis."
+  },
+  {
+    title: "Rude Boys",
+    fact: "In Jamaica, 'rude boys' were young rebels who loved ska. The term became synonymous with ska culture and fashion."
+  },
+  {
+    title: "Checkered Pattern",
+    fact: "The black and white checkered pattern symbolizes ska's message of racial harmony, particularly during the 2-Tone movement."
+  },
+  {
+    title: "Prince Buster",
+    fact: "Prince Buster is one of ska's founding fathers. His song 'Al Capone' directly inspired Madness's name and sound."
+  },
+  {
+    title: "Ska-Punk Fusion",
+    fact: "Third wave ska fused with punk rock, creating bands like Operation Ivy, Rancid, and Sublime. The DIY attitude fit perfectly!"
+  },
+  {
+    title: "Studio One",
+    fact: "Studio One in Kingston, Jamaica was the birthplace of recorded ska. Producer Coxsone Dodd helped define the genre's sound."
+  },
+  {
+    title: "Walk Don't Run",
+    fact: "The original ska bands often covered American R&B songs, speeding them up and adding that distinctive offbeat guitar."
+  },
+];
 
 function AchievementsDashboard() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +65,48 @@ function AchievementsDashboard() {
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState('all');
   const [showUnlocked, setShowUnlocked] = useState('all'); // all, unlocked, locked
+  const [newAchievements, setNewAchievements] = useState([]); // Toast notifications
+  const [currentSkaFact, setCurrentSkaFact] = useState(0);
+  const seenAchievementsRef = useRef(new Set());
+
+  // Rotate ska facts every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSkaFact(prev => (prev + 1) % SKA_FACTS.length);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll for new achievements every 30 seconds
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const recentRes = await getRecentAchievements(20);
+        const newRecent = recentRes.achievements || [];
+
+        // Check for new achievements we haven't seen
+        const newlyEarned = newRecent.filter(a => {
+          const key = `${a.id}_${a.agent_name}_${a.awarded_at}`;
+          if (!seenAchievementsRef.current.has(key)) {
+            seenAchievementsRef.current.add(key);
+            return true;
+          }
+          return false;
+        });
+
+        // Only announce new ones (skip on first load)
+        if (seenAchievementsRef.current.size > newRecent.length && newlyEarned.length > 0) {
+          setNewAchievements(prev => [...prev, ...newlyEarned]);
+        }
+
+        setRecent(newRecent);
+      } catch (error) {
+        console.error('Failed to poll achievements:', error);
+      }
+    }, 30000);
+
+    return () => clearInterval(pollInterval);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -29,11 +123,23 @@ function AchievementsDashboard() {
       setAchievements(achievementsRes.achievements || []);
       setRecent(recentRes.achievements || []);
       setStats(statsRes);
+
+      // Initialize seen achievements to prevent false notifications on load
+      const recentAchievements = recentRes.achievements || [];
+      recentAchievements.forEach(a => {
+        const key = `${a.id}_${a.agent_name}_${a.awarded_at}`;
+        seenAchievementsRef.current.add(key);
+      });
     } catch (error) {
       console.error('Failed to fetch achievements:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Remove a toast notification
+  const dismissToast = (index) => {
+    setNewAchievements(prev => prev.filter((_, i) => i !== index));
   };
 
   const getRarityColor = (rarity) => {
@@ -65,11 +171,25 @@ function AchievementsDashboard() {
       milestone: '🏆',
       streak: '🔥',
       meta: '🤖',
-      ska: '🎺'
+      ska: '🎺',
+      brass_band: '🎵',
+      drum_corps: '🥁',
+      guitar_hero: '🎮'
+    };
+    const displayNames = {
+      productivity: 'Productivity',
+      comedy: 'Comedy',
+      milestone: 'Milestone',
+      streak: 'Streak',
+      meta: 'Meta',
+      ska: 'Ska',
+      brass_band: 'Brass Band',
+      drum_corps: 'Drum Corps',
+      guitar_hero: 'Guitar Hero'
     };
     return (
       <Badge bg="dark" className="me-1">
-        {icons[category] || '❓'} {category}
+        {icons[category] || '❓'} {displayNames[category] || category}
       </Badge>
     );
   };
@@ -264,10 +384,13 @@ function AchievementsDashboard() {
                     size="sm"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    style={{ width: '150px' }}
+                    style={{ width: '170px' }}
                   >
                     <option value="all">All Categories</option>
                     <option value="ska">🎺 Ska</option>
+                    <option value="brass_band">🎵 Brass Band</option>
+                    <option value="drum_corps">🥁 Drum Corps</option>
+                    <option value="guitar_hero">🎮 Guitar Hero</option>
                     <option value="productivity">📈 Productivity</option>
                     <option value="comedy">😂 Comedy</option>
                     <option value="milestone">🏆 Milestone</option>
@@ -340,23 +463,63 @@ function AchievementsDashboard() {
         </Col>
       </Row>
 
-      {/* Fun Facts */}
+      {/* Rotating Ska Facts */}
       <Row className="mt-4 mb-4">
         <Col>
-          <Card bg="light">
+          <Card bg="light" style={{ transition: 'all 0.3s ease' }}>
             <Card.Body>
               <h6>🎺 Ska Facts</h6>
               <p className="mb-0" style={{ fontSize: '0.875rem' }}>
-                <strong>Did you know?</strong> Ska originated in Jamaica in the late 1950s,
-                predating reggae and rocksteady. The name "ska" might come from the scratchy
-                guitar sound or from the greeting "Skavoovie!" It's gone through three waves:
-                Jamaican ska (1960s), 2-Tone (late 1970s UK), and third wave (1990s US).
-                Now your AI agents are part of the fourth wave! 🎸
+                <strong>{SKA_FACTS[currentSkaFact].title}:</strong>{' '}
+                {SKA_FACTS[currentSkaFact].fact}
               </p>
+              <div className="mt-2 d-flex justify-content-center gap-1">
+                {SKA_FACTS.map((_, idx) => (
+                  <span
+                    key={idx}
+                    onClick={() => setCurrentSkaFact(idx)}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: idx === currentSkaFact ? '#333' : '#ccc',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                  />
+                ))}
+              </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
+
+      {/* Achievement Toast Notifications */}
+      <ToastContainer position="bottom-end" className="p-3" style={{ zIndex: 9999 }}>
+        {newAchievements.map((achievement, index) => (
+          <Toast
+            key={`${achievement.id}_${index}`}
+            onClose={() => dismissToast(index)}
+            delay={8000}
+            autohide
+            bg="dark"
+          >
+            <Toast.Header closeButton={true}>
+              <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>{achievement.icon}</span>
+              <strong className="me-auto">Achievement Unlocked!</strong>
+            </Toast.Header>
+            <Toast.Body className="text-white">
+              <strong>{achievement.name}</strong>
+              <br />
+              <small>{achievement.description}</small>
+              <br />
+              <Badge bg="secondary" className="mt-1">
+                {achievement.agent_name}
+              </Badge>
+            </Toast.Body>
+          </Toast>
+        ))}
+      </ToastContainer>
     </Container>
   );
 }

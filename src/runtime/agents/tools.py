@@ -790,7 +790,8 @@ class SpawnAgentTool:
         parent_agent_id: Optional[str] = None,
         request_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        auto_continue: bool = True
+        auto_continue: bool = True,
+        family_name: Optional[str] = None
     ):
         """
         Initialize spawn agent tool.
@@ -804,6 +805,7 @@ class SpawnAgentTool:
             request_id: Request ID for tracing (for metrics)
             session_id: Session ID for swarm state tracking
             auto_continue: Whether spawned agents auto-continue through milestones
+            family_name: Family name for this agent group (all agents share same surname)
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
@@ -813,12 +815,14 @@ class SpawnAgentTool:
         self.request_id = request_id or "unknown"
         self.session_id = session_id
         self.auto_continue = auto_continue
+        self.family_name = family_name
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
         # Import here to avoid circular dependency
         from .definition import AgentDefinition
         from .runtime import AgentRuntime
+        from .naming.name_generator import generate_agent_name
 
         agent_type = inputs["agent_type"]
         input_data = inputs["input_data"]
@@ -846,9 +850,17 @@ class SpawnAgentTool:
                     "error": error_msg
                 }
 
-            # Generate unique agent_id for spawned agent
+            # Generate unique agent_id for spawned agent with family name support
             import time
-            spawned_agent_id = f"{agent_type}_{int(time.time()*1000)}"
+            base_id = f"{agent_type}_{int(time.time()*1000)}"
+            # Generate whimsical name with family name if available
+            whimsical_name = generate_agent_name(
+                agent_type=agent_definition.name,
+                parent_id=self.parent_agent_id,
+                use_whimsical=True,
+                family_name=self.family_name
+            )
+            spawned_agent_id = base_id  # Keep base ID for tracking, whimsical for display
 
             # Create NEW tools with the spawned agent's permissions
             # This is critical - spawned agents need their own permission context
@@ -860,6 +872,7 @@ class SpawnAgentTool:
             )
 
             # Add spawn capability to spawned agent's tools
+            # Pass family name to child agents so they share the same surname
             spawned_spawn_tool = SpawnAgentTool(
                 agent_types_dir=self.agent_types_dir,
                 api_key=self.api_key,
@@ -868,7 +881,8 @@ class SpawnAgentTool:
                 parent_agent_id=spawned_agent_id,
                 request_id=self.request_id,
                 session_id=self.session_id,
-                auto_continue=self.auto_continue  # Propagate auto_continue
+                auto_continue=self.auto_continue,  # Propagate auto_continue
+                family_name=self.family_name  # Propagate family name to children
             )
             spawned_tools.register(spawned_spawn_tool)
 

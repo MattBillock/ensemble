@@ -1,273 +1,316 @@
-# Test Strategy - Frontend Fix Implementation
+# Test Strategy - Theme Palette & Component Integration
 
-## Milestone Overview
-Frontend Fix Implementation - Implement CSS/styling fixes to resolve all text contrast issues in the SelfImprovementDashboard component
+## Test Strategy Overview
 
-## Test Strategy Summary
-This milestone focuses on CSS/styling fixes for accessibility compliance (WCAG 2.1 AA standards). The testing strategy emphasizes visual regression testing, accessibility validation, and cross-browser compatibility to ensure the fixes resolve contrast issues without breaking existing functionality.
+### Coverage Goals
+- **Unit Test Coverage**: 85% for theme system components
+- **Integration Coverage**: 100% for theme switching and persistence
+- **Component Coverage**: All existing components tested across all 4 themes
+- **E2E Coverage**: Complete theme switching user journeys
 
-## Coverage Goals
-- **Unit Test Coverage**: 90% (CSS styling logic, conditional class application)
-- **Integration Coverage**: 100% (component rendering with different themes)
-- **E2E Coverage**: Critical user paths (normal mode, "bumpers off" mode)
-- **Visual Regression**: 100% (before/after screenshots for all styling states)
-- **Accessibility Coverage**: 100% WCAG 2.1 AA compliance verification
+### Test Approach
+- **TDD Implementation**: Tests written before theme system implementation
+- **Visual Regression**: Screenshot testing for theme consistency
+- **Accessibility Testing**: WCAG 2.1 AA compliance across all themes
+- **Performance Testing**: Theme switching speed validation
+- **Cross-browser Testing**: Theme compatibility across major browsers
 
-## Test Types Required
+## Test Categories
 
-### 1. Unit Tests
-**Target**: CSS class generation logic, conditional styling functions
-**Framework**: Jest + React Testing Library
-**Coverage**: 90%
+### 1. Unit Tests (Jest + React Testing Library)
 
-### 2. Visual Regression Tests  
-**Target**: Component appearance in different modes
-**Framework**: Jest + React Testing Library (snapshot testing)
-**Coverage**: All visual states
+#### ThemeProvider Component Tests
+**Priority**: High | **Estimated Effort**: 4 hours
+- ✅ Provides correct theme context to child components
+- ✅ Initializes with default theme when no localStorage preference
+- ✅ Loads saved theme preference from localStorage on mount
+- ✅ Updates CSS custom properties when theme changes
+- ✅ Handles corrupted localStorage data gracefully
+- ✅ Falls back to default theme on invalid theme ID
+- ✅ Provides all required context values (currentTheme, setTheme, availableThemes)
 
-### 3. Accessibility Tests
-**Target**: WCAG 2.1 compliance verification
-**Framework**: jest-axe + manual validation
-**Coverage**: 100% color contrast compliance
+#### useTheme Hook Tests
+**Priority**: High | **Estimated Effort**: 3 hours
+- ✅ Returns current theme data correctly
+- ✅ Returns available themes array
+- ✅ Provides working setTheme function
+- ✅ Updates when theme context changes
+- ✅ Throws error when used outside ThemeProvider
+- ✅ isTheme utility function works correctly
 
-### 4. Integration Tests
-**Target**: Component behavior with theme switching
-**Framework**: React Testing Library
-**Coverage**: All theme combinations
+#### ThemeSwitcher Component Tests
+**Priority**: High | **Estimated Effort**: 5 hours
+- ✅ Renders all available themes in dropdown/buttons
+- ✅ Shows current theme as selected
+- ✅ Calls setTheme when user selects different theme
+- ✅ Displays theme preview colors correctly
+- ✅ Handles different variant props (dropdown/buttons)
+- ✅ Responsive behavior on mobile screens
+- ✅ Keyboard navigation works properly
+- ✅ Accessibility attributes present (aria-labels, roles)
 
-### 5. Cross-Browser Tests
-**Target**: Visual consistency across browsers
-**Framework**: Manual testing (Chrome, Firefox, Safari, Edge)
-**Coverage**: Primary user flows
+#### Theme Configuration Tests
+**Priority**: Medium | **Estimated Effort**: 2 hours
+- ✅ All theme definitions have required properties
+- ✅ CSS variables are valid format
+- ✅ Theme IDs are unique
+- ✅ Color values are valid hex/rgb format
+- ✅ Bootstrap variable mappings are correct
 
-## Test Task Breakdown
+#### Theme Utils Tests
+**Priority**: Medium | **Estimated Effort**: 2 hours
+- ✅ applyCSSVariables function sets properties correctly
+- ✅ getThemeFromStorage handles edge cases
+- ✅ validateTheme function works correctly
+- ✅ Theme switching utilities work as expected
 
-### Task 1: Unit Tests for Styling Logic
-**Type**: Unit Test  
-**Priority**: High  
-**Estimated Effort**: 2 hours  
-**Framework**: Jest + React Testing Library
+### 2. Integration Tests
 
-**Test Cases**:
-- Test conditional CSS class generation for normal mode
-- Test conditional CSS class generation for "bumpers off" mode  
-- Test color class selection logic for different background types
-- Test Bootstrap class combination logic
-- Test edge cases (undefined states, invalid inputs)
+#### Theme System Integration
+**Priority**: High | **Estimated Effort**: 6 hours
+- ✅ ThemeProvider + ThemeSwitcher integration works end-to-end
+- ✅ Theme changes persist to localStorage correctly
+- ✅ CSS custom properties update document root
+- ✅ Bootstrap components reflect theme changes
+- ✅ All theme system components work together seamlessly
 
-**Files to Test**:
-- `SelfImprovementDashboard.jsx` - styling logic functions
-- Any utility functions for theme/color management
+#### Component Theme Integration
+**Priority**: High | **Estimated Effort**: 8 hours
+- ✅ Header component renders correctly in all 4 themes
+- ✅ Navigation components use theme variables
+- ✅ Form components maintain styling across themes
+- ✅ Button components work in all themes
+- ✅ Card/panel components theme properly
+- ✅ Modal components theme correctly
+- ✅ Table components maintain readability
+- ✅ Alert/notification components work across themes
 
-### Task 2: Visual Regression Tests
-**Type**: Visual Regression  
-**Priority**: High  
-**Estimated Effort**: 3 hours  
-**Framework**: Jest snapshot testing
+#### Bootstrap Integration
+**Priority**: High | **Estimated Effort**: 4 hours
+- ✅ Bootstrap CSS variables override correctly
+- ✅ Bootstrap components maintain functionality
+- ✅ Grid system works across all themes
+- ✅ Utility classes work with theme variables
+- ✅ Bootstrap JavaScript components unaffected
 
-**Test Cases**:
-- Snapshot test: Dashboard in normal mode
-- Snapshot test: Dashboard in "bumpers off" mode
-- Snapshot test: Individual card components with different backgrounds
-- Snapshot test: Badge components in both themes
-- Snapshot test: Table elements with proper contrast
-- Snapshot test: Responsive breakpoints (mobile, tablet, desktop)
+### 3. Visual Regression Tests
 
-**Files to Test**:
-- `SelfImprovementDashboard.jsx` - complete component rendering
+#### Theme Visual Consistency
+**Priority**: High | **Estimated Effort**: 6 hours
+- ✅ Homepage renders correctly in all 4 themes
+- ✅ Component library page shows consistent theming
+- ✅ Form pages maintain visual hierarchy
+- ✅ Dashboard/main app areas theme properly
+- ✅ Mobile responsive views for all themes
+- ✅ Theme switcher UI consistent across screen sizes
 
-### Task 3: Accessibility Compliance Tests
-**Type**: Accessibility  
-**Priority**: Critical  
-**Estimated Effort**: 4 hours  
-**Framework**: jest-axe + manual validation
+#### Cross-browser Visual Tests
+**Priority**: Medium | **Estimated Effort**: 4 hours
+- ✅ Chrome: All themes render correctly
+- ✅ Firefox: CSS custom properties work
+- ✅ Safari: Theme switching functions properly
+- ✅ Edge: Bootstrap integration maintained
 
-**Test Cases**:
-- WCAG 2.1 AA contrast ratio testing (4.5:1 normal text, 3:1 large text)
-- Color contrast validation for all text/background combinations
-- Focus management and keyboard navigation
-- Screen reader compatibility testing
-- Color-blind accessibility verification
+### 4. Accessibility Tests
 
-**Files to Test**:
-- `SelfImprovementDashboard.jsx` - all rendered text elements
+#### Theme Accessibility Compliance
+**Priority**: High | **Estimated Effort**: 5 hours
+- ✅ All themes meet WCAG 2.1 AA contrast ratios
+- ✅ Text remains readable in all themes
+- ✅ Focus indicators visible across themes
+- ✅ Color alone not used to convey information
+- ✅ Theme switcher accessible via keyboard
+- ✅ Screen reader compatibility maintained
 
-### Task 4: Theme Integration Tests
-**Type**: Integration  
-**Priority**: High  
-**Estimated Effort**: 2 hours  
-**Framework**: React Testing Library
+#### Interactive Element Testing
+**Priority**: Medium | **Estimated Effort**: 3 hours
+- ✅ Button focus states work in all themes
+- ✅ Link colors maintain contrast requirements
+- ✅ Form field states visible across themes
+- ✅ Error states clearly visible in all themes
 
-**Test Cases**:
-- Test component rendering with normal theme state
-- Test component rendering with danger theme state
-- Test theme switching behavior (if applicable)
-- Test prop passing for theme-related data
-- Test component rerender behavior on theme changes
+### 5. Performance Tests
 
-**Files to Test**:
-- `SelfImprovementDashboard.jsx` - full component integration
+#### Theme Switching Performance
+**Priority**: Medium | **Estimated Effort**: 3 hours
+- ✅ Theme switch completes under 100ms
+- ✅ No layout shift during theme changes
+- ✅ Memory usage stable during multiple switches
+- ✅ No JavaScript errors during rapid switching
 
-### Task 5: Cross-Browser Compatibility Tests
-**Type**: Manual/E2E  
-**Priority**: Medium  
-**Estimated Effort**: 3 hours  
-**Framework**: Manual testing + browser dev tools
+#### Bundle Size Impact
+**Priority**: Medium | **Estimated Effort**: 2 hours
+- ✅ Theme system adds less than 50KB to bundle
+- ✅ CSS file size impact measured
+- ✅ JavaScript impact on initial load
+- ✅ Lazy loading of theme data if needed
 
-**Test Cases**:
-- Chrome: Visual verification of all styling fixes
-- Firefox: Ensure CSS compatibility and rendering consistency
-- Safari: macOS-specific rendering validation
-- Edge: Windows compatibility verification
-- Mobile browsers: Responsive behavior validation
+### 6. End-to-End Tests (Playwright)
 
-**Files to Test**:
-- Complete application in browser environments
+#### Complete User Journeys
+**Priority**: High | **Estimated Effort**: 8 hours
+- ✅ User opens app, sees current theme, switches to new theme
+- ✅ Theme preference persists after page refresh
+- ✅ Theme preference persists after browser restart
+- ✅ User navigates between pages, theme remains consistent
+- ✅ Mobile user can access and use theme switcher
+- ✅ Theme switcher works from different pages
 
-### Task 6: Performance Impact Tests
-**Type**: Performance  
-**Priority**: Low  
-**Estimated Effort**: 1 hour  
-**Framework**: React DevTools Profiler
+#### Error Scenarios
+**Priority**: Medium | **Estimated Effort**: 4 hours
+- ✅ App works when localStorage disabled
+- ✅ App handles corrupted theme data gracefully
+- ✅ Network issues don't affect theme switching
+- ✅ Invalid theme selection recovers properly
 
-**Test Cases**:
-- Measure component render time before/after fixes
-- Verify no additional CSS bundle size impact  
-- Test for any memory leaks from styling changes
-- Validate smooth animations/transitions
+### 7. Regression Tests
 
-**Files to Test**:
-- `SelfImprovementDashboard.jsx` - performance characteristics
-
-## Test Environment Setup
-
-### Local Development
-```bash
-npm test                    # Run unit tests
-npm test -- --coverage     # Generate coverage report
-npm test -- --watch        # Run tests in watch mode
-```
-
-### Browser Testing
-```bash
-npm start                   # Start development server
-# Manual testing in multiple browsers
-```
-
-### Accessibility Testing
-```bash
-npm install --save-dev jest-axe
-# Additional manual testing with screen readers
-```
-
-## Success Criteria
-
-### Unit Tests
-- [ ] 90%+ code coverage for styling logic
-- [ ] All conditional styling functions tested
-- [ ] Edge cases handled appropriately
-- [ ] No false positives in test assertions
-
-### Visual Regression
-- [ ] Snapshot tests capture all visual states
-- [ ] Screenshots validate contrast improvements
-- [ ] No unintended visual changes detected
-- [ ] Responsive design preserved
-
-### Accessibility
-- [ ] WCAG 2.1 AA compliance achieved (4.5:1 contrast)
-- [ ] All text readable in both normal and danger modes
-- [ ] No accessibility regressions introduced
-- [ ] Screen reader compatibility maintained
-
-### Integration
-- [ ] Component behavior consistent across theme states
-- [ ] No breaking changes to existing functionality
-- [ ] Props and state management working correctly
-- [ ] Performance impact negligible
-
-### Cross-Browser
-- [ ] Consistent appearance across Chrome, Firefox, Safari, Edge
-- [ ] Mobile responsiveness maintained
-- [ ] CSS compatibility verified
-- [ ] No browser-specific rendering issues
-
-## Risk Mitigation
-
-### Risk: CSS Specificity Conflicts
-**Mitigation**: Use inline styles where needed, test in actual browser environment
-
-### Risk: Breaking Existing Visual Design
-**Mitigation**: Comprehensive snapshot testing, before/after visual comparison
-
-### Risk: Accessibility Non-Compliance  
-**Mitigation**: Automated jest-axe testing + manual validation with accessibility tools
-
-### Risk: Performance Degradation
-**Mitigation**: Performance testing with React DevTools, bundle size analysis
-
-### Risk: Cross-Browser Inconsistencies
-**Mitigation**: Test in multiple browsers, use standard Bootstrap classes
+#### Existing Functionality
+**Priority**: High | **Estimated Effort**: 6 hours
+- ✅ All existing components still function correctly
+- ✅ Navigation and routing unaffected
+- ✅ Form submissions work across all themes
+- ✅ Interactive features maintain functionality
+- ✅ API calls and data loading unaffected
+- ✅ No console errors in any theme
 
 ## Test Data Requirements
 
+### Theme Definitions Test Data
+```javascript
+const testThemes = {
+  dark: { id: 'dark', name: 'Dark', variables: {...} },
+  light: { id: 'light', name: 'Light', variables: {...} },
+  blue: { id: 'blue', name: 'Ocean Blue', variables: {...} },
+  purple: { id: 'purple', name: 'Purple', variables: {...} }
+}
+```
+
 ### Mock Data
-- Component props for different dashboard states
-- Sample performance data for display testing
-- Various user permission states
-- Error state mock data
+- localStorage mock for persistence testing
+- CSS custom property mock for theme application
+- Component render test data
+- User interaction simulation data
 
-### Test Fixtures
-- Theme configuration objects
-- CSS class mapping fixtures
-- Accessibility test scenarios
-- Browser compatibility matrices
+## Test Environment Setup
 
-## Automation Strategy
+### Unit Test Environment
+- Jest configuration for React components
+- React Testing Library setup
+- CSS custom property mocking
+- localStorage mocking
 
-### Continuous Integration
-- Unit tests run on every commit
-- Accessibility tests in CI pipeline
-- Visual regression tests on PR creation
-- Coverage reports generated automatically
+### Integration Test Environment
+- Full React application mount
+- Real CSS custom properties
+- Browser localStorage
+- Bootstrap CSS included
 
-### Manual Testing Checkpoints
-- Cross-browser testing before release
-- User acceptance testing for readability
-- Accessibility audit with real users
-- Performance validation in production-like environment
+### E2E Test Environment
+- Playwright browser automation
+- Real application deployment
+- All themes available
+- Cross-browser testing setup
+
+## Test Execution Strategy
+
+### Development Phase Testing
+1. **TDD Unit Tests**: Write tests first, implement to pass
+2. **Integration Tests**: After individual components complete
+3. **Visual Regression**: After UI implementation complete
+4. **Accessibility**: Continuous during development
+
+### Pre-deployment Testing
+1. **Full regression suite**: All existing functionality
+2. **Cross-browser testing**: All major browsers
+3. **Performance validation**: Theme switching speed
+4. **E2E scenarios**: Complete user journeys
+
+### Post-deployment Testing
+1. **Smoke tests**: Basic functionality works
+2. **User acceptance**: Theme switching UX validation
+3. **Performance monitoring**: Real-world usage metrics
+
+## Risk-Based Testing Priorities
+
+### High Risk Areas
+1. **Theme persistence reliability** - Critical user experience
+2. **Bootstrap integration** - Many components depend on Bootstrap
+3. **Mobile responsiveness** - Theme switcher must work on mobile
+4. **Accessibility compliance** - Required for inclusive design
+
+### Medium Risk Areas
+1. **Performance impact** - Theme switching speed
+2. **Cross-browser compatibility** - CSS custom property support
+3. **Visual consistency** - All themes look professional
+4. **Bundle size impact** - Keep application fast
+
+### Low Risk Areas
+1. **Advanced theme features** - Out of scope for MVP
+2. **Custom theme creation** - Not required
+3. **Theme synchronization** - Not implemented
+
+## Success Criteria
+
+### Functional Success
+- ✅ All 4 themes switch correctly and instantly
+- ✅ Theme preferences persist across sessions
+- ✅ All existing components work in all themes
+- ✅ No regression in existing functionality
+
+### Quality Success
+- ✅ 85%+ unit test coverage achieved
+- ✅ 100% integration test coverage
+- ✅ WCAG 2.1 AA compliance across all themes
+- ✅ Theme switching under 100ms
+
+### User Experience Success
+- ✅ Theme switcher discoverable and intuitive
+- ✅ Visual consistency maintained
+- ✅ Responsive behavior on all devices
+- ✅ No layout shifts during theme changes
+
+## Task Breakdown Summary
+
+| Test Category | Task Count | Estimated Hours | Priority |
+|---------------|------------|-----------------|----------|
+| Unit Tests | 5 tasks | 16 hours | High |
+| Integration Tests | 3 tasks | 18 hours | High |
+| Visual Regression | 2 tasks | 10 hours | High |
+| Accessibility | 2 tasks | 8 hours | High |
+| Performance | 2 tasks | 5 hours | Medium |
+| E2E Tests | 2 tasks | 12 hours | High |
+| Regression | 1 task | 6 hours | High |
+| **TOTAL** | **17 tasks** | **75 hours** | - |
+
+## Testing Timeline
+
+### Week 1: Foundation Testing (25 hours)
+- ThemeProvider unit tests
+- useTheme hook tests
+- Basic integration tests
+
+### Week 2: Component Testing (25 hours)
+- ThemeSwitcher component tests
+- Component theme integration tests
+- Visual regression tests
+
+### Week 3: Quality & E2E (25 hours)
+- Accessibility testing
+- Performance testing
+- End-to-end user journey tests
+- Regression testing
 
 ## Dependencies
+- Theme system implementation by Frontend Captain
+- Component updates by Frontend Captain
+- Test environment setup
+- Playwright/Jest configuration
+- Bootstrap CSS integration
 
-### Testing Dependencies
-- jest (existing)
-- @testing-library/react (existing)
-- jest-axe (to be added)
-- @testing-library/jest-dom (existing)
-
-### Development Dependencies
-- React DevTools (for performance testing)
-- Browser dev tools (for accessibility testing)
-- Multiple browser installations
-
-## Documentation Requirements
-
-### Test Documentation
-- Test case descriptions and rationale
-- Coverage reports with explanations
-- Accessibility compliance documentation
-- Cross-browser compatibility matrix
-- Performance impact analysis
-
-### User Documentation
-- Before/after screenshots showing improvements
-- Accessibility compliance statement
-- Browser support documentation
-- Known issues and workarounds (if any)
-
----
-
-**Total Estimated Effort**: 15 hours
-**Total Test Tasks**: 6 tasks
-**Primary Focus**: Accessibility compliance and visual regression prevention
-**Success Metric**: 100% WCAG 2.1 AA compliance with no visual regressions
+## Next Steps
+1. Hand off to TDD Coordinator for test implementation
+2. Coordinate with Frontend Captain for component test data
+3. Set up visual regression testing environment
+4. Configure accessibility testing tools
+5. Establish performance benchmarks

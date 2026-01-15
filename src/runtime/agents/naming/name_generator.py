@@ -3,19 +3,49 @@ Agent Name Generator
 
 Generates whimsical, memorable names for agent instances.
 Uses the name_data module to assign unique names to agents during execution.
+Supports family names so all agents in a task group share the same surname.
 
 Example usage:
     generator = NameGenerator()
-    name = generator.get_name("Executive Director")  # Returns "Lumawick-Director-4729"
+    name = generator.get_name("Executive Director")  # Returns "Lumawick Finch-Director-4729"
+
+    # Family name support:
+    family = generator.generate_family_name()  # Returns "Sparrow"
+    name = generator.get_name_with_family("Backend Developer", family)  # Returns "Bramblejay Sparrow-BackendDev-4730"
 """
 
 import random
 from datetime import datetime
 from .name_data import WHIMSICAL_NAMES
 
+# Family names (surnames) for agent groups
+FAMILY_NAMES = [
+    # Nature creatures
+    "Finch", "Sparrow", "Robin", "Wren", "Lark", "Swift",
+    "Falcon", "Hawk", "Raven", "Owl", "Dove", "Crane",
+    "Fox", "Wolf", "Bear", "Deer", "Hare", "Badger",
+    "Otter", "Beaver", "Squirrel", "Hedgehog", "Mouse", "Mole",
+    # Occupational
+    "Smith", "Wright", "Mason", "Cooper", "Fletcher", "Thatcher",
+    "Weaver", "Potter", "Baker", "Brewer", "Miller", "Shepherd",
+    "Fisher", "Hunter", "Ranger", "Warden", "Keeper", "Guard",
+    # Fantasy/Whimsical
+    "Cloud", "Storm", "Thunder", "Lightning", "Rain", "Snow",
+    "Frost", "Flame", "Ember", "Spark", "Glow", "Shine",
+    "Moon", "Star", "Sun", "Sky", "Dawn", "Dusk",
+    # Botanical
+    "Oak", "Pine", "Birch", "Maple", "Willow", "Cedar",
+    "Rose", "Lily", "Ivy", "Fern", "Sage", "Moss",
+    "Thorn", "Bloom", "Petal", "Leaf", "Blossom", "Branch",
+    # Terrain
+    "Hill", "Dale", "Glen", "Vale", "Brook", "Stream",
+    "Pond", "Lake", "Ridge", "Peak", "Cliff", "Shore",
+    "Field", "Grove", "Glade", "Heath", "Marsh", "Wood",
+]
+
 
 class NameGenerator:
-    """Generates whimsical names for agent instances."""
+    """Generates whimsical names for agent instances with family name support."""
 
     def __init__(self, use_whimsical_names: bool = True):
         """
@@ -26,7 +56,67 @@ class NameGenerator:
         """
         self.use_whimsical_names = use_whimsical_names
         self._used_names = set()
+        self._used_family_names = set()
         self._name_index = 0
+        self._family_index = 0
+
+    def generate_family_name(self) -> str:
+        """
+        Generate a unique family name for a task group.
+
+        All agents spawned for a given task should share the same family name.
+
+        Returns:
+            A unique family name string like "Sparrow"
+        """
+        # Try to get an unused family name
+        for _ in range(len(FAMILY_NAMES)):
+            name = FAMILY_NAMES[self._family_index % len(FAMILY_NAMES)]
+            self._family_index += 1
+            if name not in self._used_family_names:
+                self._used_family_names.add(name)
+                return name
+
+        # If all names used, create a unique variant
+        base = FAMILY_NAMES[self._family_index % len(FAMILY_NAMES)]
+        self._family_index += 1
+        suffix = str(random.randint(10, 99))
+        return f"{base}{suffix}"
+
+    def get_name_with_family(self, agent_type: str, family_name: str, parent_id: str = None) -> str:
+        """
+        Generate a unique name using a specific family name.
+
+        Args:
+            agent_type: The type of agent (e.g., "Backend Developer")
+            family_name: The family name to use (e.g., "Sparrow")
+            parent_id: Optional parent agent ID
+
+        Returns:
+            A unique agent name like "Bramblejay Sparrow-BackendDev-4730"
+        """
+        if not self.use_whimsical_names:
+            return f"{agent_type}_{datetime.now().timestamp()}"
+
+        # Get whimsical first name
+        first_name = self._get_next_whimsical_name()
+
+        # Shorten agent type
+        short_type = self._shorten_agent_type(agent_type)
+
+        # Generate unique suffix
+        suffix = self._generate_unique_suffix()
+
+        # Construct full name: FirstName FamilyName-ShortType-Suffix
+        full_name = f"{first_name} {family_name}-{short_type}-{suffix}"
+
+        # Ensure uniqueness
+        while full_name in self._used_names:
+            suffix = self._generate_unique_suffix()
+            full_name = f"{first_name} {family_name}-{short_type}-{suffix}"
+
+        self._used_names.add(full_name)
+        return full_name
 
     def get_name(self, agent_type: str, parent_id: str = None) -> str:
         """
@@ -143,7 +233,9 @@ class NameGenerator:
     def reset(self):
         """Reset the name generator state (for testing)."""
         self._used_names = set()
+        self._used_family_names = set()
         self._name_index = 0
+        self._family_index = 0
 
 
 # Global singleton instance
@@ -166,7 +258,7 @@ def get_generator(use_whimsical_names: bool = True) -> NameGenerator:
     return _generator
 
 
-def generate_agent_name(agent_type: str, parent_id: str = None, use_whimsical: bool = True) -> str:
+def generate_agent_name(agent_type: str, parent_id: str = None, use_whimsical: bool = True, family_name: str = None) -> str:
     """
     Convenience function to generate an agent name.
 
@@ -174,6 +266,7 @@ def generate_agent_name(agent_type: str, parent_id: str = None, use_whimsical: b
         agent_type: The type of agent (e.g., "Executive Director")
         parent_id: Optional parent agent ID
         use_whimsical: If True, use whimsical names. If False, use default naming.
+        family_name: Optional family name for the agent group
 
     Returns:
         A unique agent name
@@ -181,8 +274,30 @@ def generate_agent_name(agent_type: str, parent_id: str = None, use_whimsical: b
     Examples:
         >>> generate_agent_name("Executive Director")
         'Lumawick-Director-4729'
-        >>> generate_agent_name("Frontend Developer", parent_id="Lumawick-Director-4729")
-        'Bramblejay-FrontendDev-4730'
+        >>> generate_agent_name("Frontend Developer", family_name="Sparrow")
+        'Bramblejay Sparrow-FrontendDev-4730'
     """
     generator = get_generator(use_whimsical_names=use_whimsical)
+    if family_name:
+        return generator.get_name_with_family(agent_type, family_name, parent_id)
     return generator.get_name(agent_type, parent_id)
+
+
+def generate_family_name() -> str:
+    """
+    Generate a unique family name for a task group.
+
+    All agents spawned for a given task should share the same family name.
+
+    Returns:
+        A unique family name string like "Sparrow"
+
+    Examples:
+        >>> family = generate_family_name()
+        >>> generate_agent_name("Executive Director", family_name=family)
+        'Lumawick Sparrow-Director-4729'
+        >>> generate_agent_name("Backend Developer", family_name=family)
+        'Bramblejay Sparrow-BackendDev-4730'
+    """
+    generator = get_generator()
+    return generator.generate_family_name()

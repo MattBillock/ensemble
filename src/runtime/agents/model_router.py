@@ -75,9 +75,9 @@ MODEL_CATALOG: Dict[str, ModelSpec] = {
         max_output_tokens=64000,
         strengths=["code", "analysis", "reasoning", "balanced"]
     ),
-    "claude-haiku-3-5-20241022": ModelSpec(
+    "claude-3-5-haiku-20241022": ModelSpec(
         provider=Provider.ANTHROPIC,
-        model_id="claude-haiku-3-5-20241022",
+        model_id="claude-3-5-haiku-20241022",
         display_name="Claude Haiku 3.5",
         quality_tier=QualityTier.EFFICIENT,
         cost_per_1k_input=0.0008,

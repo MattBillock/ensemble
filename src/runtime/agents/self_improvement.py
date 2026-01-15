@@ -304,35 +304,62 @@ class RecommendationEngine:
         """Generate all recommendations based on current metrics."""
         recommendations = []
 
+        # Get existing pending/in_progress recommendations to avoid duplicates
+        existing_keys = self._get_existing_recommendation_keys()
+
         # Analyze performance issues
         issues = self.analyzer.analyze_all_agents(days)
 
         for issue in issues:
             rec = self._issue_to_recommendation(issue)
             if rec:
-                recommendations.append(rec)
+                # Create a dedup key based on agent + type
+                dedup_key = f"{rec.agent_name}_{rec.recommendation_type.value}"
+                if dedup_key not in existing_keys:
+                    recommendations.append(rec)
+                    existing_keys.add(dedup_key)
 
         # Analyze model effectiveness
         model_analysis = self.analyzer.analyze_model_effectiveness(days)
         for rec_data in model_analysis.get("recommendations", []):
-            recommendations.append(Recommendation(
-                id=f"model_{rec_data['agent']}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                agent_name=rec_data['agent'],
-                recommendation_type=RecommendationType.MODEL_UPGRADE,
-                priority=RecommendationPriority.MEDIUM,
-                title=f"Model optimization for {rec_data['agent']}",
-                description=f"Consider using {rec_data['recommend_model']} instead of {rec_data['avoid_model']}. Expected improvement: {rec_data['improvement']}",
-                evidence=rec_data,
-                suggested_changes={
-                    "preferred_model": rec_data['recommend_model'],
-                    "avoid_model": rec_data['avoid_model']
-                }
-            ))
+            dedup_key = f"{rec_data['agent']}_model_upgrade"
+            if dedup_key not in existing_keys:
+                recommendations.append(Recommendation(
+                    id=f"model_{rec_data['agent']}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    agent_name=rec_data['agent'],
+                    recommendation_type=RecommendationType.MODEL_UPGRADE,
+                    priority=RecommendationPriority.MEDIUM,
+                    title=f"Model optimization for {rec_data['agent']}",
+                    description=f"Consider using {rec_data['recommend_model']} instead of {rec_data['avoid_model']}. Expected improvement: {rec_data['improvement']}",
+                    evidence=rec_data,
+                    suggested_changes={
+                        "preferred_model": rec_data['recommend_model'],
+                        "avoid_model": rec_data['avoid_model']
+                    }
+                ))
+                existing_keys.add(dedup_key)
 
-        # Store recommendations
-        self._save_recommendations(recommendations)
+        # Only save if there are new recommendations
+        if recommendations:
+            self._save_recommendations(recommendations)
 
         return recommendations
+
+    def _get_existing_recommendation_keys(self) -> set:
+        """Get keys for existing pending/in_progress recommendations for deduplication."""
+        keys = set()
+        for filepath in self.recommendations_path.glob("recommendations_*.json"):
+            try:
+                with open(filepath) as f:
+                    data = json.load(f)
+                for item in data:
+                    # Only consider pending or in_progress recommendations
+                    if item.get("status") in ("pending", "in_progress"):
+                        key = f"{item['agent_name']}_{item['type']}"
+                        keys.add(key)
+            except (json.JSONDecodeError, IOError):
+                continue
+        return keys
 
     def _issue_to_recommendation(self, issue: PerformanceIssue) -> Optional[Recommendation]:
         """Convert a performance issue into a recommendation."""
@@ -624,6 +651,37 @@ class SelfImprovementLoop:
             }
             for r in recommendations
         ]
+
+    def get_recommendation_by_id(self, recommendation_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific recommendation by ID."""
+        for filepath in self.recommendation_engine.recommendations_path.glob("recommendations_*.json"):
+            with open(filepath) as f:
+                data = json.load(f)
+            for item in data:
+                if item["id"] == recommendation_id:
+                    return item
+        return None
+
+    def mark_recommendation_in_progress(self, recommendation_id: str) -> Dict[str, Any]:
+        """Mark a recommendation as being implemented (agent spawned)."""
+        for filepath in self.recommendation_engine.recommendations_path.glob("recommendations_*.json"):
+            with open(filepath) as f:
+                data = json.load(f)
+
+            updated = False
+            for item in data:
+                if item["id"] == recommendation_id:
+                    item["status"] = "in_progress"
+                    item["implementation_started_at"] = datetime.now().isoformat()
+                    updated = True
+                    break
+
+            if updated:
+                with open(filepath, 'w') as f:
+                    json.dump(data, f, indent=2)
+                return {"success": True, "message": f"Recommendation {recommendation_id} marked as in progress"}
+
+        return {"success": False, "message": "Recommendation not found"}
 
     def approve_recommendation(self, recommendation_id: str) -> Dict[str, Any]:
         """Mark a recommendation as approved (human in the loop)."""

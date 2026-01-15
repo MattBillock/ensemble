@@ -37,6 +37,9 @@ class AchievementCategory(Enum):
     STREAK = "streak"                 # Consecutive actions
     META = "meta"                     # Self-aware AI humor
     SKA = "ska"                       # Because ska will never die
+    BRASS_BAND = "brass_band"         # British brass band (NABBA) themed
+    DRUM_CORPS = "drum_corps"         # DCI drum corps themed
+    GUITAR_HERO = "guitar_hero"       # Guitar Hero game themed
 
 
 @dataclass
@@ -400,6 +403,594 @@ ACHIEVEMENTS = [
         points=15,
         agent_classes=["*"],
         trigger_condition={"consecutive_failures": {"min": 3}}
+    ),
+
+    # =============================================================================
+    # BRASS BAND ACHIEVEMENTS (British Brass Band / NABBA Style)
+    # NABBA = National Association of Brass Band Conductors
+    # References: Cornet solos, euphonium features, contests, sections, bandstands
+    # =============================================================================
+    Achievement(
+        id="championship_section",
+        name="Championship Section",
+        description="Achieved 95%+ success rate - you're playing in the premier division!",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.EPIC,
+        icon="🏅",
+        points=80,
+        agent_classes=["*"],
+        trigger_condition={"success_rate_threshold": {"min": 95}}
+    ),
+    Achievement(
+        id="principal_cornet",
+        name="Principal Cornet",
+        description="Led a team of 3+ agents to successful task completion",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎺",
+        points=30,
+        agent_classes=["Executive Director", "Development Manager", "System Architect"],
+        trigger_condition={"led_successful_team": {"min": 3}}
+    ),
+    Achievement(
+        id="euphonium_feature",
+        name="Euphonium Feature",
+        description="Executed a particularly complex task that required deep thinking",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.RARE,
+        icon="📯",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"iterations": {"min": 8}}
+    ),
+    Achievement(
+        id="test_piece",
+        name="Set Test Piece",
+        description="Completed the same type of task 10 times - you've mastered the test piece!",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.RARE,
+        icon="📜",
+        points=40,
+        agent_classes=["*"],
+        trigger_condition={"same_task_type_count": {"min": 10}}
+    ),
+    Achievement(
+        id="bandstand_performance",
+        name="Bandstand Performance",
+        description="Successfully completed a task on the weekend",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.COMMON,
+        icon="🎪",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"day_of_week": {"weekend": True}}
+    ),
+    Achievement(
+        id="nationals",
+        name="National Finals",
+        description="Part of a session that completed 50+ subtasks",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🏆",
+        points=150,
+        agent_classes=["*"],
+        trigger_condition={"session_subtasks": {"min": 50}}
+    ),
+    Achievement(
+        id="colliery_band",
+        name="Colliery Band Spirit",
+        description="Worked through a particularly challenging problem with determination",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="⛏️",
+        points=35,
+        agent_classes=["*"],
+        trigger_condition={"event": "persevered_through_difficulty"}
+    ),
+    Achievement(
+        id="hymn_tune",
+        name="Hymn Tune",
+        description="Completed a task with zero errors and clean output",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🕊️",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "zero_error_completion"}
+    ),
+    Achievement(
+        id="march_tempo",
+        name="March Tempo",
+        description="Completed 5 tasks in under 2 minutes each - quick march!",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.RARE,
+        icon="🥾",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"quick_tasks_count": {"min": 5, "max_duration_ms": 120000}}
+    ),
+    Achievement(
+        id="treble_clef",
+        name="Reading Treble Clef",
+        description="Processed and understood complex input with nested structures",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎼",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"event": "complex_input_handled"}
+    ),
+    Achievement(
+        id="fourth_section",
+        name="Fourth Section Graduate",
+        description="First 10 successful task completions - graduated from fourth section!",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.COMMON,
+        icon="🎓",
+        points=20,
+        agent_classes=["*"],
+        trigger_condition={"successful_executions": {"min": 10}}
+    ),
+    Achievement(
+        id="whit_friday",
+        name="Whit Friday Champion",
+        description="Completed multiple short tasks rapidly in succession",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.RARE,
+        icon="🏃",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"rapid_succession_tasks": {"min": 3, "max_gap_ms": 60000}}
+    ),
+    Achievement(
+        id="bb_flat",
+        name="BB Flat Tuba",
+        description="Provided the foundation for a large project (bottom end support)",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.RARE,
+        icon="🎹",
+        points=40,
+        agent_classes=["Backend Developer", "Backend Lead", "System Architect"],
+        trigger_condition={"event": "foundational_work"}
+    ),
+    Achievement(
+        id="flugel_horn",
+        name="Flugelhorn Solo",
+        description="Delivered exceptionally elegant solution to a problem",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.EPIC,
+        icon="✨",
+        points=70,
+        agent_classes=["*"],
+        trigger_condition={"event": "elegant_solution"}
+    ),
+    Achievement(
+        id="percussion_section",
+        name="Percussion Section",
+        description="Added rhythmic consistency with regular, timed executions",
+        category=AchievementCategory.BRASS_BAND,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🥁",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"consistent_timing": {"variance_pct": 20}}
+    ),
+
+    # =============================================================================
+    # DRUM CORPS ACHIEVEMENTS (DCI - Drum Corps International Style)
+    # References: Color guard, drill, props, GE scores, brass lines, drum lines
+    # =============================================================================
+    Achievement(
+        id="drum_major",
+        name="Drum Major",
+        description="Directed a session with 10+ agents without failures",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.EPIC,
+        icon="🎖️",
+        points=90,
+        agent_classes=["Executive Director"],
+        trigger_condition={"directed_agents": {"min": 10, "zero_failures": True}}
+    ),
+    Achievement(
+        id="color_guard",
+        name="Color Guard Excellence",
+        description="Delivered visually stunning output (generated UI components)",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🚩",
+        points=35,
+        agent_classes=["Frontend Developer", "Frontend Lead", "Style Developer"],
+        trigger_condition={"event": "ui_component_generated"}
+    ),
+    Achievement(
+        id="drum_line_precision",
+        name="Drum Line Precision",
+        description="Achieved perfect timing on a sequence of dependent tasks",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.RARE,
+        icon="🥁",
+        points=55,
+        agent_classes=["*"],
+        trigger_condition={"event": "perfect_sequence"}
+    ),
+    Achievement(
+        id="brass_run",
+        name="Brass Run",
+        description="Executed a rapid series of API calls or function invocations",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎺",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"tool_calls_in_iteration": {"min": 10}}
+    ),
+    Achievement(
+        id="general_effect",
+        name="High GE Score",
+        description="Produced output that exceeded expectations (positive feedback loop)",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.RARE,
+        icon="⭐",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"event": "exceeded_expectations"}
+    ),
+    Achievement(
+        id="drill_down",
+        name="Drill Down",
+        description="Navigated through complex nested directory structure",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.COMMON,
+        icon="📁",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "nested_directory_navigation"}
+    ),
+    Achievement(
+        id="world_class",
+        name="World Class",
+        description="Achieved legendary status in a category",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🌍",
+        points=200,
+        agent_classes=["*"],
+        trigger_condition={"legendary_achievements": {"min": 3}}
+    ),
+    Achievement(
+        id="open_class",
+        name="Open Class Rookie",
+        description="First time handling a completely new type of task",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.COMMON,
+        icon="🆕",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "first_task_type"}
+    ),
+    Achievement(
+        id="finals_week",
+        name="Finals Week",
+        description="Completed 7 tasks in a single day",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="📅",
+        points=35,
+        agent_classes=["*"],
+        trigger_condition={"tasks_today": {"min": 7}}
+    ),
+    Achievement(
+        id="prop_master",
+        name="Prop Master",
+        description="Successfully integrated external tools or resources",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.RARE,
+        icon="🛠️",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"event": "external_tool_integration"}
+    ),
+    Achievement(
+        id="visual_ensemble",
+        name="Visual Ensemble",
+        description="Coordinated perfectly with 2+ sibling agents",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="👯",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"sibling_coordination": {"min": 2}}
+    ),
+    Achievement(
+        id="high_brass",
+        name="High Brass Screamer",
+        description="Handled an unexpectedly high load without issues",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.RARE,
+        icon="📈",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"event": "high_load_handled"}
+    ),
+    Achievement(
+        id="mvp_award",
+        name="MVP Award",
+        description="Most productive agent in a session",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.EPIC,
+        icon="🏆",
+        points=75,
+        agent_classes=["*"],
+        trigger_condition={"event": "session_mvp"}
+    ),
+    Achievement(
+        id="spirit_award",
+        name="Spirit Award",
+        description="Maintained positive output despite challenging conditions",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="💫",
+        points=35,
+        agent_classes=["*"],
+        trigger_condition={"event": "positive_under_pressure"}
+    ),
+    Achievement(
+        id="caption_award",
+        name="Caption Award",
+        description="Best performance in a specific category (brass, percussion, etc.)",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.RARE,
+        icon="🎖️",
+        points=60,
+        agent_classes=["*"],
+        trigger_condition={"event": "category_best"}
+    ),
+    Achievement(
+        id="corps_style",
+        name="Corps Style",
+        description="Developed a consistent, recognizable approach to tasks",
+        category=AchievementCategory.DRUM_CORPS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎨",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"consistent_approach": {"min_tasks": 5}}
+    ),
+
+    # =============================================================================
+    # GUITAR HERO ACHIEVEMENTS (Game Style)
+    # References: Note streaks, star power, multipliers, difficulty levels, songs
+    # =============================================================================
+    Achievement(
+        id="five_star_rating",
+        name="Five Star Rating",
+        description="Completed a task with perfect metrics across all categories",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.EPIC,
+        icon="⭐⭐⭐⭐⭐",
+        points=100,
+        agent_classes=["*"],
+        trigger_condition={"event": "perfect_metrics"}
+    ),
+    Achievement(
+        id="star_power",
+        name="Star Power Activated",
+        description="Used an enhanced/upgraded model for a task",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="⚡",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "upgraded_model_used"}
+    ),
+    Achievement(
+        id="note_streak_100",
+        name="100 Note Streak",
+        description="Completed 100 tool calls without an error",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.EPIC,
+        icon="🔥",
+        points=80,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_tool_calls": {"min": 100}}
+    ),
+    Achievement(
+        id="note_streak_500",
+        name="500 Note Streak",
+        description="Completed 500 tool calls without an error - you're shredding!",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🎸",
+        points=200,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_tool_calls": {"min": 500}}
+    ),
+    Achievement(
+        id="whammy_bar",
+        name="Whammy Bar",
+        description="Smoothly handled an error and continued without crashing",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.COMMON,
+        icon="〰️",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "graceful_error_handling"}
+    ),
+    Achievement(
+        id="easy_mode",
+        name="Easy Mode",
+        description="Completed a simple task with economical model tier",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.COMMON,
+        icon="🟢",
+        points=10,
+        agent_classes=["*"],
+        trigger_condition={"event": "economical_completion"}
+    ),
+    Achievement(
+        id="medium_mode",
+        name="Medium Mode",
+        description="Completed a standard task with balanced model tier",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.COMMON,
+        icon="🟡",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "balanced_completion"}
+    ),
+    Achievement(
+        id="hard_mode",
+        name="Hard Mode",
+        description="Completed a complex task successfully",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🟠",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"complexity_level": "hard"}
+    ),
+    Achievement(
+        id="expert_mode",
+        name="Expert Mode",
+        description="Completed a task rated as expert difficulty",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.RARE,
+        icon="🔴",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"complexity_level": "expert"}
+    ),
+    Achievement(
+        id="full_combo",
+        name="Full Combo",
+        description="Completed an entire session without any missed steps",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="💯",
+        points=150,
+        agent_classes=["*"],
+        trigger_condition={"event": "full_session_combo"}
+    ),
+    Achievement(
+        id="hammer_on",
+        name="Hammer On",
+        description="Quickly followed up one task with another related task",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.COMMON,
+        icon="🔨",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "quick_follow_up"}
+    ),
+    Achievement(
+        id="pull_off",
+        name="Pull Off",
+        description="Elegantly extracted data from a complex source",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎯",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "clean_extraction"}
+    ),
+    Achievement(
+        id="battle_mode",
+        name="Battle Mode",
+        description="Competed with another agent and came out on top",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.RARE,
+        icon="⚔️",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"event": "competitive_win"}
+    ),
+    Achievement(
+        id="encore",
+        name="Encore! Encore!",
+        description="Was called upon to do additional work after completion",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="👏",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "follow_up_requested"}
+    ),
+    Achievement(
+        id="rock_meter_full",
+        name="Rock Meter Full",
+        description="Maintained excellent performance throughout a long task",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.RARE,
+        icon="🎸",
+        points=55,
+        agent_classes=["*"],
+        trigger_condition={"event": "sustained_excellence"}
+    ),
+    Achievement(
+        id="setlist_complete",
+        name="Setlist Complete",
+        description="Completed an entire project's worth of tasks",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.EPIC,
+        icon="📋",
+        points=90,
+        agent_classes=["*"],
+        trigger_condition={"event": "project_complete"}
+    ),
+    Achievement(
+        id="career_mode",
+        name="Career Mode",
+        description="Accumulated 1000+ points from achievements",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🎮",
+        points=250,
+        agent_classes=["*"],
+        trigger_condition={"total_achievement_points": {"min": 1000}}
+    ),
+    Achievement(
+        id="green_grass",
+        name="Green Grass and High Tides",
+        description="Completed an exceptionally long task (20+ minutes)",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.RARE,
+        icon="🌿",
+        points=60,
+        agent_classes=["*"],
+        trigger_condition={"duration_ms": {"min": 1200000}}
+    ),
+    Achievement(
+        id="through_fire_flames",
+        name="Through the Fire and Flames",
+        description="Completed the most difficult task type on expert settings",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🔥",
+        points=300,
+        agent_classes=["*"],
+        trigger_condition={"event": "hardest_task_expert"}
+    ),
+    Achievement(
+        id="bass_solo",
+        name="Bass Solo",
+        description="Backend agent completed a task independently without spawning",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🎸",
+        points=30,
+        agent_classes=["Backend Developer", "Backend Lead"],
+        trigger_condition={"event": "solo_completion"}
+    ),
+    Achievement(
+        id="drum_solo",
+        name="Drum Solo",
+        description="Handled a burst of rapid consecutive requests",
+        category=AchievementCategory.GUITAR_HERO,
+        rarity=AchievementRarity.RARE,
+        icon="🥁",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"event": "burst_handling"}
     ),
 ]
 

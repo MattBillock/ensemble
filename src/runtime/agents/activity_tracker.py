@@ -1,7 +1,10 @@
 """Agent Activity Tracker for detailed visibility into agent execution."""
 import json
 import logging
+import os
+import threading
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -53,8 +56,12 @@ class Activity:
 class AgentActivityTracker:
     """Tracks detailed agent activities for UI visibility."""
 
-    def __init__(self):
-        """Initialize activity tracker."""
+    # Default state file location
+    DEFAULT_STATE_DIR = os.path.expanduser("~/.ensemble")
+    STATE_FILENAME = "activity_tracker_state.json"
+
+    def __init__(self, state_dir: Optional[str] = None, enable_persistence: bool = True):
+        """Initialize activity tracker with optional persistence."""
         self.activities: List[Activity] = []
         self.agent_hierarchy: Dict[str, Dict[str, Any]] = {}
         self.agent_states: Dict[str, Dict[str, Any]] = {}
@@ -64,6 +71,96 @@ class AgentActivityTracker:
 
         # Request tracking for timeline view
         self.requests: Dict[str, Dict[str, Any]] = {}
+
+        # Persistence settings
+        self.enable_persistence = enable_persistence
+        self.state_dir = Path(state_dir or self.DEFAULT_STATE_DIR)
+        self.state_file = self.state_dir / self.STATE_FILENAME
+        self._save_lock = threading.Lock()
+        self._pending_save = False
+
+        # Load persisted state if available
+        if self.enable_persistence:
+            self._load_state()
+
+    def _save_state(self):
+        """Save current state to disk for persistence across restarts."""
+        if not self.enable_persistence:
+            return
+
+        with self._save_lock:
+            try:
+                # Ensure directory exists
+                self.state_dir.mkdir(parents=True, exist_ok=True)
+
+                # Prepare state for serialization
+                state = {
+                    "version": 1,
+                    "saved_at": datetime.now().isoformat(),
+                    "activities": [a.to_dict() for a in self.activities[-1000:]],  # Keep last 1000
+                    "agent_hierarchy": self.agent_hierarchy,
+                    "agent_states": self.agent_states,
+                    "pending_questions": self.pending_questions,
+                    "requests": self.requests
+                }
+
+                # Write to temp file then rename for atomic write
+                temp_file = self.state_file.with_suffix('.tmp')
+                with open(temp_file, 'w') as f:
+                    json.dump(state, f, indent=2, default=str)
+                temp_file.rename(self.state_file)
+
+                logger.debug(f"Saved activity tracker state to {self.state_file}")
+            except Exception as e:
+                logger.error(f"Failed to save activity tracker state: {e}")
+
+    def _load_state(self):
+        """Load persisted state from disk."""
+        if not self.enable_persistence or not self.state_file.exists():
+            logger.info("No persisted state found, starting fresh")
+            return
+
+        try:
+            with open(self.state_file, 'r') as f:
+                state = json.load(f)
+
+            # Validate version
+            if state.get("version") != 1:
+                logger.warning(f"Unknown state version {state.get('version')}, skipping load")
+                return
+
+            # Restore activities
+            for activity_dict in state.get("activities", []):
+                try:
+                    activity = Activity(
+                        activity_type=ActivityType(activity_dict["activity_type"]),
+                        agent_id=activity_dict["agent_id"],
+                        agent_name=activity_dict["agent_name"],
+                        timestamp=activity_dict["timestamp"],
+                        data=activity_dict["data"],
+                        request_id=activity_dict["request_id"],
+                        parent_agent_id=activity_dict.get("parent_agent_id"),
+                        iteration=activity_dict.get("iteration")
+                    )
+                    self.activities.append(activity)
+                except Exception as e:
+                    logger.warning(f"Failed to restore activity: {e}")
+
+            # Restore other state
+            self.agent_hierarchy = state.get("agent_hierarchy", {})
+            self.agent_states = state.get("agent_states", {})
+            self.pending_questions = state.get("pending_questions", {})
+            self.requests = state.get("requests", {})
+
+            # Mark recovered agents
+            for agent_id, agent_state in self.agent_states.items():
+                if agent_state.get("status") == "running":
+                    agent_state["status"] = "recovered"
+                    agent_state["current_task"] = f"Recovered: {agent_state.get('current_task', 'unknown')}"
+
+            logger.info(f"Loaded {len(self.activities)} activities and {len(self.agent_states)} agent states from {self.state_file}")
+        except Exception as e:
+            logger.error(f"Failed to load activity tracker state: {e}")
 
     def register_callback(self, callback: Callable[[Activity], None]):
         """Register a callback to be called when activities occur."""
@@ -89,6 +186,17 @@ class AgentActivityTracker:
                 callback(activity)
             except Exception as e:
                 logger.error(f"Error in activity callback: {e}")
+
+        # Persist state after significant events (every 10 activities or important events)
+        save_triggers = {
+            ActivityType.AGENT_STARTED,
+            ActivityType.AGENT_COMPLETED,
+            ActivityType.AGENT_FAILED,
+            ActivityType.QUESTION,
+            ActivityType.ANSWER,
+        }
+        if activity.activity_type in save_triggers or len(self.activities) % 10 == 0:
+            self._save_state()
 
     def record_agent_started(
         self,

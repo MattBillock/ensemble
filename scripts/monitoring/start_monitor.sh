@@ -111,9 +111,14 @@ else
     tmux send-keys -t "$SESSION_NAME:0.2" "watch -n 2 'ls -la $OUTPUT_DIR | head -30'" C-m
 fi
 
-# Configure Pane 3 (bottom-right): Agent status
-# Simple watch on agent status for now (Milestone 2 will add task_watcher.py)
-tmux send-keys -t "$SESSION_NAME:0.3" "watch -n 2 'echo \"=== Agent Status ===\"; curl -s http://localhost:8001/api/status 2>/dev/null | python3 -m json.tool 2>/dev/null || echo \"Backend not running\"'" C-m
+# Configure Pane 3 (bottom-right): Agent status with task watcher
+TASK_WATCHER="$PROJECT_ROOT/scripts/monitoring/task_watcher.py"
+if [ -f "$TASK_WATCHER" ]; then
+    tmux send-keys -t "$SESSION_NAME:0.3" "python3 '$TASK_WATCHER' --refresh 2" C-m
+else
+    # Fallback to simple status check if task_watcher.py doesn't exist
+    tmux send-keys -t "$SESSION_NAME:0.3" "watch -n 2 'echo \"=== Agent Status ===\"; curl -s http://localhost:8001/api/status 2>/dev/null | python3 -m json.tool 2>/dev/null || echo \"Backend not running\"'" C-m
+fi
 
 # Select the CLI pane by default
 tmux select-pane -t "$SESSION_NAME:0.0"

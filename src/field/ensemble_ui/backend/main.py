@@ -338,10 +338,15 @@ class AgentOrchestrator:
 
         agent_id = f"exec_dir_{self.request_count}"
 
+        # Generate family name for this task group - all agents will share this surname
+        from src.runtime.agents.naming.name_generator import generate_family_name
+        family_name = generate_family_name()
+
         self.logger.info(f"Spawning Executive Director", extra={
             'request_id': request_id,
             'agent_id': agent_id,
             'budget_tier': budget_tier,
+            'family_name': family_name,
             'problem_length': len(problem_description)
         })
 
@@ -392,7 +397,8 @@ class AgentOrchestrator:
                 parent_agent_id=agent_id,  # This agent is the parent for spawned agents
                 request_id=request_id,  # Pass request ID for tracing
                 session_id=session_id,  # Pass session ID for swarm state tracking
-                auto_continue=auto_continue  # Pass auto_continue for milestone handling
+                auto_continue=auto_continue,  # Pass auto_continue for milestone handling
+                family_name=family_name  # Pass family name to all child agents
             )
             tools.register(spawn_tool)
 
@@ -412,13 +418,15 @@ class AgentOrchestrator:
                 "messages": [],  # Conversation history
                 "request_id": request_id,
                 "project_id": project_id,  # Project grouping
+                "family_name": family_name,  # Family name for agent group
                 "current_stage": "requirements",  # Stage tracking
                 "created_at": datetime.now().isoformat(),
                 "parent_agent_id": None,  # Top-level agent
                 "spawned_agents": [],  # Track children
                 "metadata": {
                     "problem_length": len(problem_description),
-                    "budget_tier": budget_tier
+                    "budget_tier": budget_tier,
+                    "family_name": family_name
                 }
             }
 
@@ -1646,19 +1654,119 @@ async def apply_all_recommendations():
     }
 
 @app.post("/api/self-improvement/recommendations/{recommendation_id}/apply")
-async def apply_single_recommendation(recommendation_id: str):
-    """Apply a single recommendation (approve + apply changes)."""
+async def apply_single_recommendation(recommendation_id: str, background_tasks: BackgroundTasks):
+    """Apply a single recommendation by spawning an Executive Director to implement it."""
     from src.runtime.agents.self_improvement import get_improvement_loop
     loop = get_improvement_loop()
 
-    # First approve
+    # First approve the recommendation
     approve_result = loop.approve_recommendation(recommendation_id)
     if not approve_result.get("success"):
         return approve_result
 
-    # Then apply
-    apply_result = loop.apply_recommendation(recommendation_id)
-    return apply_result
+    # Get the recommendation details to build the task prompt
+    recommendation = loop.get_recommendation_by_id(recommendation_id)
+    if not recommendation:
+        return {"success": False, "message": "Recommendation not found"}
+
+    # Build a task prompt for the Executive Director
+    rec_type = recommendation.get("type", "unknown")
+    agent_name = recommendation.get("agent_name", "Unknown Agent")
+    title = recommendation.get("title", "Improvement")
+    description = recommendation.get("description", "")
+    suggested_changes = recommendation.get("suggested_changes", {})
+
+    # Create a detailed task prompt based on recommendation type
+    if rec_type in ["model_upgrade", "model_downgrade"]:
+        new_model = suggested_changes.get("new_model", "sonnet")
+        task_prompt = f"""Self-Improvement Task: Update model configuration for {agent_name}
+
+**Recommendation:** {title}
+**Description:** {description}
+
+**Required Change:**
+Update the agent definition file for {agent_name} to use the '{new_model}' model.
+The model preference is in the ## Model Preference section of the agent's markdown file.
+
+After making the change:
+1. Verify the syntax is correct
+2. Update any related configuration if needed
+3. Report the changes made"""
+
+    elif rec_type in ["iteration_increase", "iteration_decrease"]:
+        new_iterations = suggested_changes.get("new_max_iterations", 10)
+        task_prompt = f"""Self-Improvement Task: Update iteration limit for {agent_name}
+
+**Recommendation:** {title}
+**Description:** {description}
+
+**Required Change:**
+Update the agent definition file for {agent_name} to use {new_iterations} max iterations.
+The max iterations setting is in the ## Max Iterations section of the agent's markdown file.
+
+After making the change:
+1. Verify the syntax is correct
+2. Report the changes made"""
+
+    elif rec_type in ["definition_tweak", "definition_major"]:
+        note = suggested_changes.get("note", description)
+        task_prompt = f"""Self-Improvement Task: Improve agent definition for {agent_name}
+
+**Recommendation:** {title}
+**Description:** {description}
+
+**Performance Insight to Address:**
+{note}
+
+**Required Changes:**
+1. Review the current agent definition for {agent_name}
+2. Identify the root cause of the performance issue described above
+3. Update the agent's instructions, capabilities, or constraints to address the issue
+4. Test the changes if possible
+5. Report what was changed and why
+
+Focus on improving the agent's effectiveness without breaking existing functionality.
+Agent definition files are located in: leadership/, coordinators/, developers/, testers/, or designers/ directories."""
+
+    else:
+        # Generic improvement task
+        task_prompt = f"""Self-Improvement Task: {title}
+
+**Agent:** {agent_name}
+**Type:** {rec_type}
+**Description:** {description}
+
+**Suggested Changes:**
+{json.dumps(suggested_changes, indent=2) if suggested_changes else 'Review and improve as needed'}
+
+Please implement the recommended improvement and report what was done."""
+
+    # Spawn an Executive Director to implement the improvement
+    try:
+        asyncio.create_task(
+            orchestrator.spawn_executive_director(
+                problem_description=task_prompt,
+                budget_tier="balanced",
+                auto_continue=True
+            )
+        )
+
+        # Mark the recommendation as being implemented
+        loop.mark_recommendation_in_progress(recommendation_id)
+
+        return {
+            "success": True,
+            "message": f"Spawned Executive Director to implement: {title}",
+            "recommendation_id": recommendation_id,
+            "agent_spawned": True
+        }
+    except Exception as e:
+        logger.error(f"Failed to spawn Executive Director for recommendation: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to spawn agent: {str(e)}",
+            "recommendation_id": recommendation_id
+        }
 
 # ========== Swarm State Management Endpoints ==========
 

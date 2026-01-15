@@ -50,7 +50,11 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
       'running': 'warning',
       'completed': 'success',
       'failed': 'danger',
-      'awaiting_user_input': 'info'
+      'awaiting_user_input': 'info',
+      'stalled': 'warning',
+      'recovered': 'primary',
+      'forever_failed': 'danger',
+      'error': 'danger'
     };
     return variants[status] || 'secondary';
   };
@@ -60,7 +64,11 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
       'running': '⏳',
       'completed': '✅',
       'failed': '❌',
-      'awaiting_user_input': '❓'
+      'awaiting_user_input': '❓',
+      'stalled': '⚠️',
+      'recovered': '🔁',
+      'forever_failed': '💀',
+      'error': '🔴'
     };
     return icons[status] || '•';
   };
@@ -152,7 +160,7 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
         projectName: node.problem || node.agent_name || 'Unknown Project',
         stage: node.current_stage || 'unknown',
         agents: [],
-        stats: { running: 0, completed: 0, failed: 0, awaiting: 0 }
+        stats: { running: 0, completed: 0, failed: 0, awaiting: 0, stalled: 0, recovered: 0 }
       };
     }
     projectGroups[projectId].agents.push(agentId);
@@ -165,6 +173,8 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
       else if (status === 'completed') projectGroups[projectId].stats.completed++;
       else if (status === 'failed' || status === 'error' || status === 'forever_failed') projectGroups[projectId].stats.failed++;
       else if (status === 'awaiting_user_input') projectGroups[projectId].stats.awaiting++;
+      else if (status === 'stalled') projectGroups[projectId].stats.stalled++;
+      else if (status === 'recovered') projectGroups[projectId].stats.recovered++;
       (n.children || []).forEach(countStats);
     };
     countStats(agentId);
@@ -174,7 +184,7 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
     const isExpanded = expandedProjects.has(project.projectId);
     const stageIcon = STAGE_ICONS[project.stage] || STAGE_ICONS.unknown;
     const stageColor = STAGE_COLORS[project.stage] || STAGE_COLORS.unknown;
-    const totalAgents = project.stats.running + project.stats.completed + project.stats.failed + project.stats.awaiting;
+    const totalAgents = project.stats.running + project.stats.completed + project.stats.failed + project.stats.awaiting + project.stats.stalled + project.stats.recovered;
 
     return (
       <div key={project.projectId} style={{ marginBottom: '12px' }}>
@@ -211,10 +221,20 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
               </div>
             </div>
             {/* Stats badges */}
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {project.stats.running > 0 && (
                 <Badge bg="warning" pill style={{ fontSize: '10px' }}>
                   {project.stats.running} running
+                </Badge>
+              )}
+              {project.stats.stalled > 0 && (
+                <Badge bg="warning" pill style={{ fontSize: '10px' }}>
+                  ⚠️ {project.stats.stalled} stalled
+                </Badge>
+              )}
+              {project.stats.recovered > 0 && (
+                <Badge bg="primary" pill style={{ fontSize: '10px' }}>
+                  🔁 {project.stats.recovered} recovered
                 </Badge>
               )}
               {project.stats.completed > 0 && (

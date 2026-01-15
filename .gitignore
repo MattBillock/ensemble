@@ -61,3 +61,33 @@ logs/ensemble-backend.log.2
 logs/ensemble-backend.log.3
 logs/ensemble-backend.log.4
 logs/ensemble-backend.log.5
+
+# Operational/Temporary Files (not to be committed)
+# State and tracking files
+*_state.json
+activity_tracker_state.json
+swarm_state.json
+
+# Database files (operational, not architectural)
+*.db
+agent_metrics.db
+achievements.db
+metrics.db
+guardrails.db
+ensemble.db
+
+# Temporary output directories
+src/field/ensemble_ui/output/temp/
+src/field/ensemble_ui/output/projects/
+
+# Cache and runtime files
+.cache/
+*.cache
+*.tmp
+
+# Node modules (frontend)
+node_modules/
+
+# Generated test artifacts
+coverage/
+.nyc_output/

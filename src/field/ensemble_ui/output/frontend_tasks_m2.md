@@ -1,184 +1,333 @@
-# Frontend Tasks - CSS/Styling Fixes for Text Contrast Issues
+# Frontend Tasks - Intelligent Polling Frontend
 
 ## Overview
-This milestone focuses on implementing CSS/styling fixes to resolve all text contrast issues in the SelfImprovementDashboard component. The tasks are organized to address specific contrast problems while maintaining existing functionality and design intent.
+This milestone implements the frontend components for the intelligent polling system to replace the current unreliable file pane update mechanism. The tasks are organized by dependency order and user flow priority.
 
 ## Task Breakdown
 
-### Task 1: Fix Badge Text Contrast
-**Description**: Update badge styling to ensure proper text contrast on dark backgrounds
-**Component**: SelfImprovementDashboard.jsx - Badge elements
-**Acceptance Criteria**:
-- All badges with dark backgrounds display light/white text
-- Text contrast ratio meets WCAG 2.1 AA standards (4.5:1 minimum)
-- Badge styling adapts properly in both normal and "Bumpers Off" modes
-- No visual regression in badge appearance
+### Phase 1: Core Polling Infrastructure
 
-**Implementation Details**:
-- Review all Badge components with `bg="dark"` or similar dark variants
-- Ensure text color is explicitly set to `text="white"` or `text="light"`
-- Test conditional styling logic for different modes
-- Verify contrast using browser dev tools
-
+#### Task 1: File Polling Service
+**Description**: Create the core adaptive polling service with exponential backoff strategy
+**Priority**: Critical
+**Complexity**: Complex
 **Dependencies**: None
-**Complexity**: Simple
-**Files to Modify**: `SelfImprovementDashboard.jsx`
-
----
-
-### Task 2: Fix Card Text Contrast in Dark Themes
-**Description**: Ensure card content text remains readable when cards use dark/danger backgrounds
-**Component**: SelfImprovementDashboard.jsx - Card components
 **Acceptance Criteria**:
-- Text inside cards with dark backgrounds is clearly visible
-- Card headers and body text have proper contrast
-- Text color adapts when background switches between light/dark themes
-- Responsive behavior maintained across all screen sizes
+- Service implements adaptive polling intervals (1s active, 5s normal, 15s idle, 30s+ error with backoff)
+- Handles network interruptions with exponential backoff (max 5min intervals)
+- Provides lifecycle methods (start, stop, pause, resume polling)
+- Emits polling events for status tracking
+- Supports conditional requests with ETags
+- Automatically adjusts polling frequency based on file change activity
 
-**Implementation Details**:
-- Identify cards using `bg="dark"`, `bg="danger"`, or similar dark variants
-- Update text styling to use `text="white"` or `text="light"`
-- Fix any nested elements that may inherit problematic text colors
-- Test color combinations in both normal and danger themes
-
-**Dependencies**: None
+#### Task 2: Polling State Management (Redux Slice)
+**Description**: Create Redux slice for managing polling state and file list data
+**Priority**: Critical
 **Complexity**: Medium
-**Files to Modify**: `SelfImprovementDashboard.jsx`
-
----
-
-### Task 3: Fix Table Text Visibility
-**Description**: Ensure table content is readable within dark-themed containers
-**Component**: SelfImprovementDashboard.jsx - Table elements
+**Dependencies**: Task 1
 **Acceptance Criteria**:
-- Table headers and data cells have sufficient contrast
-- Table text remains readable in all theme modes
-- Table styling consistency maintained
-- Alternating row colors (if present) maintain readability
+- Manages file list state with optimistic updates
+- Tracks polling status (idle, polling, error states)
+- Handles incremental file changes and full refreshes
+- Stores last update timestamps and ETags for caching
+- Provides selectors for current files, polling status, and error states
+- Implements proper state normalization for file data
 
-**Implementation Details**:
-- Review table styling within card containers
-- Update table classes to ensure proper text contrast
-- Consider using Bootstrap table variants (`table-dark`, `table-light`)
-- Test table readability in different container backgrounds
-
-**Dependencies**: Task 2 (Card Text Contrast)
-**Complexity**: Simple
-**Files to Modify**: `SelfImprovementDashboard.jsx`
-
----
-
-### Task 4: Fix Form Control Text Contrast
-**Description**: Ensure form labels, inputs, and help text have proper visibility
-**Component**: SelfImprovementDashboard.jsx - Form elements
-**Acceptance Criteria**:
-- Form labels are clearly visible against their backgrounds
-- Input text and placeholder text have adequate contrast
-- Help text and form feedback messages are readable
-- Form controls maintain accessibility standards
-
-**Implementation Details**:
-- Review all form elements within the component
-- Update label styling for proper text contrast
-- Ensure input field text visibility
-- Test form controls in different theme contexts
-
-**Dependencies**: Task 2 (Card Text Contrast)
-**Complexity**: Simple
-**Files to Modify**: `SelfImprovementDashboard.jsx`
-
----
-
-### Task 5: Implement Conditional Text Color Logic
-**Description**: Create robust conditional styling logic to ensure text colors adapt with background changes
-**Component**: SelfImprovementDashboard.jsx - Styling logic
-**Acceptance Criteria**:
-- Text colors automatically adapt based on background colors
-- "Bumpers Off" mode properly triggers light text on dark backgrounds
-- Normal mode maintains appropriate text colors
-- Logic is maintainable and follows existing patterns
-
-**Implementation Details**:
-- Extract text color logic into helper functions if needed
-- Implement conditional className assignment based on mode state
-- Ensure consistency across all text elements
-- Add inline styles where Bootstrap classes are insufficient
-
-**Dependencies**: Tasks 1-4 (All component-specific fixes)
+#### Task 3: RTK Query API Integration
+**Description**: Set up RTK Query endpoints for efficient file data fetching with caching
+**Priority**: Critical
 **Complexity**: Medium
-**Files to Modify**: `SelfImprovementDashboard.jsx`
-
----
-
-### Task 6: Cross-Browser Testing and Validation
-**Description**: Test contrast fixes across different browsers and validate accessibility compliance
-**Component**: SelfImprovementDashboard.jsx - Complete component
+**Dependencies**: Task 2
 **Acceptance Criteria**:
-- All text contrast fixes work consistently in Chrome, Firefox, Safari, and Edge
-- WCAG 2.1 AA contrast requirements are met across all browsers
-- No visual regressions detected
-- Component functionality remains intact
+- Implements /api/files/list endpoint with conditional requests
+- Implements /api/files/changes endpoint for incremental updates
+- Provides automatic caching with ETag validation
+- Handles 304 Not Modified responses properly
+- Supports query invalidation and refetching
+- Integrates with polling service for automatic data synchronization
 
-**Implementation Details**:
-- Test component in multiple browsers
-- Use browser dev tools to verify contrast ratios
-- Validate with accessibility testing tools
-- Document any browser-specific considerations
+### Phase 2: React Components
 
-**Dependencies**: Task 5 (Conditional Logic)
-**Complexity**: Simple
-**Files to Modify**: None (testing only)
-
----
-
-### Task 7: Performance and Regression Testing
-**Description**: Ensure styling fixes don't impact performance or break existing functionality
-**Component**: SelfImprovementDashboard.jsx - Complete component
+#### Task 4: FileListContainer Component
+**Description**: Create container component that manages polling lifecycle and connects to state
+**Priority**: Critical
+**Complexity**: Medium
+**Dependencies**: Task 1, Task 2, Task 3
 **Acceptance Criteria**:
-- No measurable performance impact from styling changes
-- All existing component functionality works unchanged
-- Responsive design remains intact
-- No console errors or warnings introduced
+- Starts/stops polling based on component lifecycle
+- Connects to Redux state and RTK Query hooks
+- Handles polling errors with user feedback
+- Manages polling frequency based on user activity/tab visibility
+- Provides loading states during initial fetch and updates
+- Implements proper cleanup on component unmount
 
-**Implementation Details**:
-- Test component performance before and after changes
-- Verify all interactive elements work properly
-- Test responsive behavior on different screen sizes
-- Check for any new console errors
+#### Task 5: FileListDisplay Component
+**Description**: Create optimized presentation component for file list rendering
+**Priority**: High
+**Complexity**: Medium
+**Dependencies**: Task 4
+**Acceptance Criteria**:
+- Renders file list with proper React.memo optimization
+- Shows real-time update indicators (new/modified/deleted files)
+- Handles empty states and loading states gracefully
+- Supports file selection and basic interactions
+- Displays last update timestamp and polling status
+- Implements virtualization for large file lists (1000+ files)
 
-**Dependencies**: Task 6 (Cross-Browser Testing)
+#### Task 6: FileListItem Component
+**Description**: Create individual file item component with update animations
+**Priority**: Medium
 **Complexity**: Simple
-**Files to Modify**: None (testing only)
+**Dependencies**: Task 5
+**Acceptance Criteria**:
+- Displays file name, size, modification date
+- Shows visual indicators for file changes (new, modified, deleted)
+- Implements smooth entry/exit animations
+- Supports file type icons and metadata display
+- Handles click/selection events
+- Optimized with React.memo to prevent unnecessary re-renders
 
-## Implementation Strategy
+### Phase 3: Custom Hooks and Utilities
 
-### Phase 1: Component-Level Fixes (Tasks 1-4)
-- Address specific element types (badges, cards, tables, forms)
-- Focus on immediate contrast improvements
-- Test each fix in isolation
+#### Task 7: useFilePolling Hook
+**Description**: Create custom hook that encapsulates polling logic and state management
+**Priority**: High
+**Complexity**: Medium
+**Dependencies**: Task 1, Task 2
+**Acceptance Criteria**:
+- Provides simple interface for components to use polling
+- Handles automatic polling start/stop based on component lifecycle
+- Returns current files, polling status, and control methods
+- Manages error states and recovery logic
+- Supports polling configuration options
+- Integrates with browser visibility API to pause when tab inactive
 
-### Phase 2: System-Level Integration (Task 5)
-- Implement comprehensive conditional styling logic
-- Ensure consistency across all elements
-- Optimize for maintainability
+#### Task 8: useFileList Hook
+**Description**: Create hook for file list operations and filtering
+**Priority**: Medium
+**Complexity**: Simple
+**Dependencies**: Task 7
+**Acceptance Criteria**:
+- Provides filtered and sorted file data
+- Supports search/filter functionality with debouncing
+- Handles file selection state management
+- Returns memoized file arrays to prevent unnecessary re-renders
+- Supports custom sorting and grouping options
+- Integrates with localStorage for user preferences
 
-### Phase 3: Validation and Quality Assurance (Tasks 6-7)
-- Cross-browser testing
-- Accessibility validation
-- Performance verification
+#### Task 9: Polling Strategies Utility
+**Description**: Create utility functions for different polling strategies and timing calculations
+**Priority**: Medium
+**Complexity**: Medium
+**Dependencies**: Task 1
+**Acceptance Criteria**:
+- Implements exponential backoff calculation
+- Provides different polling strategies (adaptive, fixed, burst)
+- Handles network condition detection for strategy adjustment
+- Supports configuration via environment variables
+- Includes jitter to prevent thundering herd problems
+- Provides debugging utilities for polling behavior analysis
 
-## Expected Outcomes
+### Phase 4: Error Handling and Resilience
 
-1. **Immediate Impact**: All text contrast issues resolved
-2. **Accessibility Compliance**: WCAG 2.1 AA standards met
-3. **Maintainability**: Robust conditional styling logic in place
-4. **No Regression**: Existing functionality and design preserved
-5. **Cross-Platform Compatibility**: Consistent behavior across browsers
+#### Task 10: Error Handling Service
+**Description**: Create comprehensive error handling for network and polling failures
+**Priority**: High
+**Complexity**: Medium
+**Dependencies**: Task 1
+**Acceptance Criteria**:
+- Categorizes different error types (network, server, timeout)
+- Implements retry logic with different strategies per error type
+- Provides user-friendly error messages and recovery suggestions
+- Logs errors for debugging and monitoring
+- Supports graceful degradation when polling fails
+- Integrates with notification system for error alerts
 
-## Notes for TDD Coordinator
+#### Task 11: Offline Support Component
+**Description**: Create component that handles offline scenarios and connection recovery
+**Priority**: Medium
+**Complexity**: Medium
+**Dependencies**: Task 4, Task 10
+**Acceptance Criteria**:
+- Detects network connectivity changes
+- Shows offline indicators in UI
+- Queues file operations when offline
+- Automatically resumes polling when connection restored
+- Maintains file list state during brief disconnections
+- Provides manual refresh option during network issues
 
-- **Testing Priority**: Focus on visual regression testing and accessibility validation
-- **Component Isolation**: Test each styling fix independently before integration
-- **Bootstrap Compatibility**: Leverage Bootstrap's semantic color classes where possible
-- **Documentation**: Document any custom styling logic for future maintenance
-- **User Validation**: Consider user acceptance testing for final contrast verification
+#### Task 12: Network Status Indicator
+**Description**: Create UI component showing polling and network status
+**Priority**: Low
+**Complexity**: Simple
+**Dependencies**: Task 5, Task 11
+**Acceptance Criteria**:
+- Shows current polling status (active, paused, error)
+- Displays last successful update timestamp
+- Indicates network connectivity status
+- Shows retry countdown during error backoff periods
+- Provides manual refresh trigger
+- Includes polling frequency indicator for debugging
+
+### Phase 5: Performance Optimization
+
+#### Task 13: File List Virtualization
+**Description**: Implement virtual scrolling for large file lists
+**Priority**: Medium
+**Complexity**: Complex
+**Dependencies**: Task 5
+**Acceptance Criteria**:
+- Renders only visible file items for performance
+- Supports smooth scrolling through thousands of files
+- Maintains scroll position during updates
+- Handles dynamic item heights for different file types
+- Integrates with existing file selection and filtering
+- Provides accessibility features for screen readers
+
+#### Task 14: Update Animation System
+**Description**: Create smooth animations for file list changes
+**Priority**: Low
+**Complexity**: Medium
+**Dependencies**: Task 6
+**Acceptance Criteria**:
+- Animates file additions, removals, and modifications
+- Provides visual feedback for recent changes
+- Supports different animation styles (fade, slide, highlight)
+- Performs efficiently without blocking UI updates
+- Allows user to disable animations for accessibility
+- Integrates with polling system to trigger at appropriate times
+
+#### Task 15: Memory Management Utilities
+**Description**: Create utilities for managing memory usage in long-running polling sessions
+**Priority**: Medium
+**Complexity**: Medium
+**Dependencies**: Task 1, Task 2
+**Acceptance Criteria**:
+- Implements cleanup for old polling timers and references
+- Manages Redux state size for large file lists
+- Provides cache eviction strategies for file metadata
+- Monitors and reports memory usage metrics
+- Handles cleanup during route changes and unmounts
+- Supports configuration of memory limits and cleanup thresholds
+
+### Phase 6: Configuration and Monitoring
+
+#### Task 16: Polling Configuration Component
+**Description**: Create admin/debug component for configuring polling behavior
+**Priority**: Low
+**Complexity**: Simple
+**Dependencies**: Task 9
+**Acceptance Criteria**:
+- Allows runtime adjustment of polling intervals
+- Supports switching between polling strategies
+- Provides interface for error handling configuration
+- Shows current polling metrics and statistics
+- Enables/disables polling for testing
+- Persists configuration changes to localStorage
+
+#### Task 17: Debug Dashboard Component
+**Description**: Create debugging interface showing polling behavior and statistics
+**Priority**: Low
+**Complexity**: Medium
+**Dependencies**: Task 16
+**Acceptance Criteria**:
+- Displays real-time polling metrics (frequency, errors, cache hits)
+- Shows network request history and response times
+- Provides file change event timeline
+- Displays current Redux state for debugging
+- Supports exporting logs and metrics for analysis
+- Includes performance profiling tools for optimization
+
+#### Task 18: Integration Testing Setup
+**Description**: Set up end-to-end testing for polling integration
+**Priority**: High
+**Complexity**: Complex
+**Dependencies**: All previous tasks
+**Acceptance Criteria**:
+- Tests complete polling lifecycle from start to error recovery
+- Validates file list updates under various network conditions
+- Simulates server errors and network interruptions
+- Tests component behavior during polling state changes
+- Validates performance under high file change frequency
+- Includes accessibility testing for all polling-related UI elements
+
+## Task Dependencies Graph
+
+```
+Task 1 (Polling Service) → Task 2 (Redux Slice) → Task 3 (RTK Query)
+                       ↘                        ↗
+                         Task 4 (Container) → Task 5 (Display) → Task 6 (Item)
+                       ↗                    ↗                 ↗
+Task 7 (useFilePolling) → Task 8 (useFileList)              ↗
+                       ↗                                     ↗
+Task 9 (Strategies) → Task 10 (Error Handling) → Task 11 (Offline)
+                                                ↗
+                   Task 12 (Status) → Task 13 (Virtualization)
+                                   ↗
+Task 15 (Memory) → Task 14 (Animations) → Task 16 (Config) → Task 17 (Debug)
+                                                         ↗
+                                        Task 18 (Integration Tests)
+```
+
+## Implementation Priority
+
+### Sprint 1 (Critical Path - 2 weeks)
+- Task 1: File Polling Service
+- Task 2: Polling State Management
+- Task 3: RTK Query API Integration
+- Task 4: FileListContainer Component
+
+### Sprint 2 (Core UI - 1.5 weeks)
+- Task 5: FileListDisplay Component
+- Task 6: FileListItem Component
+- Task 7: useFilePolling Hook
+- Task 10: Error Handling Service
+
+### Sprint 3 (Resilience - 1 week)
+- Task 8: useFileList Hook
+- Task 9: Polling Strategies Utility
+- Task 11: Offline Support Component
+- Task 12: Network Status Indicator
+
+### Sprint 4 (Performance & Polish - 1 week)
+- Task 13: File List Virtualization
+- Task 15: Memory Management Utilities
+- Task 14: Update Animation System
+
+### Sprint 5 (Debugging & Testing - 0.5 weeks)
+- Task 16: Polling Configuration Component
+- Task 17: Debug Dashboard Component
+- Task 18: Integration Testing Setup
+
+## Estimated Total Timeline
+**5.5-6 weeks** for complete implementation with proper testing and optimization.
+
+## Technical Notes
+
+### State Management Pattern
+Uses Redux Toolkit with RTK Query for optimal caching and state synchronization. The polling service integrates with RTK Query's cache invalidation system.
+
+### Performance Considerations
+- React.memo optimization on all list components
+- Virtualization for large file lists
+- Debounced search/filtering
+- Background tab polling optimization
+- Memory cleanup on unmount
+
+### Error Recovery Strategy
+- Network errors: Exponential backoff with jitter
+- Server errors: Fixed retry intervals
+- Timeout errors: Immediate retry with shorter timeout
+- Connection loss: Pause polling until recovery
+
+### Accessibility Features
+- Screen reader support for status updates
+- Keyboard navigation for file list
+- High contrast indicators for file changes
+- Optional animation disable for motion sensitivity
+
+### Browser Compatibility
+- Modern browsers with ES6+ support
+- Graceful degradation for older browsers
+- Progressive enhancement for advanced features
+- Polyfills for missing API support where needed
