@@ -1,204 +1,332 @@
-# Test Strategy - Foundation & Theme System Setup
+# Test Strategy - Fix Recovery Continuation Bug
 
-## Overview
-This milestone establishes the core theming infrastructure and CSS variable system. Testing focuses on the foundation components that enable theme switching functionality without the UI components.
+## Testing Overview
 
-## Test Coverage Goals
-- **Unit Test Coverage**: 80%+ for theme management logic
-- **Integration Coverage**: All theme context interactions and CSS variable management
-- **E2E Coverage**: Core theme switching without UI (headless testing)
+This test strategy covers the comprehensive testing of the recovery continuation bug fix. The fix implements state restoration and execution resumption for recovered jobs that were previously stalling after successful recovery.
 
-## Test Categories
+## Coverage Goals
 
-### 1. Unit Tests
+- **Unit Test Coverage**: 85% for recovery and continuation logic
+- **Integration Test Coverage**: 100% of recovery-to-execution flow paths
+- **End-to-End Test Coverage**: All critical recovery scenarios + error paths
 
-#### 1.1 Theme Definitions Module (`src/themes/definitions.ts`)
-**Test Focus**: Theme configuration objects and validation
-- **Test Task**: Verify all theme objects have required properties
-- **Test Task**: Validate theme variable completeness across all themes
-- **Test Task**: Test theme accessibility metadata (contrast ratios)
-- **Test Task**: Verify theme type safety and TypeScript compliance
-- **Coverage Target**: 100% (critical foundation)
+## Test Architecture
 
-#### 1.2 Theme Context Provider (`src/contexts/ThemeContext.tsx`)
-**Test Focus**: Theme state management and switching logic
-- **Test Task**: Test theme provider initialization with default theme
-- **Test Task**: Test theme switching functionality and state updates
-- **Test Task**: Test theme context value propagation to consumers
-- **Test Task**: Test error handling for invalid theme IDs
-- **Test Task**: Test loading states during theme transitions
-- **Coverage Target**: 95% (core business logic)
+### Test Types Breakdown
 
-#### 1.3 useTheme Hook (`src/hooks/useTheme.ts`)
-**Test Focus**: Theme context consumption and utilities
-- **Test Task**: Test hook returns current theme data correctly
-- **Test Task**: Test theme switching through hook interface
-- **Test Task**: Test hook throws error when used outside provider
-- **Test Task**: Test memoization of theme values
-- **Coverage Target**: 100% (simple but critical interface)
+#### Unit Tests (85% coverage target)
+- Individual function/method testing with mocked dependencies
+- Fast execution, isolated from external systems
+- Focus on business logic verification
 
-#### 1.4 Theme Manager Utility (`src/utils/themeManager.ts`)
-**Test Focus**: CSS variable manipulation and DOM updates
-- **Test Task**: Test CSS variable application to document root
-- **Test Task**: Test CSS variable removal and cleanup
-- **Test Task**: Test fallback value handling for unsupported browsers
-- **Test Task**: Test performance of bulk CSS variable updates
-- **Coverage Target**: 90% (utility functions)
+#### Integration Tests (100% coverage target)
+- Component interaction testing
+- Recovery system + execution engine integration
+- State persistence and restoration validation
 
-#### 1.5 Storage Utilities (`src/utils/storage.ts`)
-**Test Focus**: localStorage interaction and error handling
-- **Test Task**: Test theme preference saving to localStorage
-- **Test Task**: Test theme preference loading from localStorage
-- **Test Task**: Test error handling when localStorage is unavailable
-- **Test Task**: Test JSON serialization/deserialization
-- **Test Task**: Test storage quota exceeded scenarios
-- **Coverage Target**: 85% (robust error handling needed)
+#### End-to-End Tests (Critical path coverage)
+- Complete user journey simulation
+- Stall detection → recovery → continuation → completion flow
+- Error scenario validation
 
-#### 1.6 useLocalStorage Hook (`src/hooks/useLocalStorage.ts`)
-**Test Focus**: localStorage React hook functionality
-- **Test Task**: Test initial value loading from localStorage
-- **Test Task**: Test value updates and localStorage synchronization
-- **Test Task**: Test error handling and fallback to default values
-- **Test Task**: Test cleanup on component unmount
-- **Coverage Target**: 90% (reusable hook)
+## Test Task Breakdown
 
-### 2. Integration Tests
+### Unit Test Tasks
 
-#### 2.1 Theme System Integration
-**Test Focus**: End-to-end theme switching without UI components
-- **Test Task**: Test complete theme switching flow (context → CSS variables)
-- **Test Task**: Test theme persistence across provider remounts
-- **Test Task**: Test multiple theme switches in sequence
-- **Test Task**: Test theme system initialization with saved preferences
-- **Test Task**: Test graceful degradation when storage fails
+#### Task UT-1: Recovery Orchestrator Unit Tests
+**Component**: `swarm_recovery.py` (modified)
+**Test Focus**: Enhanced continuation logic
+**Coverage Target**: 90%
 
-#### 2.2 CSS Variable System Integration
-**Test Focus**: Theme variables applying to DOM correctly
-- **Test Task**: Test CSS variables update in document.documentElement
-- **Test Task**: Test CSS variable inheritance in nested elements
-- **Test Task**: Test CSS variable fallback values work correctly
-- **Test Task**: Test theme transitions don't cause layout shifts
+**Test Cases**:
+- Test continuation checkpoint creation after recovery
+- Test transition from recovery state to execution state  
+- Test recovery orchestrator state management
+- Test error handling during continuation setup
+- Mock all external dependencies (agent state, execution engine)
 
-#### 2.3 Cross-Hook Integration
-**Test Focus**: Interaction between theme and storage hooks
-- **Test Task**: Test useTheme + useLocalStorage coordination
-- **Test Task**: Test theme context updates trigger storage writes
-- **Test Task**: Test storage changes reflect in theme context
-- **Test Task**: Test concurrent theme switches handle race conditions
+**Validation Criteria**:
+- Continuation checkpoints are properly created
+- State transitions work correctly
+- Error conditions are handled gracefully
+- No regression in existing recovery functionality
 
-### 3. End-to-End Tests (Headless)
+#### Task UT-2: Agent State Manager Unit Tests
+**Component**: `agent_state.py` (modified)
+**Test Focus**: Enhanced state persistence for continuation
+**Coverage Target**: 90%
 
-#### 3.1 Theme System E2E Flow
-**Test Focus**: Complete theme system functionality without UI
-- **Test Task**: Test app initialization loads correct theme from storage
-- **Test Task**: Test programmatic theme switching updates entire system
-- **Test Task**: Test browser refresh maintains theme selection
-- **Test Task**: Test incognito/private mode graceful fallback
+**Test Cases**:
+- Test continuation checkpoint save/restore functionality
+- Test execution context preservation during recovery
+- Test task state maintenance for continuation
+- Test state validation for continuation eligibility
+- Mock file system operations and JSON serialization
 
-#### 3.2 Performance Testing
-**Test Focus**: Theme system performance characteristics
-- **Test Task**: Test theme switching completes within 200ms
-- **Test Task**: Test memory usage doesn't increase with theme switches
-- **Test Task**: Test CSS variable updates don't cause excessive repaints
-- **Test Task**: Test large component tree theme propagation performance
+**Validation Criteria**:
+- Execution context is properly preserved
+- State validation works correctly
+- Checkpoint data integrity is maintained
+- Backward compatibility with existing state formats
 
-### 4. Accessibility Testing
+#### Task UT-3: Execution Engine Unit Tests  
+**Component**: `execution_engine.py` (modified)
+**Test Focus**: Accept and resume recovered jobs
+**Coverage Target**: 85%
 
-#### 4.1 Theme Contrast Validation
-**Test Focus**: Ensure themes meet accessibility standards
-- **Test Task**: Test all themes meet WCAG AA contrast ratios
-- **Test Task**: Test high contrast theme exceeds WCAG AAA standards
-- **Test Task**: Test color combinations for color-blind accessibility
-- **Test Task**: Test theme metadata accuracy for contrast calculations
+**Test Cases**:
+- Test acceptance of jobs from recovery system
+- Test execution context restoration from saved state
+- Test task execution resumption from continuation points
+- Test error handling for invalid recovered jobs
+- Mock recovery continuation handler and state management
 
-### 5. Error Handling & Edge Cases
+**Validation Criteria**:
+- Recovered jobs are properly accepted
+- Execution context restoration works correctly
+- Task resumption maintains progress correctly
+- Invalid jobs are handled gracefully
 
-#### 5.1 Resilience Testing
-**Test Focus**: System behavior under failure conditions
-- **Test Task**: Test theme system with corrupted localStorage data
-- **Test Task**: Test theme system with missing theme definitions
-- **Test Task**: Test theme system with invalid CSS variables
-- **Test Task**: Test theme system in browsers without CSS variable support
+#### Task UT-4: Recovery Continuation Handler Unit Tests
+**Component**: `recovery/continuation_handler.py` (new)
+**Test Focus**: Bridge between recovery and execution
+**Coverage Target**: 90%
 
-#### 5.2 Boundary Testing
-**Test Focus**: Edge cases and limits
-- **Test Task**: Test theme switching with extremely large theme objects
-- **Test Task**: Test rapid successive theme switches
-- **Test Task**: Test theme system with network connectivity issues
-- **Test Task**: Test theme system with restricted storage quotas
+**Test Cases**:
+- Test recovered job state validation
+- Test execution context preparation for resumption
+- Test coordination of handoff to execution engine
+- Test error scenarios during continuation process
+- Mock recovery orchestrator and execution engine
 
-## Test Infrastructure Requirements
+**Validation Criteria**:
+- Job state validation works correctly
+- Context preparation is complete and accurate
+- Handoff coordination is reliable
+- Error handling prevents system corruption
 
-### Testing Tools
-- **Unit Testing**: Jest + React Testing Library
-- **Integration Testing**: Jest with DOM environment
-- **E2E Testing**: Jest with jsdom for headless testing
-- **Performance Testing**: Jest performance profiling
-- **Accessibility Testing**: jest-axe for automated a11y checks
+#### Task UT-5: State Checkpoint Manager Unit Tests
+**Component**: `recovery/state_checkpoint.py` (new)
+**Test Focus**: Continuation state management
+**Coverage Target**: 85%
 
-### Test Environment Setup
-- **Mock localStorage**: Custom localStorage mock for testing
-- **CSS Variable Mocking**: Mock document.documentElement.style
-- **Theme Definition Fixtures**: Test theme objects for consistent testing
-- **Error Simulation**: Mock functions to simulate various failure modes
+**Test Cases**:
+- Test checkpoint creation and persistence
+- Test checkpoint restoration and validation
+- Test checkpoint cleanup and management
+- Test performance of checkpoint operations
+- Mock file system and JSON operations
 
-### Test Data & Fixtures
-- **Sample Themes**: Light, dark, and high-contrast test themes
-- **Invalid Theme Data**: Malformed theme objects for error testing
-- **Storage Scenarios**: Various localStorage states for persistence testing
-- **Performance Benchmarks**: Baseline performance metrics for comparison
+**Validation Criteria**:
+- Checkpoints are created correctly
+- Restoration maintains data integrity
+- Performance meets requirements (<100ms overhead)
+- Cleanup prevents storage bloat
 
-## Success Metrics
+### Integration Test Tasks
 
-### Quantitative Goals
-- **Code Coverage**: 85%+ overall, 95%+ for core theme logic
-- **Test Performance**: Test suite completes in <30 seconds
-- **Test Reliability**: <1% flaky test rate
-- **Error Coverage**: 100% error paths tested
+#### Task IT-1: Recovery-to-Execution Flow Integration
+**Components**: Recovery orchestrator + continuation handler + execution engine
+**Test Focus**: End-to-end recovery continuation flow
+**Coverage Target**: 100% of flow paths
 
-### Qualitative Goals
-- **Test Maintainability**: Tests are easy to understand and modify
-- **Test Documentation**: Clear test descriptions and failure messages
-- **Test Independence**: Tests don't depend on execution order
-- **Test Realism**: Tests reflect actual usage patterns
+**Test Scenarios**:
+- Successful recovery with immediate continuation
+- Recovery with state validation failures
+- Recovery with execution context restoration failures
+- Multiple concurrent recoveries with continuation
+- Use real components with minimal mocking
 
-## Implementation Notes
+**Validation Criteria**:
+- Complete flow works without errors
+- State integrity maintained throughout process
+- Concurrent operations don't interfere
+- Performance meets requirements
 
-### Critical Test Scenarios
-1. **Theme switching performance**: Must complete <200ms
-2. **Storage failure handling**: Graceful degradation required
-3. **CSS variable propagation**: Must update entire component tree
-4. **Cross-browser compatibility**: Test fallback mechanisms
+#### Task IT-2: State Persistence Integration
+**Components**: Agent state manager + state checkpoint manager + file system
+**Test Focus**: State save/restore across recovery process
+**Coverage Target**: 100% of persistence scenarios
 
-### Testing Priorities
-1. **High Priority**: Core theme switching logic and CSS variable management
-2. **Medium Priority**: Storage persistence and error handling
-3. **Lower Priority**: Edge cases and performance optimization
+**Test Scenarios**:
+- State persistence during normal operation
+- State restoration after system restart
+- State corruption detection and handling
+- Large state object persistence performance
+- Use real file system operations
 
-### Test Execution Strategy
-- **Development**: Run unit tests on every save
-- **Pre-commit**: Run full test suite with coverage check
-- **CI/CD**: Run all tests + accessibility validation
-- **Pre-deployment**: Performance benchmark validation
+**Validation Criteria**:
+- State persistence is reliable
+- Restoration is accurate and complete
+- Corruption is detected and handled
+- Performance is acceptable for large states
 
-## Deliverables
+#### Task IT-3: Recovery Strategy Integration
+**Components**: Recovery strategies + continuation handler + state management
+**Test Focus**: Integration of existing recovery with new continuation
+**Coverage Target**: 100% of recovery strategy types
 
-Upon completion of these test tasks, we will have:
-- ✅ Comprehensive test coverage of theme foundation system
-- ✅ Validated theme switching performance and reliability
-- ✅ Confirmed accessibility compliance of all themes
-- ✅ Robust error handling for all failure scenarios
-- ✅ Performance baselines for theme system operations
-- ✅ Test infrastructure ready for UI component testing in M2
+**Test Scenarios**:
+- Each recovery strategy with continuation
+- Mixed recovery strategy scenarios
+- Recovery strategy failures with continuation fallback
+- Performance impact of continuation on recovery
+- Use real recovery strategies with continuation handlers
 
-## Dependencies
-- Theme definitions must be complete before theme validation tests
-- Storage utilities must be implemented before persistence tests
-- CSS variable system must be functional before integration tests
-- Theme context must be stable before hook testing
+**Validation Criteria**:
+- All recovery strategies work with continuation
+- No performance regression in recovery
+- Fallback scenarios work correctly
+- Integration is transparent to existing code
+
+### End-to-End Test Tasks
+
+#### Task E2E-1: Complete Recovery Lifecycle
+**Scope**: Full system integration from stall detection to completion
+**Test Focus**: Real-world recovery scenarios
+**Coverage Target**: Happy path + critical error scenarios
+
+**Test Scenarios**:
+- Agent stalls → detection → recovery → continuation → completion
+- Multiple agents with different stall patterns
+- Recovery during high system load
+- Recovery with various job types and complexities
+- Use full system stack with minimal test doubles
+
+**Validation Criteria**:
+- Jobs complete successfully after recovery
+- No data loss during recovery process
+- System performance remains stable
+- Recovery metrics show improvement
+
+#### Task E2E-2: Error Scenario Validation
+**Scope**: Recovery continuation failure handling
+**Test Focus**: System resilience under error conditions
+**Coverage Target**: All critical error paths
+
+**Test Scenarios**:
+- State corruption during recovery
+- Execution engine unavailable during continuation
+- Storage failures during checkpoint operations
+- Network issues during recovery process
+- Use real system with simulated failure conditions
+
+**Validation Criteria**:
+- System degrades gracefully under errors
+- No cascade failures from recovery errors
+- Error logging provides actionable information
+- Recovery attempts don't impact healthy jobs
+
+#### Task E2E-3: Performance and Scalability
+**Scope**: Recovery system performance under load
+**Test Focus**: System performance with continuation logic
+**Coverage Target**: Performance benchmarks + load scenarios
+
+**Test Scenarios**:
+- High-volume recovery scenarios
+- Concurrent recovery operations
+- Large state object recovery
+- Memory usage during recovery operations
+- Use production-like data volumes and concurrency
+
+**Validation Criteria**:
+- Recovery performance meets SLA (<2s for simple jobs)
+- Memory usage remains within bounds
+- Concurrent operations scale linearly
+- No memory leaks in recovery process
+
+## Test Environment Setup
+
+### Development Testing
+- **Framework**: pytest for Python components
+- **Mocking**: unittest.mock for unit tests
+- **Test Data**: Synthetic job and state data
+- **Assertions**: Comprehensive state and behavior validation
+
+### Integration Testing
+- **Environment**: Isolated test environment with real components
+- **Data**: Representative production-like test data
+- **Monitoring**: Performance and resource monitoring
+- **Cleanup**: Automated test data cleanup
+
+### End-to-End Testing
+- **Environment**: Full system deployment in test environment
+- **Load Generation**: Realistic job and stall scenarios
+- **Monitoring**: Full system monitoring and logging
+- **Validation**: Business outcome validation
+
+## Testing Dependencies
+
+### Required Test Infrastructure
+- Test database for state persistence testing
+- Mock external services for isolation
+- Performance monitoring tools
+- Log aggregation for test analysis
+
+### Test Data Requirements
+- Variety of agent state scenarios
+- Different job types and complexities
+- Error condition simulation data
+- Performance baseline data
+
+## Success Criteria
+
+### Functional Testing
+- All unit tests pass with >85% coverage
+- All integration tests pass with 100% flow coverage
+- All E2E tests demonstrate successful recovery continuation
+- No regression in existing recovery functionality
+
+### Performance Testing
+- Recovery continuation adds <100ms to recovery process
+- Memory usage increase <10% during recovery
+- Concurrent recovery performance scales linearly
+- No performance impact on normal job execution
+
+### Quality Testing
+- Error handling prevents system corruption
+- Logging provides actionable troubleshooting information
+- Recovery metrics show clear improvement in job completion
+- Code maintainability metrics remain high
+
+## Test Execution Schedule
+
+### Phase 1: Unit Testing (Week 1)
+- Implement all unit test tasks (UT-1 through UT-5)
+- Achieve target coverage for each component
+- Validate individual component functionality
+
+### Phase 2: Integration Testing (Week 2)  
+- Implement integration test tasks (IT-1 through IT-3)
+- Validate component interactions
+- Performance baseline establishment
+
+### Phase 3: End-to-End Testing (Week 2-3)
+- Implement E2E test tasks (E2E-1 through E2E-3)
+- Full system validation
+- Performance and scalability testing
+
+### Phase 4: Regression Testing (Week 3)
+- Run full existing test suite
+- Validate no regression in current functionality
+- Performance comparison with baseline
 
 ## Risk Mitigation
-- **CSS Variable Support**: Test fallbacks for older browsers
-- **Storage Failures**: Comprehensive error handling tests
-- **Performance Issues**: Proactive performance testing and benchmarking
-- **Type Safety**: TypeScript compilation testing for theme objects
+
+### Test Environment Risks
+- **Mitigation**: Isolated test environments with cleanup automation
+- **Monitoring**: Resource usage monitoring during tests
+
+### Test Data Integrity
+- **Mitigation**: Version-controlled test data sets
+- **Validation**: Test data verification before execution
+
+### Performance Test Reliability
+- **Mitigation**: Multiple test runs with statistical analysis
+- **Baseline**: Establish performance baselines before testing
+
+### Coverage Measurement
+- **Mitigation**: Automated coverage reporting with trend analysis
+- **Validation**: Manual verification of critical path coverage
+
+This comprehensive test strategy ensures the recovery continuation bug fix is thoroughly validated while maintaining the reliability and performance of the existing recovery system.
