@@ -1,333 +1,248 @@
-# Frontend Tasks - Intelligent Polling Frontend
+# Frontend Tasks - UI Integration for Katamari Category Support
 
 ## Overview
-This milestone implements the frontend components for the intelligent polling system to replace the current unreliable file pane update mechanism. The tasks are organized by dependency order and user flow priority.
+Update the AchievementsDashboard component to support the new katamari (famous_mustards) achievement category with proper filtering and display styling.
+
+## Context Analysis
+- **Architecture**: Data-driven configuration with enumerated categories
+- **Current State**: Dashboard supports 9 existing achievement categories (ska, brass_band, drum_corps, guitar_hero, productivity, comedy, milestone, streak, meta)
+- **New Addition**: famous_mustards category needs frontend integration
+- **Framework**: React with Bootstrap styling
+- **Pattern**: Extend existing category filtering without breaking current functionality
 
 ## Task Breakdown
 
-### Phase 1: Core Polling Infrastructure
+### Task 1: Update Category Dropdown Options
+**Description**: Add famous_mustards category option to the filtering dropdown in AchievementsDashboard
+**Type**: Component Enhancement
+**Complexity**: Simple
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
 
-#### Task 1: File Polling Service
-**Description**: Create the core adaptive polling service with exponential backoff strategy
-**Priority**: Critical
-**Complexity**: Complex
+**Acceptance Criteria**:
+- Famous mustards option appears in category filter dropdown
+- Option includes appropriate mustard-themed icon (🌭 or 🟡)  
+- Dropdown maintains alphabetical or logical ordering
+- Existing category options remain unchanged
+
+**Implementation Details**:
+- Add new `<option>` element in Form.Select for category filtering
+- Use consistent icon pattern: `🌭 Famous Mustards` or `🟡 Famous Mustards`
+- Place in logical position within dropdown (after existing categories or alphabetically)
+
 **Dependencies**: None
-**Acceptance Criteria**:
-- Service implements adaptive polling intervals (1s active, 5s normal, 15s idle, 30s+ error with backoff)
-- Handles network interruptions with exponential backoff (max 5min intervals)
-- Provides lifecycle methods (start, stop, pause, resume polling)
-- Emits polling events for status tracking
-- Supports conditional requests with ETags
-- Automatically adjusts polling frequency based on file change activity
 
-#### Task 2: Polling State Management (Redux Slice)
-**Description**: Create Redux slice for managing polling state and file list data
-**Priority**: Critical
-**Complexity**: Medium
-**Dependencies**: Task 1
-**Acceptance Criteria**:
-- Manages file list state with optimistic updates
-- Tracks polling status (idle, polling, error states)
-- Handles incremental file changes and full refreshes
-- Stores last update timestamps and ETags for caching
-- Provides selectors for current files, polling status, and error states
-- Implements proper state normalization for file data
+---
 
-#### Task 3: RTK Query API Integration
-**Description**: Set up RTK Query endpoints for efficient file data fetching with caching
-**Priority**: Critical
-**Complexity**: Medium
-**Dependencies**: Task 2
-**Acceptance Criteria**:
-- Implements /api/files/list endpoint with conditional requests
-- Implements /api/files/changes endpoint for incremental updates
-- Provides automatic caching with ETag validation
-- Handles 304 Not Modified responses properly
-- Supports query invalidation and refetching
-- Integrates with polling service for automatic data synchronization
-
-### Phase 2: React Components
-
-#### Task 4: FileListContainer Component
-**Description**: Create container component that manages polling lifecycle and connects to state
-**Priority**: Critical
-**Complexity**: Medium
-**Dependencies**: Task 1, Task 2, Task 3
-**Acceptance Criteria**:
-- Starts/stops polling based on component lifecycle
-- Connects to Redux state and RTK Query hooks
-- Handles polling errors with user feedback
-- Manages polling frequency based on user activity/tab visibility
-- Provides loading states during initial fetch and updates
-- Implements proper cleanup on component unmount
-
-#### Task 5: FileListDisplay Component
-**Description**: Create optimized presentation component for file list rendering
-**Priority**: High
-**Complexity**: Medium
-**Dependencies**: Task 4
-**Acceptance Criteria**:
-- Renders file list with proper React.memo optimization
-- Shows real-time update indicators (new/modified/deleted files)
-- Handles empty states and loading states gracefully
-- Supports file selection and basic interactions
-- Displays last update timestamp and polling status
-- Implements virtualization for large file lists (1000+ files)
-
-#### Task 6: FileListItem Component
-**Description**: Create individual file item component with update animations
-**Priority**: Medium
+### Task 2: Update Category Badge Display Function
+**Description**: Extend getCategoryBadge function to handle famous_mustards category
+**Type**: Function Enhancement  
 **Complexity**: Simple
-**Dependencies**: Task 5
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Displays file name, size, modification date
-- Shows visual indicators for file changes (new, modified, deleted)
-- Implements smooth entry/exit animations
-- Supports file type icons and metadata display
-- Handles click/selection events
-- Optimized with React.memo to prevent unnecessary re-renders
+- getCategoryBadge function returns appropriate badge for famous_mustards
+- Badge uses mustard-themed icon (🌭, 🟡, or appropriate mustard emoji)
+- Badge styling matches existing category badges
+- Function maintains existing behavior for all current categories
 
-### Phase 3: Custom Hooks and Utilities
+**Implementation Details**:
+- Add `famous_mustards: '🌭'` to icons object within getCategoryBadge
+- Add `famous_mustards: 'Famous Mustards'` to displayNames object
+- Consider alternative icons: 🟡 (yellow circle), 🌮 (taco), or other mustard-appropriate emoji
 
-#### Task 7: useFilePolling Hook
-**Description**: Create custom hook that encapsulates polling logic and state management
-**Priority**: High
-**Complexity**: Medium
-**Dependencies**: Task 1, Task 2
-**Acceptance Criteria**:
-- Provides simple interface for components to use polling
-- Handles automatic polling start/stop based on component lifecycle
-- Returns current files, polling status, and control methods
-- Manages error states and recovery logic
-- Supports polling configuration options
-- Integrates with browser visibility API to pause when tab inactive
+**Dependencies**: None
 
-#### Task 8: useFileList Hook
-**Description**: Create hook for file list operations and filtering
-**Priority**: Medium
+---
+
+### Task 3: Update Filter Logic for New Category
+**Description**: Ensure filtering logic properly handles famous_mustards category selection
+**Type**: Logic Enhancement
 **Complexity**: Simple
-**Dependencies**: Task 7
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Provides filtered and sorted file data
-- Supports search/filter functionality with debouncing
-- Handles file selection state management
-- Returns memoized file arrays to prevent unnecessary re-renders
-- Supports custom sorting and grouping options
-- Integrates with localStorage for user preferences
+- Selecting "Famous Mustards" from dropdown filters to show only famous_mustards achievements
+- Filter logic works correctly when no famous_mustards achievements exist yet
+- "All Categories" option continues to include famous_mustards achievements
+- Filter state management handles new category properly
 
-#### Task 9: Polling Strategies Utility
-**Description**: Create utility functions for different polling strategies and timing calculations
-**Priority**: Medium
-**Complexity**: Medium
-**Dependencies**: Task 1
-**Acceptance Criteria**:
-- Implements exponential backoff calculation
-- Provides different polling strategies (adaptive, fixed, burst)
-- Handles network condition detection for strategy adjustment
-- Supports configuration via environment variables
-- Includes jitter to prevent thundering herd problems
-- Provides debugging utilities for polling behavior analysis
+**Implementation Details**:
+- Current filter logic in `filteredAchievements` should automatically handle new category
+- Verify filter comparison: `filter !== 'all' && a.category !== filter` works with famous_mustards
+- Test empty state handling when category exists but no achievements are unlocked
 
-### Phase 4: Error Handling and Resilience
+**Dependencies**: Backend must have famous_mustards category achievements available
 
-#### Task 10: Error Handling Service
-**Description**: Create comprehensive error handling for network and polling failures
-**Priority**: High
-**Complexity**: Medium
-**Dependencies**: Task 1
-**Acceptance Criteria**:
-- Categorizes different error types (network, server, timeout)
-- Implements retry logic with different strategies per error type
-- Provides user-friendly error messages and recovery suggestions
-- Logs errors for debugging and monitoring
-- Supports graceful degradation when polling fails
-- Integrates with notification system for error alerts
+---
 
-#### Task 11: Offline Support Component
-**Description**: Create component that handles offline scenarios and connection recovery
-**Priority**: Medium
-**Complexity**: Medium
-**Dependencies**: Task 4, Task 10
-**Acceptance Criteria**:
-- Detects network connectivity changes
-- Shows offline indicators in UI
-- Queues file operations when offline
-- Automatically resumes polling when connection restored
-- Maintains file list state during brief disconnections
-- Provides manual refresh option during network issues
-
-#### Task 12: Network Status Indicator
-**Description**: Create UI component showing polling and network status
-**Priority**: Low
+### Task 4: Add Category Statistics Support
+**Description**: Update category statistics display to include famous_mustards counts
+**Type**: Data Display Enhancement
 **Complexity**: Simple
-**Dependencies**: Task 5, Task 11
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Shows current polling status (active, paused, error)
-- Displays last successful update timestamp
-- Indicates network connectivity status
-- Shows retry countdown during error backoff periods
-- Provides manual refresh trigger
-- Includes polling frequency indicator for debugging
+- Famous mustards category appears in "By Category" statistics card
+- Progress bar renders correctly for famous_mustards count
+- Statistics accurately reflect famous_mustards achievements when available
+- Empty state handled gracefully when no famous_mustards achievements awarded yet
 
-### Phase 5: Performance Optimization
+**Implementation Details**:
+- Current stats.by_category mapping should automatically include famous_mustards
+- getCategoryBadge call in stats iteration will use Task 2 implementation  
+- Progress bar calculation handles division by zero gracefully
+- Consider adding conditional rendering if category has zero achievements
 
-#### Task 13: File List Virtualization
-**Description**: Implement virtual scrolling for large file lists
-**Priority**: Medium
-**Complexity**: Complex
-**Dependencies**: Task 5
-**Acceptance Criteria**:
-- Renders only visible file items for performance
-- Supports smooth scrolling through thousands of files
-- Maintains scroll position during updates
-- Handles dynamic item heights for different file types
-- Integrates with existing file selection and filtering
-- Provides accessibility features for screen readers
+**Dependencies**: Backend API must return famous_mustards in achievement statistics
 
-#### Task 14: Update Animation System
-**Description**: Create smooth animations for file list changes
-**Priority**: Low
+---
+
+### Task 5: Visual Styling Enhancements
+**Description**: Ensure famous_mustards category has appropriate visual theming
+**Type**: Styling Enhancement
 **Complexity**: Medium
-**Dependencies**: Task 6
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Animates file additions, removals, and modifications
-- Provides visual feedback for recent changes
-- Supports different animation styles (fade, slide, highlight)
-- Performs efficiently without blocking UI updates
-- Allows user to disable animations for accessibility
-- Integrates with polling system to trigger at appropriate times
+- Famous mustards achievements display with consistent styling
+- Category badge uses appropriate color scheme (yellow/mustard tones)
+- Achievement cards maintain visual hierarchy and readability
+- Hover states and interactive elements work properly for new category
 
-#### Task 15: Memory Management Utilities
-**Description**: Create utilities for managing memory usage in long-running polling sessions
-**Priority**: Medium
-**Complexity**: Medium
-**Dependencies**: Task 1, Task 2
+**Implementation Details**:
+- Consider adding custom color for famous_mustards in getRarityColor function (if category-specific colors desired)
+- Ensure badge background color provides good contrast with mustard icon
+- Test achievement card display with mustard-themed descriptions and icons
+- Verify responsive behavior with longer category name
+
+**Dependencies**: Tasks 1-4 completed
+
+---
+
+### Task 6: Add Loading State Handling
+**Description**: Ensure proper loading states when famous_mustards achievements are being fetched
+**Type**: Error Handling Enhancement
+**Complexity**: Simple  
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Implements cleanup for old polling timers and references
-- Manages Redux state size for large file lists
-- Provides cache eviction strategies for file metadata
-- Monitors and reports memory usage metrics
-- Handles cleanup during route changes and unmounts
-- Supports configuration of memory limits and cleanup thresholds
+- Loading spinner shows appropriately when fetching achievements
+- Empty state messaging handles missing famous_mustards gracefully
+- Error states don't break when famous_mustards category is involved
+- Toast notifications work for new famous_mustards achievements
 
-### Phase 6: Configuration and Monitoring
+**Implementation Details**:
+- Current loading logic should handle new category transparently
+- Verify toast notifications work with famous_mustards achievement unlocks
+- Test error boundary behavior with famous_mustards data
+- Ensure empty results don't cause UI breaks
 
-#### Task 16: Polling Configuration Component
-**Description**: Create admin/debug component for configuring polling behavior
-**Priority**: Low
+**Dependencies**: None (enhances existing error handling)
+
+---
+
+### Task 7: Update Achievement Grid Layout
+**Description**: Optimize grid layout to handle additional category without breaking responsive design
+**Type**: Layout Enhancement
 **Complexity**: Simple
-**Dependencies**: Task 9
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Allows runtime adjustment of polling intervals
-- Supports switching between polling strategies
-- Provides interface for error handling configuration
-- Shows current polling metrics and statistics
-- Enables/disables polling for testing
-- Persists configuration changes to localStorage
+- Achievement grid displays famous_mustards achievements properly on all screen sizes
+- Card spacing and alignment maintained with new category
+- Filter controls remain accessible and functional
+- No horizontal scrolling introduced
 
-#### Task 17: Debug Dashboard Component
-**Description**: Create debugging interface showing polling behavior and statistics
-**Priority**: Low
-**Complexity**: Medium
-**Dependencies**: Task 16
+**Implementation Details**:
+- Current Bootstrap grid (Col md={4}) should handle new achievements automatically
+- Test responsive behavior with larger number of total achievements
+- Verify dropdown doesn't overflow with additional option
+- Check mobile layout with longer "Famous Mustards" text
+
+**Dependencies**: None
+
+---
+
+### Task 8: Add Contextual Help/Description
+**Description**: Add contextual information about the famous_mustards achievement category
+**Type**: UX Enhancement  
+**Complexity**: Simple
+**Files**: `/frontend/src/components/AchievementsDashboard.jsx`
+
 **Acceptance Criteria**:
-- Displays real-time polling metrics (frequency, errors, cache hits)
-- Shows network request history and response times
-- Provides file change event timeline
-- Displays current Redux state for debugging
-- Supports exporting logs and metrics for analysis
-- Includes performance profiling tools for optimization
+- User can understand what famous_mustards category represents
+- Help text or tooltip explains mustard-themed achievement concept
+- Information is discoverable but not intrusive
+- Maintains consistency with existing help patterns
 
-#### Task 18: Integration Testing Setup
-**Description**: Set up end-to-end testing for polling integration
-**Priority**: High
-**Complexity**: Complex
-**Dependencies**: All previous tasks
-**Acceptance Criteria**:
-- Tests complete polling lifecycle from start to error recovery
-- Validates file list updates under various network conditions
-- Simulates server errors and network interruptions
-- Tests component behavior during polling state changes
-- Validates performance under high file change frequency
-- Includes accessibility testing for all polling-related UI elements
+**Implementation Details**:
+- Consider adding famous_mustards entry to rotating facts section
+- Add tooltip to category badge explaining theme
+- Include mustard facts in SKA_FACTS array with mustard trivia
+- Use existing Toast pattern for contextual information
 
-## Task Dependencies Graph
+**Dependencies**: None
 
-```
-Task 1 (Polling Service) → Task 2 (Redux Slice) → Task 3 (RTK Query)
-                       ↘                        ↗
-                         Task 4 (Container) → Task 5 (Display) → Task 6 (Item)
-                       ↗                    ↗                 ↗
-Task 7 (useFilePolling) → Task 8 (useFileList)              ↗
-                       ↗                                     ↗
-Task 9 (Strategies) → Task 10 (Error Handling) → Task 11 (Offline)
-                                                ↗
-                   Task 12 (Status) → Task 13 (Virtualization)
-                                   ↗
-Task 15 (Memory) → Task 14 (Animations) → Task 16 (Config) → Task 17 (Debug)
-                                                         ↗
-                                        Task 18 (Integration Tests)
-```
+---
 
-## Implementation Priority
+## Component Architecture
 
-### Sprint 1 (Critical Path - 2 weeks)
-- Task 1: File Polling Service
-- Task 2: Polling State Management
-- Task 3: RTK Query API Integration
-- Task 4: FileListContainer Component
+### Modified Functions
+1. **getCategoryBadge()** - Add famous_mustards case
+2. **filteredAchievements logic** - Handle new category filtering  
+3. **Category dropdown JSX** - Add new option
 
-### Sprint 2 (Core UI - 1.5 weeks)
-- Task 5: FileListDisplay Component
-- Task 6: FileListItem Component
-- Task 7: useFilePolling Hook
-- Task 10: Error Handling Service
+### New/Updated State
+- No new state required (existing filter state handles new category)
+- Existing `filter` state supports famous_mustards value
 
-### Sprint 3 (Resilience - 1 week)
-- Task 8: useFileList Hook
-- Task 9: Polling Strategies Utility
-- Task 11: Offline Support Component
-- Task 12: Network Status Indicator
+### Data Flow
+1. User selects "Famous Mustards" from dropdown
+2. `setFilter('famous_mustards')` updates state  
+3. `filteredAchievements` filters to famous_mustards category
+4. Achievement cards re-render with filtered results
+5. Statistics update to show famous_mustards counts
 
-### Sprint 4 (Performance & Polish - 1 week)
-- Task 13: File List Virtualization
-- Task 15: Memory Management Utilities
-- Task 14: Update Animation System
+### Error Handling
+- Empty state when no famous_mustards achievements exist
+- Graceful degradation if category not returned by API
+- Loading states during achievement fetch operations
 
-### Sprint 5 (Debugging & Testing - 0.5 weeks)
-- Task 16: Polling Configuration Component
-- Task 17: Debug Dashboard Component
-- Task 18: Integration Testing Setup
+## Testing Considerations
 
-## Estimated Total Timeline
-**5.5-6 weeks** for complete implementation with proper testing and optimization.
+### Manual Testing
+- [ ] Category dropdown includes famous_mustards option
+- [ ] Filtering works correctly for famous_mustards
+- [ ] Category badge displays with appropriate icon/styling
+- [ ] Statistics include famous_mustards counts
+- [ ] Achievement cards render properly for new category
+- [ ] Responsive design maintained across screen sizes
+- [ ] Empty states handled gracefully
 
-## Technical Notes
+### Integration Points
+- Backend API must return famous_mustards achievements
+- Achievement data structure must include category field
+- Statistics endpoint must aggregate famous_mustards
 
-### State Management Pattern
-Uses Redux Toolkit with RTK Query for optimal caching and state synchronization. The polling service integrates with RTK Query's cache invalidation system.
+### Rollback Plan
+- Changes are purely additive to frontend code
+- Can safely deploy even before backend has famous_mustards achievements
+- Graceful degradation ensures no breaking changes
 
-### Performance Considerations
-- React.memo optimization on all list components
-- Virtualization for large file lists
-- Debounced search/filtering
-- Background tab polling optimization
-- Memory cleanup on unmount
+## Dependencies Summary
+- **Backend Ready**: famous_mustards category exists in achievement system
+- **API Support**: Achievement endpoints return famous_mustards data  
+- **Data Structure**: Achievements include famous_mustards as category value
 
-### Error Recovery Strategy
-- Network errors: Exponential backoff with jitter
-- Server errors: Fixed retry intervals
-- Timeout errors: Immediate retry with shorter timeout
-- Connection loss: Pause polling until recovery
+## Estimated Effort
+- **Simple Tasks (1-4, 6-8)**: 30 minutes each = 3.5 hours
+- **Medium Task (5)**: 1 hour  
+- **Total**: ~4.5 hours of development time
 
-### Accessibility Features
-- Screen reader support for status updates
-- Keyboard navigation for file list
-- High contrast indicators for file changes
-- Optional animation disable for motion sensitivity
+## Implementation Order
+1. Tasks 1-2 (Core functionality)
+2. Task 3 (Filter logic)  
+3. Tasks 4-5 (Display enhancements)
+4. Tasks 6-8 (Polish and error handling)
 
-### Browser Compatibility
-- Modern browsers with ES6+ support
-- Graceful degradation for older browsers
-- Progressive enhancement for advanced features
-- Polyfills for missing API support where needed
+This approach ensures core functionality works first, then adds enhancements progressively.

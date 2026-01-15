@@ -1,77 +1,160 @@
-# Frontend Tasks - Foundation Setup (FAMOUS_MUSTARDS Category)
+# Frontend Tasks - Foundation & Theme System Setup
 
-## Milestone Overview
-Foundation Setup - Add FAMOUS_MUSTARDS category and prepare codebase for new mustard-themed achievements. This is a pure backend task with no UI components required.
-
-## Analysis Summary
-Based on the architecture document, this milestone involves adding a single new category `FAMOUS_MUSTARDS` to the existing `AchievementCategory` enum and creating 10 new mustard-themed achievements. This is **not a frontend task** - it's purely backend code changes to a Python data structure.
-
-## Key Findings
-- **No frontend work required** for this milestone
-- All changes are in `/src/runtime/agents/achievements.py`
-- Existing UI components automatically display new achievements
-- No new components, pages, or services needed
-- Current achievement display system will handle mustard category automatically
-
-## Frontend Impact Assessment
-- **Existing Achievement Display**: No changes needed - UI already supports dynamic categories
-- **Category Filtering**: May need update if category filters are hardcoded
-- **Icons**: New emoji icons will display automatically in existing components
-- **Styling**: No styling changes needed for new category
+## Overview
+Milestone 1 establishes the core theming infrastructure and CSS variable system for the ensemble UI. This foundation enables dynamic theme switching and provides the architectural base for the theme dropdown component.
 
 ## Task Breakdown
 
-### Task 1: Verify Achievement Display Component Compatibility
-**Type**: Investigation/Verification
-**Description**: Confirm existing achievement display components can handle new `FAMOUS_MUSTARDS` category without modifications
+### 1. Theme Type System & Definitions
+**Description**: Create TypeScript interfaces and theme definition objects for the theming system  
 **Acceptance Criteria**:
-- Achievement display components support dynamic categories
-- New category appears in category filters (if any)
-- Mustard emoji icons render correctly in existing UI
-**Dependencies**: None
-**Complexity**: Simple
-**Estimated Effort**: 30 minutes
+- Theme interface with id, name, displayName, variables, and accessibility properties
+- At least 3 theme definitions (light, dark, high-contrast) with complete CSS variable sets
+- Type definitions for theme context state and theme preferences
+- Theme validation utilities for runtime type checking
 
-### Task 2: Update Category Filter Component (If Applicable)
-**Type**: Component Update
-**Description**: If category filters are hardcoded in frontend, add `FAMOUS_MUSTARDS` option
+**Dependencies**: None  
+**Estimated Complexity**: Simple  
+**Files**: `src/themes/types.ts`, `src/themes/definitions.ts`
+
+### 2. CSS Custom Properties Foundation
+**Description**: Establish CSS variable system with comprehensive theme variable definitions  
 **Acceptance Criteria**:
-- FAMOUS_MUSTARDS appears as filter option
-- Filter functionality works for mustard achievements
-- Maintains existing filter UI/UX patterns
-**Dependencies**: Task 1 completion
-**Complexity**: Simple
-**Estimated Effort**: 1 hour
-**Note**: May not be needed if filters are dynamically generated
+- Global CSS variables for all theme-able properties (backgrounds, text, borders, interactive elements)
+- CSS variable structure supports 3+ themes with consistent naming convention
+- Fallback values for browser compatibility
+- CSS organization separates base variables from theme-specific overrides
 
-### Task 3: Test Achievement Display with Mustard Category
-**Type**: Integration Testing
-**Description**: Verify new mustard achievements display correctly in all UI contexts
+**Dependencies**: Task 1 (Theme definitions)  
+**Estimated Complexity**: Medium  
+**Files**: `src/themes/variables.css`, `src/styles/globals.css`, `src/styles/themes.css`
+
+### 3. Theme Context Provider
+**Description**: Implement React Context for global theme state management  
 **Acceptance Criteria**:
-- Mustard achievements appear in achievement lists
-- Category grouping works correctly
-- Icons, names, and descriptions display properly
-- Points and rarity show correctly
-**Dependencies**: Backend achievements added
-**Complexity**: Simple
-**Estimated Effort**: 45 minutes
+- ThemeProvider component wraps application root
+- Context provides currentTheme, availableThemes, setTheme function, and loading state
+- Theme state initialization from localStorage or defaults
+- Memoized context value to prevent unnecessary re-renders
 
-## Dependencies
-- **External**: Backend team must add FAMOUS_MUSTARDS achievements first
-- **Internal**: None - leverages existing achievement display infrastructure
+**Dependencies**: Task 1 (Theme definitions)  
+**Estimated Complexity**: Medium  
+**Files**: `src/contexts/ThemeContext.tsx`
 
-## Notes for Implementation
-- This milestone is primarily backend-focused
-- Frontend work is minimal verification and testing
-- Existing achievement UI architecture supports new categories automatically
-- No new components, services, or major changes required
+### 4. CSS Variable Manager Utility
+**Description**: Create utility functions for dynamic CSS variable manipulation  
+**Acceptance Criteria**:
+- Functions to apply theme variables to document root
+- CSS variable update utilities handle theme transitions smoothly
+- Fallback handling for browsers with limited CSS variable support
+- Performance optimization to batch CSS variable updates
 
-## Frontend Resources Not Needed
-- ❌ New components (achievement display exists)
-- ❌ New pages/routes (achievements shown on existing pages) 
-- ❌ New services (achievement data comes from existing API)
-- ❌ New styling (mustard category uses existing achievement styles)
-- ❌ State management changes (achievement state already handled)
+**Dependencies**: Task 2 (CSS variables)  
+**Estimated Complexity**: Medium  
+**Files**: `src/utils/themeManager.ts`
 
-## Ready for Handoff
-Frontend tasks are minimal for this milestone. Most work is verification that existing components handle the new category correctly. The robust existing achievement system architecture means new categories integrate seamlessly.
+### 5. useTheme Hook
+**Description**: Create custom hook for easy theme access in components  
+**Acceptance Criteria**:
+- Simple API: `const { currentTheme, setTheme, isLoading } = useTheme()`
+- Memoized return values to prevent unnecessary re-renders
+- TypeScript support with proper theme type inference
+- Error handling for usage outside ThemeProvider
+
+**Dependencies**: Task 3 (Theme context)  
+**Estimated Complexity**: Simple  
+**Files**: `src/hooks/useTheme.ts`
+
+### 6. localStorage Persistence Hook
+**Description**: Create reusable hook for theme preference storage  
+**Acceptance Criteria**:
+- useLocalStorage hook handles theme preference persistence
+- Graceful fallback when localStorage is unavailable (private browsing)
+- JSON serialization/deserialization for theme preferences
+- Error handling and default value support
+
+**Dependencies**: None  
+**Estimated Complexity**: Simple  
+**Files**: `src/hooks/useLocalStorage.ts`
+
+### 7. Theme Integration with ThemeProvider
+**Description**: Connect theme context with CSS variable manager and storage  
+**Acceptance Criteria**:
+- ThemeProvider applies CSS variables when theme changes
+- Theme preference loads from localStorage on app initialization
+- Theme changes persist automatically to localStorage
+- Loading states handled during theme initialization and switching
+
+**Dependencies**: Tasks 3, 4, 6 (Context, CSS manager, storage)  
+**Estimated Complexity**: Medium  
+**Files**: Update `src/contexts/ThemeContext.tsx`
+
+### 8. Application Root Integration
+**Description**: Integrate ThemeProvider at application root level  
+**Acceptance Criteria**:
+- App component wrapped with ThemeProvider
+- Theme system initializes before other components render
+- No theme flash on initial load (theme applied synchronously)
+- Error boundaries handle theme system failures gracefully
+
+**Dependencies**: Task 7 (Complete theme integration)  
+**Estimated Complexity**: Simple  
+**Files**: `src/App.tsx` (or application root)
+
+### 9. Base Theme Application Testing
+**Description**: Verify theme system works with basic HTML elements  
+**Acceptance Criteria**:
+- Create test page/component using CSS variables for styling
+- All 3 themes render correctly with distinct visual appearance
+- Theme switching updates test elements immediately
+- No visual glitches or layout shifts during theme changes
+
+**Dependencies**: Task 8 (Application integration)  
+**Estimated Complexity**: Simple  
+**Files**: `src/components/ThemeTest/ThemeTest.tsx`, test files
+
+### 10. Theme System Unit Tests
+**Description**: Comprehensive testing suite for theme system components  
+**Acceptance Criteria**:
+- ThemeContext provider tests (initialization, theme switching, persistence)
+- useTheme hook tests (return values, error handling)
+- CSS variable manager tests (DOM manipulation, fallbacks)
+- localStorage hook tests (storage, retrieval, error cases)
+- Theme definition validation tests
+
+**Dependencies**: Tasks 1-8 (All core theme components)  
+**Estimated Complexity**: Medium  
+**Files**: Test files for all theme system components
+
+## Component Hierarchy
+```
+Application Root
+└── ThemeProvider (wraps entire app)
+    ├── Theme Context (global state)
+    ├── CSS Variable Manager (DOM updates)
+    └── localStorage Integration (persistence)
+        └── useTheme Hook (component access)
+```
+
+## User Flow
+1. Application initializes with ThemeProvider
+2. ThemeProvider loads saved theme from localStorage (or defaults)
+3. CSS variables applied to document root
+4. Components access theme via useTheme hook
+5. Future: Theme dropdown will trigger setTheme() function
+
+## Dependencies Overview
+- **Foundation**: Tasks 1, 2 (Types, CSS variables)
+- **Core System**: Tasks 3, 4, 5, 6 (Context, utilities, hooks)
+- **Integration**: Tasks 7, 8 (Connection, app root)
+- **Validation**: Tasks 9, 10 (Testing, verification)
+
+## Technical Notes
+- **CSS Variables**: Using native CSS custom properties for performance
+- **Context API**: Preferred over Redux for single-purpose theme state
+- **TypeScript**: Full type safety throughout theme system
+- **Performance**: Memoization and batched updates prevent unnecessary renders
+- **Accessibility**: High contrast theme meets WCAG AA standards
+
+## Ready for Implementation
+All tasks are ready for TDD Coordinator implementation. Each task has clear acceptance criteria and can be test-driven. The dependency chain is well-defined, starting with type definitions and building up to full application integration.

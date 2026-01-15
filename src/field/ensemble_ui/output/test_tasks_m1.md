@@ -1,216 +1,204 @@
-# Test Strategy - Foundation Setup: Add FAMOUS_MUSTARDS Category
+# Test Strategy - Foundation & Theme System Setup
 
 ## Overview
-This milestone involves adding a new achievement category (`FAMOUS_MUSTARDS`) and 10 new mustard-themed achievements to the existing achievement system. This is a pure feature addition with zero modifications to existing logic, requiring comprehensive testing to ensure seamless integration.
+This milestone establishes the core theming infrastructure and CSS variable system. Testing focuses on the foundation components that enable theme switching functionality without the UI components.
 
-## Test Strategy Summary
-- **Unit Test Coverage**: 85%+ for new achievement definitions and category validation
-- **Integration Coverage**: 100% - all new achievements must integrate with existing tracker
-- **E2E Coverage**: Critical user journeys for achievement display and awarding
-- **Testing Framework**: pytest for backend logic, no frontend changes needed
+## Test Coverage Goals
+- **Unit Test Coverage**: 80%+ for theme management logic
+- **Integration Coverage**: All theme context interactions and CSS variable management
+- **E2E Coverage**: Core theme switching without UI (headless testing)
 
 ## Test Categories
 
-### 1. Unit Tests (20 tasks)
+### 1. Unit Tests
 
-#### 1.1 Achievement Category Tests (3 tasks)
-**Task ID**: UT001-UT003
-**Target**: Achievement category enum validation
+#### 1.1 Theme Definitions Module (`src/themes/definitions.ts`)
+**Test Focus**: Theme configuration objects and validation
+- **Test Task**: Verify all theme objects have required properties
+- **Test Task**: Validate theme variable completeness across all themes
+- **Test Task**: Test theme accessibility metadata (contrast ratios)
+- **Test Task**: Verify theme type safety and TypeScript compliance
+- **Coverage Target**: 100% (critical foundation)
 
-- **UT001**: Test FAMOUS_MUSTARDS category exists in AchievementCategory enum
-- **UT002**: Test FAMOUS_MUSTARDS category has correct string value ("famous_mustards")  
-- **UT003**: Test enum maintains all existing categories after addition
+#### 1.2 Theme Context Provider (`src/contexts/ThemeContext.tsx`)
+**Test Focus**: Theme state management and switching logic
+- **Test Task**: Test theme provider initialization with default theme
+- **Test Task**: Test theme switching functionality and state updates
+- **Test Task**: Test theme context value propagation to consumers
+- **Test Task**: Test error handling for invalid theme IDs
+- **Test Task**: Test loading states during theme transitions
+- **Coverage Target**: 95% (core business logic)
 
-#### 1.2 Achievement Definition Validation (10 tasks)
-**Task ID**: UT004-UT013
-**Target**: Individual mustard achievement structure
+#### 1.3 useTheme Hook (`src/hooks/useTheme.ts`)
+**Test Focus**: Theme context consumption and utilities
+- **Test Task**: Test hook returns current theme data correctly
+- **Test Task**: Test theme switching through hook interface
+- **Test Task**: Test hook throws error when used outside provider
+- **Test Task**: Test memoization of theme values
+- **Coverage Target**: 100% (simple but critical interface)
 
-- **UT004**: Test all 10 mustard achievements have unique IDs
-- **UT005**: Test all mustard achievements use FAMOUS_MUSTARDS category
-- **UT006**: Test achievement names are non-empty and mustard-themed
-- **UT007**: Test achievement descriptions follow existing pattern
-- **UT008**: Test achievement icons use appropriate food emojis
-- **UT009**: Test achievement rarities follow valid enum values
-- **UT010**: Test achievement points align with rarity levels
-- **UT011**: Test agent_classes lists are valid (either ["*"] or existing classes)
-- **UT012**: Test trigger_conditions use existing condition patterns
-- **UT013**: Test no duplicate achievement IDs across entire ACHIEVEMENTS list
+#### 1.4 Theme Manager Utility (`src/utils/themeManager.ts`)
+**Test Focus**: CSS variable manipulation and DOM updates
+- **Test Task**: Test CSS variable application to document root
+- **Test Task**: Test CSS variable removal and cleanup
+- **Test Task**: Test fallback value handling for unsupported browsers
+- **Test Task**: Test performance of bulk CSS variable updates
+- **Coverage Target**: 90% (utility functions)
 
-#### 1.3 Mustard Theme Validation (4 tasks)
-**Task ID**: UT014-UT017
-**Target**: Thematic consistency and creativity
+#### 1.5 Storage Utilities (`src/utils/storage.ts`)
+**Test Focus**: localStorage interaction and error handling
+- **Test Task**: Test theme preference saving to localStorage
+- **Test Task**: Test theme preference loading from localStorage
+- **Test Task**: Test error handling when localStorage is unavailable
+- **Test Task**: Test JSON serialization/deserialization
+- **Test Task**: Test storage quota exceeded scenarios
+- **Coverage Target**: 85% (robust error handling needed)
 
-- **UT014**: Test each mustard achievement references actual mustard varieties
-- **UT015**: Test rarity distribution across 10 achievements (3 common, 4 uncommon, 2 rare, 1 epic/legendary)
-- **UT016**: Test point value distribution follows established scaling
-- **UT017**: Test trigger conditions are realistic and varied
+#### 1.6 useLocalStorage Hook (`src/hooks/useLocalStorage.ts`)
+**Test Focus**: localStorage React hook functionality
+- **Test Task**: Test initial value loading from localStorage
+- **Test Task**: Test value updates and localStorage synchronization
+- **Test Task**: Test error handling and fallback to default values
+- **Test Task**: Test cleanup on component unmount
+- **Coverage Target**: 90% (reusable hook)
 
-#### 1.4 Data Structure Integrity (3 tasks)
-**Task ID**: UT018-UT020
-**Target**: Achievement dataclass compliance
+### 2. Integration Tests
 
-- **UT018**: Test all required Achievement fields are populated
-- **UT019**: Test all field types match Achievement dataclass specification
-- **UT020**: Test achievements can be serialized/deserialized correctly
+#### 2.1 Theme System Integration
+**Test Focus**: End-to-end theme switching without UI components
+- **Test Task**: Test complete theme switching flow (context → CSS variables)
+- **Test Task**: Test theme persistence across provider remounts
+- **Test Task**: Test multiple theme switches in sequence
+- **Test Task**: Test theme system initialization with saved preferences
+- **Test Task**: Test graceful degradation when storage fails
 
-### 2. Integration Tests (15 tasks)
+#### 2.2 CSS Variable System Integration
+**Test Focus**: Theme variables applying to DOM correctly
+- **Test Task**: Test CSS variables update in document.documentElement
+- **Test Task**: Test CSS variable inheritance in nested elements
+- **Test Task**: Test CSS variable fallback values work correctly
+- **Test Task**: Test theme transitions don't cause layout shifts
 
-#### 2.1 Achievement Tracker Integration (8 tasks)
-**Task ID**: IT001-IT008
-**Target**: AchievementTracker compatibility with new achievements
+#### 2.3 Cross-Hook Integration
+**Test Focus**: Interaction between theme and storage hooks
+- **Test Task**: Test useTheme + useLocalStorage coordination
+- **Test Task**: Test theme context updates trigger storage writes
+- **Test Task**: Test storage changes reflect in theme context
+- **Test Task**: Test concurrent theme switches handle race conditions
 
-- **IT001**: Test AchievementTracker loads all mustard achievements without errors
-- **IT002**: Test tracker can evaluate mustard achievement trigger conditions
-- **IT003**: Test tracker awards mustard achievements when conditions are met
-- **IT004**: Test tracker stores mustard achievements in database correctly
-- **IT005**: Test tracker retrieves awarded mustard achievements from database
-- **IT006**: Test existing achievement tracking continues to work unchanged
-- **IT007**: Test multiple mustard achievements can be awarded simultaneously
-- **IT008**: Test mustard achievement points are correctly calculated and stored
+### 3. End-to-End Tests (Headless)
 
-#### 2.2 Database Integration (4 tasks)
-**Task ID**: IT009-IT012
-**Target**: Database schema compatibility
+#### 3.1 Theme System E2E Flow
+**Test Focus**: Complete theme system functionality without UI
+- **Test Task**: Test app initialization loads correct theme from storage
+- **Test Task**: Test programmatic theme switching updates entire system
+- **Test Task**: Test browser refresh maintains theme selection
+- **Test Task**: Test incognito/private mode graceful fallback
 
-- **IT009**: Test mustard achievement IDs store correctly in awarded_achievements table
-- **IT010**: Test achievement metadata queries include mustard achievements
-- **IT011**: Test database queries filter by FAMOUS_MUSTARDS category correctly
-- **IT012**: Test achievement history includes mustard achievements chronologically
+#### 3.2 Performance Testing
+**Test Focus**: Theme system performance characteristics
+- **Test Task**: Test theme switching completes within 200ms
+- **Test Task**: Test memory usage doesn't increase with theme switches
+- **Test Task**: Test CSS variable updates don't cause excessive repaints
+- **Test Task**: Test large component tree theme propagation performance
 
-#### 2.3 Trigger Condition Integration (3 tasks)
-**Task ID**: IT013-IT015
-**Target**: Trigger condition evaluation engine
+### 4. Accessibility Testing
 
-- **IT013**: Test event-based trigger conditions work for mustard achievements
-- **IT014**: Test metric-based trigger conditions work for mustard achievements
-- **IT015**: Test combination trigger conditions work for mustard achievements
+#### 4.1 Theme Contrast Validation
+**Test Focus**: Ensure themes meet accessibility standards
+- **Test Task**: Test all themes meet WCAG AA contrast ratios
+- **Test Task**: Test high contrast theme exceeds WCAG AAA standards
+- **Test Task**: Test color combinations for color-blind accessibility
+- **Test Task**: Test theme metadata accuracy for contrast calculations
 
-### 3. System Integration Tests (8 tasks)
+### 5. Error Handling & Edge Cases
 
-#### 3.1 Achievement System End-to-End (5 tasks)
-**Task ID**: SIT001-SIT005
-**Target**: Complete achievement flow from agent action to UI display
+#### 5.1 Resilience Testing
+**Test Focus**: System behavior under failure conditions
+- **Test Task**: Test theme system with corrupted localStorage data
+- **Test Task**: Test theme system with missing theme definitions
+- **Test Task**: Test theme system with invalid CSS variables
+- **Test Task**: Test theme system in browsers without CSS variable support
 
-- **SIT001**: Test agent action triggers mustard achievement evaluation
-- **SIT002**: Test successful mustard achievement award creates database entry
-- **SIT003**: Test mustard achievements appear in achievement listing UI
-- **SIT004**: Test mustard achievement category filter works correctly
-- **SIT005**: Test mustard achievement details display correctly (name, description, icon, points)
+#### 5.2 Boundary Testing
+**Test Focus**: Edge cases and limits
+- **Test Task**: Test theme switching with extremely large theme objects
+- **Test Task**: Test rapid successive theme switches
+- **Test Task**: Test theme system with network connectivity issues
+- **Test Task**: Test theme system with restricted storage quotas
 
-#### 3.2 Backward Compatibility Tests (3 tasks)
-**Task ID**: SIT006-SIT008
-**Target**: Existing functionality preservation
+## Test Infrastructure Requirements
 
-- **SIT006**: Test all existing achievements continue to be awarded correctly
-- **SIT007**: Test existing achievement categories still display properly
-- **SIT008**: Test achievement statistics and totals include mustard achievements
+### Testing Tools
+- **Unit Testing**: Jest + React Testing Library
+- **Integration Testing**: Jest with DOM environment
+- **E2E Testing**: Jest with jsdom for headless testing
+- **Performance Testing**: Jest performance profiling
+- **Accessibility Testing**: jest-axe for automated a11y checks
 
-### 4. Performance Tests (3 tasks)
+### Test Environment Setup
+- **Mock localStorage**: Custom localStorage mock for testing
+- **CSS Variable Mocking**: Mock document.documentElement.style
+- **Theme Definition Fixtures**: Test theme objects for consistent testing
+- **Error Simulation**: Mock functions to simulate various failure modes
 
-#### 4.1 Achievement Evaluation Performance (3 tasks)
-**Task ID**: PT001-PT003
-**Target**: Performance impact of additional achievements
+### Test Data & Fixtures
+- **Sample Themes**: Light, dark, and high-contrast test themes
+- **Invalid Theme Data**: Malformed theme objects for error testing
+- **Storage Scenarios**: Various localStorage states for persistence testing
+- **Performance Benchmarks**: Baseline performance metrics for comparison
 
-- **PT001**: Test achievement evaluation time with 10 additional achievements
-- **PT002**: Test memory usage impact of expanded ACHIEVEMENTS list
-- **PT003**: Test database query performance with mustard achievements included
+## Success Metrics
 
-### 5. Manual Verification Tests (4 tasks)
+### Quantitative Goals
+- **Code Coverage**: 85%+ overall, 95%+ for core theme logic
+- **Test Performance**: Test suite completes in <30 seconds
+- **Test Reliability**: <1% flaky test rate
+- **Error Coverage**: 100% error paths tested
 
-#### 5.1 User Experience Validation (4 tasks)
-**Task ID**: MV001-MV004
-**Target**: Human validation of thematic quality
+### Qualitative Goals
+- **Test Maintainability**: Tests are easy to understand and modify
+- **Test Documentation**: Clear test descriptions and failure messages
+- **Test Independence**: Tests don't depend on execution order
+- **Test Realism**: Tests reflect actual usage patterns
 
-- **MV001**: Manually verify mustard achievement names are creative and appropriate
-- **MV002**: Manually verify achievement descriptions are humorous and clear
-- **MV003**: Manually verify trigger conditions are logical for described behaviors
-- **MV004**: Manually verify icons appropriately represent mustard theme
+## Implementation Notes
 
-## Coverage Goals
+### Critical Test Scenarios
+1. **Theme switching performance**: Must complete <200ms
+2. **Storage failure handling**: Graceful degradation required
+3. **CSS variable propagation**: Must update entire component tree
+4. **Cross-browser compatibility**: Test fallback mechanisms
 
-### Unit Test Coverage
-- **Target**: 85%+ for new code additions
-- **Focus**: Achievement definition validation and data structure integrity
-- **Exclusions**: External dependencies, database I/O (mocked in unit tests)
+### Testing Priorities
+1. **High Priority**: Core theme switching logic and CSS variable management
+2. **Medium Priority**: Storage persistence and error handling
+3. **Lower Priority**: Edge cases and performance optimization
 
-### Integration Test Coverage
-- **Target**: 100% of integration points
-- **Critical paths**: Achievement tracker evaluation, database storage, category filtering
-- **All mustard achievements must be testable through tracker**
+### Test Execution Strategy
+- **Development**: Run unit tests on every save
+- **Pre-commit**: Run full test suite with coverage check
+- **CI/CD**: Run all tests + accessibility validation
+- **Pre-deployment**: Performance benchmark validation
 
-### End-to-End Coverage
-- **Target**: Happy path + critical error scenarios
-- **Happy path**: Agent action → trigger condition met → achievement awarded → displayed in UI
-- **Error scenarios**: Malformed trigger conditions, database failures, duplicate awards
+## Deliverables
 
-## Test Implementation Guidelines
+Upon completion of these test tasks, we will have:
+- ✅ Comprehensive test coverage of theme foundation system
+- ✅ Validated theme switching performance and reliability
+- ✅ Confirmed accessibility compliance of all themes
+- ✅ Robust error handling for all failure scenarios
+- ✅ Performance baselines for theme system operations
+- ✅ Test infrastructure ready for UI component testing in M2
 
-### Testing Framework Setup
-```python
-# Use existing pytest framework
-# Mock external dependencies (database, UI components)
-# Test data factories for Achievement objects
-# Parameterized tests for all 10 mustard achievements
-```
-
-### Test Data Strategy
-```python
-# Create test fixtures for:
-# - Valid mustard achievement definitions
-# - Mock agent execution contexts
-# - Simulated trigger condition scenarios
-# - Database state setup/teardown
-```
-
-### Assertion Patterns
-```python
-# Structure validation: isinstance, hasattr, type checking
-# Value validation: equality, membership, range checking  
-# Behavior validation: call counts, side effects, state changes
-# Error handling: exception types, error messages
-```
+## Dependencies
+- Theme definitions must be complete before theme validation tests
+- Storage utilities must be implemented before persistence tests
+- CSS variable system must be functional before integration tests
+- Theme context must be stable before hook testing
 
 ## Risk Mitigation
-
-### High-Risk Areas
-1. **Achievement ID Conflicts**: Comprehensive ID uniqueness testing
-2. **Trigger Condition Logic**: Integration tests with realistic scenarios
-3. **Database Schema Compatibility**: Full CRUD operation testing
-4. **Performance Regression**: Baseline performance measurement
-
-### Testing Dependencies
-- Existing achievement system must remain functional during testing
-- Test database should mirror production schema
-- Mock agent execution contexts for trigger condition testing
-- UI testing environment for end-to-end validation
-
-## Success Criteria
-
-### All Tests Must Pass
-- 50+ automated test cases covering unit, integration, and system levels
-- Zero regressions in existing achievement functionality
-- Performance metrics within acceptable ranges
-- Manual verification confirms thematic quality
-
-### Code Coverage Targets Met
-- 85%+ coverage for new achievement definition code
-- 100% coverage for integration points with existing system
-- All edge cases and error conditions tested
-
-### Quality Standards Achieved
-- All 10 mustard achievements follow established patterns
-- Trigger conditions are realistic and properly implemented
-- Database integration works seamlessly with existing schema
-- UI displays new achievements correctly without modifications
-
-## Handoff to TDD Coordinator
-
-This test strategy identifies 50 specific test tasks across 5 categories (unit, integration, system, performance, manual). Each task has clear success criteria and testing approach. The TDD Coordinator should implement these tests using pytest, focusing on:
-
-1. **Start with unit tests** (UT001-UT020) to validate achievement definitions
-2. **Proceed to integration tests** (IT001-IT015) to verify system compatibility  
-3. **Complete with end-to-end tests** (SIT001-SIT008) to ensure user-facing functionality
-4. **Add performance monitoring** (PT001-PT003) to prevent regressions
-5. **Coordinate manual verification** (MV001-MV004) for thematic quality
-
-All tests should be implemented before any code changes to follow true TDD methodology.
+- **CSS Variable Support**: Test fallbacks for older browsers
+- **Storage Failures**: Comprehensive error handling tests
+- **Performance Issues**: Proactive performance testing and benchmarking
+- **Type Safety**: TypeScript compilation testing for theme objects

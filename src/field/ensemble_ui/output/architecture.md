@@ -1,287 +1,252 @@
-# D&D Achievements Addition - Architecture Proposal
+# Fix Recovered Jobs Continuation Bug - Architecture Proposal
 
 ## Architecture Overview
 
-This is a **data extension architecture** using the **Additive Pattern** for low-risk feature enhancement. The existing achievements system provides a robust foundation with complete infrastructure for category-based achievements, tracking mechanisms, and display systems.
+### Problem Summary
+The system's recovery mechanism successfully detects and queues stalled jobs, but fails to properly continue execution after recovery. Based on requirements specifying "fix, don't analyze", this architecture focuses on implementing a targeted fix for the job continuation flow.
 
-**Architecture Pattern:** Data Extension / Configuration-Based Enhancement  
-**Rationale:** The requirements specify adding content to an existing, functional system without modifying core behavior. This approach minimizes risk while maximizing code reuse.
+### High-Level Design
+**Recovery State Machine Pattern** with enhanced continuation logic
+- **Current Flow**: Detection → Queuing → Recovery Strategy → [BROKEN: Continuation]
+- **Target Flow**: Detection → Queuing → Recovery Strategy → **State Restoration → Execution Resumption**
 
-## Tech Stack Analysis
+**Architecture Pattern**: State-based recovery with continuation checkpoints
+- Recovery orchestrator manages job lifecycle
+- State persistence enables continuation from last known good point
+- Execution resumption handles context restoration and task pickup
 
-### Current Stack (Inferred from Requirements)
-- **Language:** Python 3.x
-- **Data Structure:** Dataclasses for type safety
-- **Configuration:** Enum-based categories and centralized achievement registry
-- **Architecture:** Event-driven achievement tracking system
+**Rationale**: The existing recovery system architecture is sound for detection and queuing. The gap is in the transition from recovery completion back to normal execution flow.
 
-### No New Technologies Required
-- **Rationale:** Requirements specify working within existing system constraints
-- **Benefits:** Zero deployment risk, immediate availability, consistent user experience
-- **Alternative Considered:** Separate microservice for D&D achievements - **Rejected** due to unnecessary complexity for data additions
+## Tech Stack
+
+### Existing System (No Changes)
+- **Python**: Core recovery system implementation
+- **Asyncio**: Concurrent recovery processing 
+- **JSON**: Agent state serialization/storage
+- **File-based Storage**: Agent state persistence
+
+### Required Components for Fix
+- **State Management**: Enhanced state persistence for continuation points
+- **Recovery Orchestrator**: Modified to handle post-recovery continuation
+- **Agent State Tracker**: Enhanced to support continuation markers
+- **Execution Queue**: Modified to accept recovered jobs
+
+**Why No New Technologies**: The issue is logical flow, not technical capability. Existing infrastructure can handle the fix with targeted modifications.
 
 ## System Components
 
 ### Modified Components
 
-**1. AchievementCategory (enum extension)**
-- **Responsibility:** Define achievement categorization
-- **Change:** Add `DUNGEONS_DRAGONS = "dungeons_dragons"` enum value
-- **Risk:** Minimal - enum extensions are inherently safe
-- **Testing:** Verify enum serialization and category filtering
+#### 1. Recovery Orchestrator (`swarm_recovery.py`)
+**Current Responsibility**: Detect stalled agents, queue recovery, execute recovery strategies
+**Enhanced Responsibility**: + Post-recovery continuation management
+- Add continuation checkpoint after successful recovery
+- Manage transition from recovery state to execution state
+- Handle execution resumption coordination
 
-**2. Achievement Registry (data addition)**
-- **Responsibility:** Central registry of all available achievements
-- **Change:** Add 10 new Achievement instances to `ACHIEVEMENTS` list
-- **Risk:** Low - purely additive change
-- **Testing:** Verify achievements load correctly and appear in gallery
+#### 2. Agent State Manager
+**Current Responsibility**: Track agent status and state
+**Enhanced Responsibility**: + Continuation state preservation
+- Persist execution context during recovery
+- Maintain progress checkpoints for resumption
+- Store task state for continuation
 
-### Unchanged Components (Critical Dependencies)
+#### 3. Job Execution Engine
+**Current Responsibility**: Execute agent tasks and manage workflow
+**Enhanced Responsibility**: + Accept and resume recovered jobs
+- Accept jobs returning from recovery system
+- Restore execution context from saved state
+- Resume task execution from continuation point
 
-**1. Achievement Tracking System**
-- **Responsibility:** Monitor agent execution for trigger conditions
-- **Dependency:** Must detect all defined trigger conditions for D&D achievements
-- **Assumption:** Current system tracks sufficient execution metadata
+### New Components (Minimal)
 
-**2. Achievement Display System**
-- **Responsibility:** Render achievements in gallery and notifications
-- **Dependency:** Must support category-based filtering
-- **Assumption:** UI can handle new category without changes
+#### 4. Recovery Continuation Handler
+**Responsibility**: Bridge between recovery completion and execution resumption
+- Validate recovered job state
+- Prepare execution context for resumption
+- Coordinate handoff to execution engine
 
-**3. Achievement Awarding System**
-- **Responsibility:** Grant achievements when conditions are met
-- **Dependency:** Must process trigger conditions for new achievements
-- **Assumption:** Existing trigger evaluation handles all required patterns
+## Recovery Flow Architecture
+
+### Current Broken Flow
+```
+Stalled Job → Recovery Queue → Recovery Strategy → [DEAD END]
+```
+
+### Fixed Flow
+```
+Stalled Job → Recovery Queue → Recovery Strategy → Continuation Handler → Execution Engine
+     ↑                                                       ↓
+     └─ State Persistence ←─ Checkpoint State ←─ Context Restoration
+```
+
+### Detailed Recovery Continuation Process
+
+1. **Recovery Completion**: Recovery strategy completes successfully
+2. **State Validation**: Verify agent state is valid for continuation
+3. **Context Restoration**: Restore execution context from saved state
+4. **Execution Handoff**: Pass recovered job to execution engine
+5. **Resumption**: Job continues from last checkpoint
+6. **Monitoring**: Track continued execution for success/failure
 
 ## File/Directory Structure
 
-```
-achievements_system/
-├── achievements.py                 # MODIFIED: Add category + 10 achievements
-│   ├── AchievementCategory enum   # ADD: DUNGEONS_DRAGONS value
-│   ├── Achievement dataclass      # UNCHANGED: Structure remains same
-│   └── ACHIEVEMENTS list          # MODIFIED: Append 10 new achievements
-├── achievement_tracking.py        # UNCHANGED: Existing tracking logic
-├── achievement_display.py         # UNCHANGED: Category filtering works
-└── achievement_awarding.py        # UNCHANGED: Trigger evaluation works
-```
+Based on existing codebase structure, focusing on modifications:
 
-**Rationale:** Single-file modification approach minimizes integration complexity and testing surface area.
+```
+src/
+├── swarm_recovery.py                    # MODIFIED: Add continuation logic
+├── agent_state.py                       # MODIFIED: Enhanced state persistence
+├── execution_engine.py                  # MODIFIED: Accept recovered jobs
+├── recovery/
+│   ├── continuation_handler.py          # NEW: Recovery→Execution bridge
+│   ├── state_checkpoint.py             # NEW: Continuation state management
+│   └── recovery_strategies.py          # MODIFIED: Add continuation hooks
+└── tests/
+    ├── test_recovery_continuation.py    # NEW: End-to-end recovery tests
+    └── test_state_restoration.py       # NEW: State persistence tests
+```
 
 ## Data Model
 
-### New Category Enum Value
+### Enhanced Agent State
 ```python
-class AchievementCategory(Enum):
-    # ... existing categories ...
-    DUNGEONS_DRAGONS = "dungeons_dragons"  # NEW
+class AgentState:
+    # Existing fields
+    agent_id: str
+    status: AgentStatus
+    current_task: str
+    error_count: int
+    
+    # Enhanced for continuation
+    continuation_checkpoint: dict  # Execution state for resumption
+    recovery_context: dict         # Recovery-specific metadata
+    last_successful_operation: str  # Rollback point if needed
+    execution_resumable: bool      # Flag for continuation eligibility
 ```
 
-### Achievement Data Structure (Existing)
+### Recovery Continuation Metadata
 ```python
-@dataclass
-class Achievement:
-    id: str                    # Snake_case identifier
-    name: str                  # Display name
-    description: str           # Humorous D&D-themed description
-    category: AchievementCategory  # DUNGEONS_DRAGONS for all new ones
-    rarity: AchievementRarity  # COMMON/UNCOMMON/RARE/EPIC/LEGENDARY
-    icon: str                  # D&D themed emoji (🎲⚔️🐉🏰🗡️🛡️📜🧙‍♂️)
-    points: int               # Based on rarity: 25/50/100/200/500
-    agent_classes: List[str]  # ["*"] for universal, specific classes for targeted
-    trigger_condition: Dict   # Existing trigger patterns
+class RecoveryContinuation:
+    agent_id: str
+    recovery_timestamp: datetime
+    pre_recovery_state: dict       # State before recovery
+    post_recovery_state: dict      # State after recovery
+    continuation_point: str        # Where to resume execution
+    context_data: dict            # Restored execution context
+    ready_for_execution: bool     # Validation flag
 ```
 
-### Proposed Achievement Definitions
+## Implementation Strategy
 
-**Distribution by Rarity:**
-- Common (25 pts): 4 achievements - Basic D&D behaviors
-- Uncommon (50 pts): 3 achievements - Notable D&D patterns  
-- Rare (100 pts): 2 achievements - Advanced D&D concepts
-- Epic (200 pts): 1 achievement - Legendary D&D scenario
+### Phase 1: State Enhancement (Critical Fix)
+1. **Enhanced State Persistence**: Modify agent state tracking to include continuation checkpoints
+2. **Recovery Context Storage**: Store execution context during recovery process
+3. **State Validation**: Add validation for continuation eligibility
 
-**Trigger Condition Patterns (Using Existing System):**
-- Event-based: `{"event": "first_attempt_success"}` → Natural 20
-- Metric-based: `{"optimization_score": {"min": 95}}` → Min-Maxer
-- Failure-based: `{"consecutive_failures": {"min": 3}}` → Critical Fumble
-- Duration-based: `{"execution_time_ms": {"max": 1000}}` → Lightning Reflexes
+### Phase 2: Recovery Flow Modification
+1. **Recovery Orchestrator Update**: Add continuation logic after successful recovery
+2. **Continuation Handler**: Implement bridge between recovery and execution
+3. **Execution Engine Integration**: Modify execution engine to accept recovered jobs
 
-## API Design
-
-**No API Changes Required**
-
-Existing achievement APIs will automatically serve new achievements:
-- `GET /achievements` - Will include D&D category
-- `GET /achievements/categories/dungeons_dragons` - Will work via existing filtering
-- `GET /user/{id}/achievements` - Will include earned D&D achievements
-
-**Rationale:** Well-designed existing API with generic category support eliminates need for D&D-specific endpoints.
-
-## Deployment Strategy
-
-### Zero-Deployment-Risk Approach
-1. **File Update:** Single file modification (`achievements.py`)
-2. **Hot Reload:** Most Python systems support runtime reloading of configuration data
-3. **Rollback Strategy:** Simple git revert of single commit
-4. **Validation:** Verify achievements load without errors during startup
-
-### Environment Considerations
-- **Development:** Test achievement earning in controlled scenarios
-- **Staging:** Validate category filtering and display
-- **Production:** Deploy during low-traffic window with monitoring
-
-### CI/CD Integration
-- **Lint Check:** Verify Python syntax and enum values
-- **Unit Tests:** Achievement data structure validation
-- **Integration Tests:** Achievement earning and display workflows
+### Phase 3: Testing and Validation
+1. **End-to-End Testing**: Full recovery-to-completion flow testing
+2. **State Restoration Testing**: Verify context restoration works correctly
+3. **Regression Testing**: Ensure no impact on existing recovery functionality
 
 ## Testing Strategy
 
 ### Unit Testing
-```python
-def test_dungeons_dragons_category_added():
-    assert AchievementCategory.DUNGEONS_DRAGONS == "dungeons_dragons"
-
-def test_all_dnd_achievements_valid():
-    dnd_achievements = [a for a in ACHIEVEMENTS if a.category == AchievementCategory.DUNGEONS_DRAGONS]
-    assert len(dnd_achievements) == 10
-    for achievement in dnd_achievements:
-        assert achievement.id is not None
-        assert achievement.trigger_condition is not None
-```
+- **State Persistence**: Test enhanced state save/restore functionality
+- **Continuation Handler**: Test recovery→execution transition logic
+- **Recovery Flow**: Test modified recovery orchestrator behavior
 
 ### Integration Testing
-- **Achievement Loading:** Verify system starts with new achievements
-- **Category Filtering:** Test gallery shows D&D achievements under correct category
-- **Trigger Recognition:** Simulate agent behaviors that should earn achievements
-- **Display Rendering:** Verify achievement names, descriptions, and icons render correctly
+- **End-to-End Recovery**: Test complete stall→recovery→continuation→completion flow
+- **State Integrity**: Test that recovered jobs maintain proper state through continuation
+- **Error Handling**: Test failure scenarios during continuation process
 
-### Acceptance Testing
-- **Functional:** All 10 D&D achievements appear in gallery
-- **Content Quality:** Achievements reference authentic D&D concepts with humor
-- **Integration:** Existing achievements continue to work unchanged
-- **Performance:** No degradation in system performance
+### Regression Testing
+- **Existing Recovery**: Ensure current recovery detection/queuing still works
+- **Performance**: Verify continuation logic doesn't impact recovery performance
+- **Backward Compatibility**: Test with existing agent state formats
 
-## Alternatives Considered
+## Deployment Strategy
 
-### 1. Separate D&D Achievement Service
-**Pros:** Clean separation, independent scaling
-**Cons:** Unnecessary complexity, duplicate infrastructure, API integration overhead
-**Decision:** **Rejected** - Over-engineering for data addition
+### Development Environment
+- Implement changes in isolated development branch
+- Test with simulated stalled jobs and recovery scenarios
+- Validate continuation logic with various job types
 
-### 2. Database-Driven Achievement System  
-**Pros:** Runtime configurability, no code deploys
-**Cons:** Major architectural change, migration complexity, system risk
-**Decision:** **Rejected** - Violates requirement to use existing system
+### Testing Environment  
+- Deploy enhanced recovery system to staging
+- Run extended recovery scenario testing
+- Monitor for any performance or stability issues
 
-### 3. Plugin Architecture for Achievement Categories
-**Pros:** Extensible framework for future categories
-**Cons:** Significant refactoring, introduces architectural complexity
-**Decision:** **Rejected** - Scope exceeds requirements
+### Production Deployment
+- Deploy during low-activity period to minimize impact
+- Enable feature flags for gradual rollout
+- Monitor recovery success rates and continuation metrics
 
-### 4. Configuration File Approach
-**Pros:** Non-code configuration, easy editing
-**Cons:** External dependency, file management overhead
-**Decision:** **Rejected** - Current pattern uses code-based configuration
+### Rollback Strategy
+- Maintain previous version of recovery system as fallback
+- Feature flags allow disabling continuation logic if issues arise
+- Database/state changes are backwards compatible
 
 ## Risks and Mitigations
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| **D&D references too obscure** | Medium | Low | Use mainstream D&D concepts (classes, dice, dragons) |
-| **Trigger conditions not achievable** | Medium | Medium | Base on documented agent behaviors, test in development |
-| **Category enum breaks serialization** | Low | High | Test enum serialization/deserialization thoroughly |
-| **Achievement point inflation** | Low | Low | Follow existing rarity-to-points mapping strictly |
-| **Performance impact from 10 new achievements** | Very Low | Low | Achievements are loaded once at startup, minimal runtime cost |
-| **Existing achievement system assumptions** | Medium | High | Validate all assumptions during testing phase |
+### Risk 1: State Corruption During Recovery
+**Mitigation**: 
+- Comprehensive state validation before continuation
+- Backup of pre-recovery state for rollback capability
+- Graceful degradation if continuation state is invalid
 
-## Open Questions for User Review
+### Risk 2: Performance Impact on Recovery System
+**Mitigation**:
+- Minimal additional processing for continuation logic
+- Asynchronous state persistence to avoid blocking
+- Performance monitoring and optimization
 
-### 1. Content Tone Balance
-**Question:** How closely should achievements mirror existing system's humor style vs. authentic D&D culture?
-**Options:** 
-- A) Prioritize consistency with existing achievements
-- B) Prioritize authentic D&D community humor
-- C) Balanced blend of both
-**Recommendation:** Option C - maintains system cohesion while adding D&D authenticity
+### Risk 3: Complex State Restoration Failures
+**Mitigation**:
+- Robust error handling in continuation process
+- Fallback to fresh job start if restoration fails
+- Detailed logging for troubleshooting restoration issues
 
-### 2. Agent Class Targeting
-**Question:** Should some achievements be restricted to specific agent types?
-**Options:**
-- A) All achievements available to all agents (`["*"]`)
-- B) Some achievements restricted to relevant agents (e.g., "Dungeon Master" only for orchestrating agents)
-**Recommendation:** Option B - more meaningful achievement earning
+### Risk 4: Regression in Existing Recovery Functionality
+**Mitigation**:
+- Comprehensive regression testing
+- Gradual deployment with monitoring
+- Clear separation between existing and new continuation logic
 
-### 3. Rarity Distribution
-**Question:** Confirm achievement rarity distribution (4 Common, 3 Uncommon, 2 Rare, 1 Epic)?
-**Rationale:** Balances accessibility with prestigious high-tier achievements
-**Alternative:** More even distribution (2-3 per rarity level)
+## Success Criteria
 
-## Implementation Roadmap
+### Functional Requirements
+- ✅ Recovered jobs successfully continue execution after recovery
+- ✅ Jobs maintain progress and context through recovery process
+- ✅ End-to-end flow: stall → recovery → continuation → completion works
+- ✅ No regression in existing recovery detection and queuing
 
-### Phase 1: Foundation (Day 1)
-- Add `DUNGEONS_DRAGONS` to `AchievementCategory` enum
-- Verify enum integration doesn't break existing functionality
-- **Deliverable:** Category exists and displays in system
+### Performance Requirements
+- ✅ Continuation logic adds <100ms to recovery process
+- ✅ No impact on job execution performance
+- ✅ Recovery success rate maintains current levels
 
-### Phase 2: Achievement Creation (Day 1-2)
-- Define all 10 D&D achievements following established patterns
-- Implement trigger conditions using existing patterns
-- Balance rarity distribution and point values
-- **Deliverable:** 10 complete achievement definitions
+### Quality Requirements
+- ✅ Robust error handling for continuation failures
+- ✅ Comprehensive logging for troubleshooting
+- ✅ State integrity maintained through recovery process
 
-### Phase 3: Integration (Day 2)
-- Add achievements to `ACHIEVEMENTS` registry
-- Verify system loads without errors
-- Test category filtering and display
-- **Deliverable:** D&D achievements appear in gallery
+## Implementation Priority
 
-### Phase 4: Validation (Day 2-3)
-- Test trigger conditions can be achieved through normal agent behavior
-- Verify content quality and D&D authenticity  
-- Confirm no impact on existing achievement functionality
-- **Deliverable:** Working D&D achievements that can be earned
+### Critical Path (Week 1)
+1. **State Enhancement**: Implement continuation checkpoint functionality
+2. **Recovery Flow**: Add continuation logic to recovery orchestrator  
+3. **Basic Testing**: Validate core continuation functionality
 
-## Architecture Decision Records
+### Integration (Week 2)
+1. **Execution Engine**: Modify to accept recovered jobs
+2. **End-to-End Testing**: Complete recovery flow testing
+3. **Performance Validation**: Ensure no performance regression
 
-### ADR-1: Use Additive Pattern Over Service Extension
-**Decision:** Add achievements to existing system rather than create separate D&D service
-**Rationale:** Requirements specify integration with existing system, additive changes have minimal risk
-**Consequences:** Faster implementation, lower risk, maintains system cohesion
-
-### ADR-2: Code-Based Configuration Over External Files
-**Decision:** Define achievements in Python code rather than JSON/YAML files
-**Rationale:** Follows existing pattern, provides type safety, eliminates file management
-**Consequences:** Requires code deployment but maintains consistency
-
-### ADR-3: Generic Trigger Conditions Over D&D-Specific Logic
-**Decision:** Use existing trigger condition patterns rather than create D&D-specific detection
-**Rationale:** Leverages existing infrastructure, reduces complexity, ensures conditions are achievable
-**Consequences:** Trigger conditions may be less thematically specific but more reliable
-
-## Success Metrics
-
-### Technical Success
-- ✅ All 10 achievements load successfully at system startup
-- ✅ D&D category appears in achievement gallery
-- ✅ Achievement trigger conditions can be met through agent behavior
-- ✅ No performance degradation in existing functionality
-- ✅ Zero breaking changes to existing achievements
-
-### Content Success  
-- ✅ D&D references are authentic and recognizable
-- ✅ Humor tone matches existing achievement system
-- ✅ Achievement difficulty progression is balanced
-- ✅ All achievements are achievable through normal agent workflows
-
-### Integration Success
-- ✅ New achievements integrate seamlessly with existing UI
-- ✅ Category filtering works correctly
-- ✅ Achievement awarding system processes new trigger conditions
-- ✅ Existing users see no changes to their earned achievements
-
----
-
-**Architecture Confidence:** High - Low-risk additive pattern with proven implementation strategy  
-**Implementation Complexity:** Low - Single file modification with well-defined data structures  
-**Risk Level:** Minimal - Purely additive changes to stable, existing system
+This architecture provides a targeted fix for the recovery continuation bug while maintaining the stability and functionality of the existing recovery system. The approach is conservative but effective, focusing on the specific gap in job continuation rather than overhauling the entire recovery architecture.

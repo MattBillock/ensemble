@@ -34,7 +34,7 @@ const useUpdateInterval = () => {
   const debounceTimerRef = useRef(null);
 
   // Validate interval and set error/warning messages
-  const validateInterval = useCallback((value) => {
+  const validateAndSetMessages = useCallback((value) => {
     if (value < MIN_INTERVAL) {
       setError('Interval too low - minimum is 200ms');
       setWarning('');
@@ -57,12 +57,12 @@ const useUpdateInterval = () => {
     }
   }, []);
 
-  // Set interval with validation - memoized to prevent infinite loops
+  // Set interval with validation
   const setInterval = useCallback((value) => {
-    validateInterval(value);
+    validateAndSetMessages(value);
     setIntervalState(value);
     localStorage.setItem(STORAGE_KEY, String(value));
-  }, [validateInterval]);
+  }, [validateAndSetMessages]);
 
   // Reset to default state
   const reset = useCallback(() => {
@@ -71,57 +71,49 @@ const useUpdateInterval = () => {
     setError('');
     setWarning('');
     setCustomInput('');
+    
+    // Clear any pending debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
   }, []);
 
   // Handle debounced customInput changes
-  // CRITICAL: Only depends on customInput to avoid circular dependency
   useEffect(() => {
     // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
 
     // Only process if customInput has a value
     if (customInput !== '') {
+      // Create debounce timer
       debounceTimerRef.current = setTimeout(() => {
         const parsed = parseInt(customInput, 10);
         if (!isNaN(parsed)) {
-          // Directly update state and localStorage without calling setInterval
-          // This breaks the circular dependency chain
+          // Update interval state
           setIntervalState(parsed);
           
-          // Validate and set error/warning states
-          if (parsed < MIN_INTERVAL) {
-            setError('Interval too low - minimum is 200ms');
-            setWarning('');
-          } else if (parsed > MAX_INTERVAL) {
-            setError('Interval too high - maximum is 300000ms');
-            setWarning('');
-          } else {
-            setError('');
-            
-            if (parsed < FAST_THRESHOLD) {
-              setWarning('Fast polling may impact performance');
-            } else if (parsed > SLOW_THRESHOLD) {
-              setWarning('Slow polling may miss rapid updates');
-            } else {
-              setWarning('');
-            }
-          }
+          // Validate and set messages
+          validateAndSetMessages(parsed);
           
-          // Write directly to localStorage
+          // Save to localStorage
           localStorage.setItem(STORAGE_KEY, String(parsed));
         }
+        debounceTimerRef.current = null;
       }, DEBOUNCE_DELAY);
     }
 
-    // Cleanup on unmount or customInput change
+    // Cleanup function
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
       }
     };
-  }, [customInput]); // Only depends on customInput - no circular dependency
+  }, [customInput, validateAndSetMessages]);
 
   return {
     interval,

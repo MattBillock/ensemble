@@ -1,101 +1,96 @@
-# Achievement System Expansion Requirements
+# UI Color Scheme Dropdown - Requirements
 
-## Project Overview
-**Vision**: Expand the existing achievement system by adding 10 new achievements to every achievement category, enhancing agent engagement and providing more comprehensive recognition for diverse behaviors.
+## Project Vision
+Implement a dropdown component in the header that allows users to dynamically change the UI color scheme/theme of the ensemble interface without requiring a page refresh.
 
-## Current State Analysis
-Based on system analysis, the achievement system currently contains:
-- **138 total achievements** across 9 categories
-- **Categories with current counts**:
-  - ska: 8 achievements
-  - productivity: 5 achievements 
-  - comedy: 5 achievements
-  - milestone: 4 achievements
-  - meta: 4 achievements
-  - streak: 3 achievements
-  - brass_band: 15 achievements (already has 10+)
-  - drum_corps: 15 achievements (already has 10+)
-  - guitar_hero: 20 achievements (already has 10+)
+## Core Objectives
+1. **Theme Selection**: Enable users to choose from multiple predefined color schemes
+2. **Persistent State**: Store user's theme preference across browser sessions
+3. **Dynamic Application**: Apply theme changes instantly without page reload
+4. **Header Integration**: Seamlessly integrate dropdown into existing header component
 
-## Objectives
-1. **Add 10 new achievements to each category** that currently has fewer than 10
-2. **Maintain thematic consistency** with existing achievement styles
-3. **Ensure balanced rarity distribution** across new achievements
-4. **Preserve existing functionality** and database compatibility
+## Functional Requirements
 
-## Scope
+### Theme Dropdown Component
+- **Location**: Position in the header navigation area
+- **Options**: Minimum 3 theme options (Light, Dark, High Contrast)
+- **Visual**: Clean dropdown with theme name and optional preview indicator
+- **Accessibility**: Full keyboard navigation and screen reader support
 
-### In Scope
-- **Categories requiring expansion** (add 10 each):
-  - ska: +10 achievements (current: 8)
-  - productivity: +10 achievements (current: 5)
-  - comedy: +10 achievements (current: 5)
-  - milestone: +10 achievements (current: 4)
-  - meta: +10 achievements (current: 4)
-  - streak: +10 achievements (current: 3)
+### Theme System
+- **CSS Variables**: Implement theming using CSS custom properties
+- **Coverage**: Apply to all major UI components (backgrounds, text, borders, buttons)
+- **Consistency**: Maintain visual hierarchy across all themes
+- **Performance**: Efficient theme switching without layout shift
 
-- **Categories already meeting requirement** (maintain as-is):
-  - brass_band: 15 achievements (meets requirement)
-  - drum_corps: 15 achievements (meets requirement)
-  - guitar_hero: 20 achievements (meets requirement)
-
-### Features to Add
-- **60 new achievement definitions** total
-- Appropriate icons, names, descriptions for each
-- Balanced rarity distribution (common, uncommon, rare, epic, legendary)
-- Logical trigger conditions that align with agent behaviors
-- Point values consistent with existing rarity scales
-
-### Out of Scope
-- Modifying existing achievements
-- Changing achievement tracking logic or database schema
-- Altering UI components beyond what's necessary for new achievements
-- Adding new achievement categories
+### State Management
+- **Local Storage**: Persist user's theme selection
+- **Initial Load**: Respect saved preference or system default
+- **Context**: React context for global theme state management
+- **Fallback**: Graceful degradation if storage unavailable
 
 ## Technical Requirements
 
-### Code Changes Required
-- **Primary file**: `/src/runtime/agents/achievements.py`
-- Expand `ACHIEVEMENTS` list with 60 new entries
-- Follow existing `Achievement` dataclass structure
-- Maintain thematic naming and icon conventions
+### Frontend Implementation
+- **Framework**: React with TypeScript
+- **Styling**: CSS modules or styled-components with CSS variables
+- **State**: React Context API for theme management
+- **Storage**: localStorage for persistence
+- **Testing**: Unit tests for components and theme switching logic
 
-### Constraints
-- Must not break existing achievement tracking
-- New achievements must use existing `AchievementCategory` enum values
-- Must follow existing rarity point scale:
-  - Common: 5-15 points
-  - Uncommon: 15-35 points  
-  - Rare: 35-60 points
-  - Epic: 60-100 points
-  - Legendary: 100-300 points
+### Integration Points
+- **Header Component**: Modify existing header to include theme dropdown
+- **Global Styles**: Update root CSS variables for theme application
+- **Component Library**: Ensure all existing components respect theme variables
 
-### Quality Standards
-- All achievements must have unique IDs
-- Names should be creative and thematically appropriate
-- Descriptions should be clear and often humorous
-- Trigger conditions should be implementable with existing tracking
+## User Experience Requirements
+
+### Interaction Flow
+1. User clicks theme dropdown in header
+2. Dropdown shows available theme options
+3. User selects desired theme
+4. UI instantly updates to new color scheme
+5. Selection is saved for future sessions
+
+### Visual Design
+- **Responsive**: Work on desktop, tablet, and mobile layouts
+- **Loading States**: Smooth transitions between theme changes
+- **Feedback**: Clear visual indication of currently selected theme
+- **Consistency**: Maintain brand identity across all themes
+
+## Technical Constraints
+- **Browser Support**: Modern browsers (Chrome 80+, Firefox 75+, Safari 13+)
+- **Performance**: Theme switching should complete within 200ms
+- **Bundle Size**: Minimal impact on existing bundle size
+- **Backward Compatibility**: Graceful fallback to default theme if system fails
 
 ## Success Criteria
-1. **60 new achievements added** to specified categories
-2. **All categories have at least 10 achievements** 
-3. **System maintains backward compatibility**
-4. **New achievements appear in UI** and can be earned
-5. **No regression in existing functionality**
+1. ✅ Dropdown renders correctly in header across all screen sizes
+2. ✅ At least 3 distinct, accessible themes available
+3. ✅ Theme changes apply instantly to entire interface
+4. ✅ User preference persists across browser sessions
+5. ✅ No visual glitches or layout shifts during theme switching
+6. ✅ Full keyboard and screen reader accessibility
+7. ✅ All existing components maintain functionality with new themes
+
+## Out of Scope
+- Custom theme creation by users
+- Advanced theme customization options
+- Animation/transition effects beyond basic fade
+- Theme-specific component variations
+- Integration with system dark/light mode detection (v1)
+- Mobile app theme synchronization
 
 ## Assumptions Made
-- Existing achievement infrastructure supports additional entries
-- Current rarity and point distributions should be maintained
-- Ska music, productivity, comedy, milestone, meta, and streak themes should continue
-- Agent classes and trigger conditions remain as currently defined
+- **Technology Stack**: React/TypeScript frontend already exists
+- **CSS Architecture**: Modern CSS with custom property support
+- **Build System**: Supports CSS modules or styled-components
+- **State Management**: React Context is acceptable for theme state
+- **Storage**: localStorage is available and functional
+- **Design System**: Existing components can be themed via CSS variables
 
-## Dependencies
-- Achievement tracking system (`AchievementTracker` class)
-- Achievement database schema
-- Frontend achievement display components
-- Agent execution monitoring for trigger detection
-
-## Deliverables
-- Updated `achievements.py` with 60 new achievement definitions
-- Verification that all categories meet the 10-achievement minimum
-- Testing to ensure new achievements integrate properly with existing system
+## Risk Mitigation
+- **Theme Conflicts**: Test all combinations of themes with existing components
+- **Performance**: Profile theme switching for any performance bottlenecks
+- **Storage Failure**: Implement fallback when localStorage is unavailable
+- **Accessibility**: Validate with screen readers and keyboard navigation
