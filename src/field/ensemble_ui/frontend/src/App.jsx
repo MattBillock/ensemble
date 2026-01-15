@@ -363,7 +363,7 @@ function App() {
               </Card.Header>
               {!sectionsCollapsed.hierarchy && (
                 <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: '12px' }}>
-                  <StatusSummaryBar agentStatus={agentStatus} />
+                  <StatusSummaryBar agentStatus={agentStates} />
                   <AgentHierarchyTree hierarchy={hierarchy} />
                 </Card.Body>
               )}

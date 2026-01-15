@@ -1,242 +1,298 @@
-# Test Strategy - Memory Audit and Analysis
+# Test Strategy - Theme Infrastructure & Core Switcher Component
 
-## Overview
-This document defines the testing strategy for profiling current memory usage patterns and identifying specific memory leak sources in the agent system. The milestone focuses on auditing and analysis rather than fixes, requiring specialized memory profiling and leak detection tests.
+## Milestone Overview
+Testing strategy for building the foundational theme system and basic switcher UI component with theme provider context, CSS variable-based themes, basic switcher in header, localStorage persistence, and default dark + light themes.
 
-## Test Categories
+## Testing Approach
 
-### 1. Memory Profiling Tests
-**Purpose**: Establish baseline memory usage patterns and identify leak sources
+### Coverage Goals
+- **Unit Test Coverage**: 85% for all theme-related business logic
+- **Integration Coverage**: 100% of theme provider functionality and component interactions
+- **E2E Coverage**: Critical user theme switching flows
 
-#### 1.1 Unit Tests - Memory Profiling Components
-- **Test Memory Profiler Utilities**: Test custom memory profiling decorators and context managers
-- **Test Agent Lifecycle Memory Tracking**: Verify memory tracking during agent creation/completion
-- **Test SwarmStateManager Memory Usage**: Profile database connection and state management memory
-- **Test ThreadPoolExecutor Resource Tracking**: Monitor thread pool memory consumption
-- **Coverage Goal**: 85% for memory profiling utilities
+### Testing Strategy
+- **Unit Tests**: Focus on pure logic, context behavior, and utility functions
+- **Integration Tests**: Test theme provider with components, localStorage integration, CSS variable updates
+- **End-to-End Tests**: Complete theme switching user journey
 
-#### 1.2 Integration Tests - Memory Behavior Analysis
-- **Test Agent Execution Memory Patterns**: Profile complete agent execution cycles for memory usage
-- **Test Parallel Agent Memory Isolation**: Verify agents don't retain references to each other
-- **Test Message History Memory Management**: Validate pruning mechanisms work correctly
-- **Test Tool Execution Memory Cleanup**: Ensure tool results are properly released
-- **Coverage Goal**: 100% of critical memory management paths
+## Test Tasks Breakdown
 
-#### 1.3 Memory Leak Detection Tests
-- **Test Agent Reference Counting**: Detect if completed agents have remaining references
-- **Test Circular Reference Detection**: Identify parent/child agent reference cycles
-- **Test Event Bus Memory Accumulation**: Monitor event queues for unbounded growth
-- **Test Metrics Tracker Memory Growth**: Check if performance metrics accumulate infinitely
-- **Coverage Goal**: All suspected leak sources covered
+### Unit Tests
 
-### 2. Load Testing for Memory Leaks
-**Purpose**: Stress test the system to expose memory leaks under load
+#### Task 1: Theme Context Unit Tests
+**Priority**: High  
+**Estimated Effort**: 4 hours  
+**Dependencies**: ThemeContext implementation
 
-#### 2.1 Sequential Agent Execution Tests
-- **Test Long-Running Sequential Agents**: Execute 100+ agents sequentially, monitor memory growth
-- **Test Memory Recovery After Completion**: Verify memory returns to baseline after agent completion
-- **Test Different Agent Types Memory Usage**: Profile various agent types (ED, Dev Manager, etc.)
-- **Expected Behavior**: Memory usage should stabilize, not grow indefinitely
+**Test Cases**:
+- ✅ ThemeProvider provides default theme context
+- ✅ ThemeProvider initializes with dark theme by default
+- ✅ Theme context contains required properties (currentTheme, availableThemes, setTheme, isLoading)
+- ✅ setTheme function updates current theme state
+- ✅ Theme state changes trigger context updates
+- ✅ Invalid theme ID handling (fallback to default)
+- ✅ Context throws error when used outside Provider
 
-#### 2.2 Parallel Agent Execution Tests
-- **Test Concurrent Agent Memory Isolation**: Run multiple agents simultaneously, check for interference
-- **Test Thread Pool Memory Management**: Verify ThreadPoolExecutor properly cleans up resources
-- **Test Database Connection Memory**: Monitor connection pooling and cleanup under load
-- **Expected Behavior**: Memory per agent should be consistent regardless of parallelization
+**Test Framework**: Jest + React Testing Library  
+**Mock Requirements**: localStorage
 
-### 3. Memory Monitoring and Alerting Tests
-**Purpose**: Verify memory monitoring infrastructure works correctly
+#### Task 2: useTheme Hook Unit Tests
+**Priority**: High  
+**Estimated Effort**: 3 hours  
+**Dependencies**: useTheme hook implementation
 
-#### 3.1 Memory Monitoring Unit Tests
-- **Test Memory Threshold Detection**: Verify alerts trigger at configured memory thresholds
-- **Test Memory Growth Rate Calculation**: Test algorithms for detecting memory growth patterns
-- **Test Memory Snapshot Comparison**: Validate memory diff utilities work correctly
-- **Coverage Goal**: 90% for monitoring infrastructure
+**Test Cases**:
+- ✅ Returns current theme data correctly
+- ✅ Provides theme switching function
+- ✅ isTheme utility function works correctly
+- ✅ Hook updates when theme changes
+- ✅ Throws error when used outside ThemeProvider
+- ✅ Returns correct theme metadata
 
-#### 3.2 Integration Tests - Monitoring System
-- **Test End-to-End Memory Monitoring**: Verify monitoring captures real memory issues
-- **Test Alert Generation**: Ensure alerts are generated when memory leaks occur
-- **Test Memory Report Generation**: Validate detailed memory reports are accurate
-- **Coverage Goal**: 100% of monitoring workflows
+**Test Framework**: Jest + React Testing Library  
+**Mock Requirements**: ThemeContext
 
-### 4. Performance Regression Tests
-**Purpose**: Ensure memory profiling doesn't impact system performance
+#### Task 3: Theme Utilities Unit Tests
+**Priority**: Medium  
+**Estimated Effort**: 2 hours  
+**Dependencies**: themeUtils implementation
 
-#### 4.1 Performance Baseline Tests
-- **Test Agent Execution Time Impact**: Measure performance overhead of memory profiling
-- **Test Memory Profiling Overhead**: Quantify memory cost of memory monitoring itself
-- **Test Database Performance Impact**: Ensure memory tracking doesn't slow database operations
-- **Acceptance Criteria**: <5% performance overhead from memory profiling
+**Test Cases**:
+- ✅ Theme validation function works correctly
+- ✅ CSS variable application logic
+- ✅ Theme loading from localStorage
+- ✅ Theme saving to localStorage
+- ✅ Error handling for corrupted localStorage
+- ✅ Default theme selection logic
 
-### 5. Memory Cleanup Validation Tests
-**Purpose**: Verify existing cleanup mechanisms work as intended
+**Test Framework**: Jest  
+**Mock Requirements**: localStorage, document.documentElement
 
-#### 5.1 Cleanup Mechanism Tests
-- **Test Message History Pruning**: Validate _prune_message_history() reduces memory usage
-- **Test Database Connection Cleanup**: Verify thread-local connections are properly closed
-- **Test Agent Instance Cleanup**: Ensure agent objects are garbage collected after completion
-- **Test Tool Result Cleanup**: Verify tool execution results don't accumulate
-- **Coverage Goal**: 100% of existing cleanup paths
+#### Task 4: Theme Definitions Unit Tests
+**Priority**: Medium  
+**Estimated Effort**: 2 hours  
+**Dependencies**: themes.js configuration
 
-## Test Data and Fixtures
+**Test Cases**:
+- ✅ All required themes are defined (dark, light)
+- ✅ Theme objects have required properties (id, name, variables)
+- ✅ CSS variables are valid format
+- ✅ Theme preview colors are valid hex codes
+- ✅ No duplicate theme IDs
+- ✅ Theme names are user-friendly
 
-### Memory Profiling Test Fixtures
-```python
-# Memory baseline capture fixture
-@pytest.fixture
-def memory_baseline():
-    initial_memory = capture_memory_snapshot()
-    yield initial_memory
-    final_memory = capture_memory_snapshot()
-    assert_memory_stable(initial_memory, final_memory, tolerance=10)
+**Test Framework**: Jest  
+**Mock Requirements**: None
 
-# Long-running agent simulation
-@pytest.fixture
-def agent_memory_profile():
-    return {
-        'agent_count': 100,
-        'agent_types': ['leadership/executive_director', 'coordination/dev_manager'],
-        'memory_samples': 1000,  # Take memory snapshot every 100ms
-        'max_memory_growth': 50  # Max 50MB growth allowed
-    }
-```
+### Integration Tests
 
-### Memory Leak Detection Fixtures
-```python
-# Reference counting test fixture
-@pytest.fixture
-def reference_tracker():
-    tracker = ReferenceCountTracker()
-    yield tracker
-    leaked_objects = tracker.find_leaked_references()
-    assert len(leaked_objects) == 0, f"Memory leaks detected: {leaked_objects}"
+#### Task 5: ThemeProvider Integration Tests
+**Priority**: High  
+**Estimated Effort**: 5 hours  
+**Dependencies**: ThemeProvider + child components
 
-# Agent lifecycle fixture for leak testing
-@pytest.fixture
-def agent_lifecycle_test():
-    return {
-        'iterations': 50,
-        'agent_configs': [
-            {'type': 'leadership/executive_director', 'complexity': 'simple'},
-            {'type': 'coordination/dev_manager', 'complexity': 'medium'},
-            {'type': 'implementation/code_writer', 'complexity': 'complex'}
-        ]
-    }
-```
+**Test Cases**:
+- ✅ ThemeProvider wraps app and provides context to all children
+- ✅ Theme changes update all consuming components
+- ✅ localStorage persistence works end-to-end
+- ✅ Theme loading from localStorage on app initialization
+- ✅ CSS variables updated on document root when theme changes
+- ✅ Bootstrap variable integration works
+- ✅ Component re-rendering behavior during theme changes
+
+**Test Framework**: Jest + React Testing Library  
+**Mock Requirements**: localStorage, document.documentElement
+
+#### Task 6: ThemeSwitcher Component Integration Tests
+**Priority**: High  
+**Estimated Effort**: 4 hours  
+**Dependencies**: ThemeSwitcher component + ThemeProvider
+
+**Test Cases**:
+- ✅ ThemeSwitcher renders all available themes
+- ✅ Current theme shows as selected
+- ✅ Theme selection triggers context update
+- ✅ Theme change propagates to other components
+- ✅ Dropdown functionality (open/close)
+- ✅ Keyboard navigation support
+- ✅ Mobile responsive behavior
+
+**Test Framework**: Jest + React Testing Library  
+**Mock Requirements**: ThemeContext
+
+#### Task 7: CSS Variables Integration Tests
+**Priority**: High  
+**Estimated Effort**: 3 hours  
+**Dependencies**: CSS variables + theme system
+
+**Test Cases**:
+- ✅ CSS variables applied correctly to document root
+- ✅ Theme change updates CSS variables immediately
+- ✅ All theme variables have valid CSS values
+- ✅ Bootstrap integration variables work
+- ✅ Component styling responds to theme variable changes
+- ✅ Default fallback values present
+
+**Test Framework**: Jest + jsdom  
+**Mock Requirements**: document.documentElement
+
+#### Task 8: localStorage Persistence Integration Tests
+**Priority**: High  
+**Estimated Effort**: 3 hours  
+**Dependencies**: Theme system + localStorage
+
+**Test Cases**:
+- ✅ Theme preference saved to localStorage on change
+- ✅ Theme loaded from localStorage on app startup
+- ✅ Corrupted localStorage data handled gracefully
+- ✅ localStorage unavailable scenario (fallback to default)
+- ✅ Multiple theme changes persist correctly
+- ✅ localStorage key naming convention
+
+**Test Framework**: Jest  
+**Mock Requirements**: localStorage (with different scenarios)
+
+### End-to-End Tests
+
+#### Task 9: Theme Switching User Journey E2E
+**Priority**: High  
+**Estimated Effort**: 4 hours  
+**Dependencies**: Complete theme system implementation
+
+**Test Cases**:
+- ✅ User opens theme switcher in header
+- ✅ User selects different theme
+- ✅ All page elements update to new theme immediately
+- ✅ Theme preference persists after page reload
+- ✅ Theme switcher shows correct selection after reload
+- ✅ Mobile theme switcher works correctly
+- ✅ Theme switching works across different pages
+
+**Test Framework**: Playwright  
+**Environment**: Full application running
+
+#### Task 10: Cross-Component Theme Consistency E2E
+**Priority**: Medium  
+**Estimated Effort**: 3 hours  
+**Dependencies**: Multiple components + theme system
+
+**Test Cases**:
+- ✅ All components render correctly in dark theme
+- ✅ All components render correctly in light theme
+- ✅ Bootstrap components maintain theme consistency
+- ✅ Header, main content, footer all use theme variables
+- ✅ Interactive elements (buttons, forms) respond to themes
+- ✅ No visual glitches during theme transitions
+
+**Test Framework**: Playwright  
+**Environment**: Full application with sample content
+
+### Accessibility Tests
+
+#### Task 11: Theme Accessibility Integration Tests
+**Priority**: High  
+**Estimated Effort**: 3 hours  
+**Dependencies**: All themes implemented
+
+**Test Cases**:
+- ✅ Dark theme meets WCAG 2.1 AA contrast requirements
+- ✅ Light theme meets WCAG 2.1 AA contrast requirements
+- ✅ Theme switcher is keyboard navigable
+- ✅ Theme switcher has proper ARIA labels
+- ✅ Screen reader announces theme changes
+- ✅ Focus indicators visible in all themes
+
+**Test Framework**: Jest + @testing-library/jest-dom + axe-core  
+**Mock Requirements**: None
+
+### Performance Tests
+
+#### Task 12: Theme Switching Performance Tests
+**Priority**: Medium  
+**Estimated Effort**: 2 hours  
+**Dependencies**: Complete theme system
+
+**Test Cases**:
+- ✅ Theme switching completes within 100ms
+- ✅ No layout shifts during theme changes
+- ✅ CSS variable updates don't cause performance bottlenecks
+- ✅ Memory usage stable during repeated theme switches
+- ✅ No unnecessary re-renders of unrelated components
+
+**Test Framework**: Jest + React Testing Library (performance monitoring)  
+**Mock Requirements**: Performance timing APIs
+
+## Test Coverage Matrix
+
+| Component | Unit | Integration | E2E | Accessibility |
+|-----------|------|-------------|-----|---------------|
+| ThemeContext | ✅ | ✅ | ✅ | ✅ |
+| useTheme Hook | ✅ | ✅ | - | - |
+| ThemeSwitcher | - | ✅ | ✅ | ✅ |
+| Theme Utils | ✅ | ✅ | - | - |
+| localStorage | ✅ | ✅ | ✅ | - |
+| CSS Variables | ✅ | ✅ | ✅ | ✅ |
 
 ## Test Environment Setup
 
-### Memory Profiling Tools
-- **memory_profiler**: Line-by-line memory usage profiling
-- **pympler**: Memory analysis and leak detection
-- **tracemalloc**: Built-in Python memory tracking
-- **objgraph**: Object reference graph analysis
-- **psutil**: System-level memory monitoring
+### Unit/Integration Test Environment
+- **Framework**: Jest + React Testing Library
+- **Mocks**: localStorage, document.documentElement, CSS variables
+- **Coverage**: Istanbul/nyc for coverage reporting
+- **Assertions**: jest-dom for enhanced DOM assertions
 
-### Test Configuration
-```python
-# Memory testing configuration
-MEMORY_TEST_CONFIG = {
-    'profiling_enabled': True,
-    'memory_sampling_interval': 0.1,  # 100ms
-    'memory_threshold_mb': 500,  # Alert if process exceeds 500MB
-    'gc_collection_frequency': 10,  # Force GC every 10 iterations
-    'reference_counting_enabled': True,
-    'leak_detection_sensitivity': 'high'
-}
-```
+### E2E Test Environment
+- **Framework**: Playwright
+- **Browsers**: Chromium, Firefox, Safari (WebKit)
+- **Test Data**: Sample themes and component states
+- **Screenshots**: Visual regression for theme consistency
 
-## Coverage Goals
-
-### Overall Coverage Targets
-- **Memory Profiling Code**: 85% line coverage
-- **Existing Cleanup Mechanisms**: 100% path coverage
-- **Memory Monitoring Infrastructure**: 90% branch coverage
-- **Agent Memory Lifecycle**: 100% scenario coverage
-
-### Critical Memory Paths (Must be 100% Covered)
-- Agent creation and destruction
-- SwarmStateManager state cleanup
-- ThreadPoolExecutor resource management
-- Message history pruning
-- Database connection lifecycle
-- Tool execution result cleanup
-
-## Test Execution Strategy
-
-### Phase 1: Baseline Establishment (Week 1)
-1. **Memory Profiling Infrastructure Tests**
-   - Unit tests for profiling utilities
-   - Baseline memory usage measurement
-   - Tool overhead quantification
-
-2. **Existing System Analysis Tests**
-   - Current cleanup mechanism validation
-   - Reference counting baseline
-   - Performance baseline establishment
-
-### Phase 2: Leak Detection (Week 2)
-1. **Memory Leak Detection Tests**
-   - Sequential agent execution leak tests
-   - Parallel execution leak tests
-   - Circular reference detection tests
-
-2. **Load Testing**
-   - Long-running memory stability tests
-   - High-frequency agent execution tests
-   - Resource exhaustion boundary tests
-
-### Phase 3: Monitoring Validation (Week 3)
-1. **Memory Monitoring Tests**
-   - Alert system validation
-   - Monitoring accuracy tests
-   - Report generation validation
-
-2. **Integration Testing**
-   - End-to-end memory audit workflows
-   - Real-world scenario simulation
-   - Performance regression validation
-
-## Success Criteria
-
-### Memory Audit Success Metrics
-1. **Leak Source Identification**: All memory leak sources identified and documented
-2. **Memory Pattern Documentation**: Baseline memory usage patterns established
-3. **Monitoring Infrastructure**: Memory monitoring system validated and functional
-4. **Test Coverage**: All coverage goals met
-5. **Performance Impact**: Memory profiling overhead <5% performance impact
-
-### Deliverables
-1. **Memory Profiling Test Suite**: Comprehensive tests for memory analysis
-2. **Memory Leak Detection Tests**: Automated leak detection and validation
-3. **Memory Monitoring Tests**: Validation of memory monitoring infrastructure
-4. **Memory Audit Report**: Detailed analysis of current memory usage patterns
-5. **Performance Baseline**: Established performance baselines with memory profiling enabled
-
-## Test Data Requirements
-
-### Memory Usage Patterns
-- Baseline memory usage for different agent types
-- Memory growth patterns during agent execution
-- Memory cleanup efficiency metrics
-- Resource utilization statistics
-
-### Reference Counting Data
-- Object creation/destruction patterns
-- Reference cycle identification
-- Weak reference usage analysis
-- Garbage collection effectiveness metrics
+### CI/CD Integration
+- **Unit/Integration**: Run on every PR
+- **E2E**: Run on main branch merges
+- **Coverage**: Minimum 85% required for merge
+- **Performance**: Baseline established for theme switching speed
 
 ## Risk Mitigation
 
-### Test Environment Risks
-- **Memory profiling overhead**: Use sampling and targeted profiling to minimize impact
-- **False positive leak detection**: Implement multiple leak detection methods for validation
-- **Platform-specific memory behavior**: Test on multiple Python versions and OS platforms
+### High-Risk Areas
+1. **localStorage reliability** - Extensive mock scenarios for edge cases
+2. **CSS variable browser support** - Cross-browser testing with Playwright
+3. **Bootstrap integration** - Specific tests for Bootstrap component theming
+4. **Performance impact** - Dedicated performance test suite
 
-### System Impact Risks
-- **Production system interference**: Use isolated test environments
-- **Resource exhaustion**: Implement safety limits and timeouts in stress tests
-- **Data corruption**: Use separate test databases and backup/restore procedures
+### Test Data Management
+- **Theme definitions**: Centralized test theme configurations
+- **Mock localStorage**: Consistent mocking across all tests
+- **Component snapshots**: Version-controlled for regression detection
 
-This testing strategy provides comprehensive coverage for the Memory Audit and Analysis milestone, focusing on identifying memory leak sources and establishing baseline patterns rather than implementing fixes."
+## Success Criteria
+
+### Test Completion
+- ✅ All 12 test tasks completed
+- ✅ 85% unit test coverage achieved
+- ✅ 100% integration test coverage for theme functionality
+- ✅ All E2E critical paths tested
+- ✅ Accessibility compliance verified
+
+### Quality Gates
+- ✅ No failing tests in CI/CD pipeline
+- ✅ Performance benchmarks met
+- ✅ Cross-browser compatibility confirmed
+- ✅ No regressions in existing functionality
+
+## Implementation Order
+
+### Phase 1: Foundation Testing (Tasks 1-4)
+Unit tests for core theme infrastructure
+
+### Phase 2: Integration Testing (Tasks 5-8)
+Component integration and persistence testing
+
+### Phase 3: User Experience Testing (Tasks 9-12)
+End-to-end flows and accessibility validation
+
+### Dependencies
+- Each integration test depends on corresponding unit tests
+- E2E tests require complete component implementation
+- Performance tests run after functional tests pass

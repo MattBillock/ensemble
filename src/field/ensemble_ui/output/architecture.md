@@ -1,283 +1,428 @@
-# Architecture: Recovery Agent System
+# Theme Switcher UI Feature - Architecture Proposal
 
 ## Architecture Overview
 
-This architecture introduces a **Recovery Agent** into the agent hierarchy to govern job recovery. The key innovation is replacing direct retry mechanisms with agent-spawned recovery, ensuring recovered jobs appear in the main agent hierarchy alongside regular jobs.
+### High-Level Design
+The Theme Switcher feature will implement a **Context-based state management pattern** with **CSS Custom Properties (variables)** for theme styling. This approach provides instant theme switching, easy maintenance, and seamless integration with the existing React + Bootstrap architecture.
 
-**Architecture Pattern**: Agent-based Recovery Orchestration
-**Rationale**: By treating recovery as a first-class agent-spawned operation, recovered jobs automatically integrate with existing swarm state tracking, hierarchy visualization, and monitoring infrastructure.
+**Architecture Pattern**: Provider Pattern + CSS Variables
+- **ThemeProvider** manages theme state globally
+- **CSS Custom Properties** enable instant visual updates
+- **Hook-based** component integration for theme awareness
+
+### Rationale
+- **Instant switching**: CSS variables allow immediate visual updates without re-rendering components
+- **Bootstrap compatibility**: CSS variables can override Bootstrap's default values
+- **Performance**: Minimal JavaScript execution during theme changes
+- **Maintainability**: Centralized theme definitions and easy extensibility
+
+## Tech Stack
+
+### Core Technologies
+- **React Context API**: Theme state management (chosen over Redux for simplicity - single state concern)
+- **CSS Custom Properties**: Theme variable system (chosen over CSS-in-JS for performance)
+- **localStorage**: Theme persistence (standard browser API, reliable)
+- **Bootstrap 5**: Existing UI framework (maintained for compatibility)
+
+### Libraries and Dependencies
+- **No additional dependencies required** - using built-in browser and React APIs
+- **Optional**: `react-transition-group` for smooth theme transitions (if smoother animations needed)
+
+### Rationale for Tech Choices
+- **CSS Variables over CSS-in-JS**: Better performance for theme switching, no runtime style generation
+- **Context API over Redux**: Simpler for single-concern state, reduces bundle size
+- **localStorage over cookies**: Larger storage capacity, no server overhead, perfect for UI preferences
 
 ## System Components
 
-### 1. Recovery Agent (`leadership/recovery_agent.md`)
-**Role**: Specialized leadership agent that governs recovery operations
-**Responsibilities**:
-- Accept recovery task information from RecoveryOrchestrator
-- Spawn Executive Directors to handle recovered tasks
-- Track recovery attempts and maintain metadata
-- Report recovery status back to orchestrator
+### 1. ThemeProvider Component
+**Responsibility**: Global theme state management and persistence
+- Wraps the entire application
+- Manages current theme state
+- Handles localStorage persistence
+- Provides theme context to all children
 
-**Can Spawn**: Executive Director only
-**Cannot Spawn**: Direct code writers, coordinators, or other agents
+### 2. ThemeSwitcher Component
+**Responsibility**: User interface for theme selection
+- Renders theme selection dropdown/buttons
+- Triggers theme changes
+- Shows current theme indication
+- Responsive design for mobile/desktop
 
-### 2. Modified RecoveryOrchestrator (`swarm_recovery.py`)
-**Role**: Orchestrates recovery queue processing
-**Changes Required**:
-- Instead of calling `_retry_agent()` directly, spawn Recovery Agent via `spawn_agent` tool
-- Pass recovery context (original input, failure reason, strategy) to Recovery Agent
-- Monitor spawned Recovery Agent for completion
+### 3. Theme Configuration
+**Responsibility**: Theme definitions and CSS variable mappings
+- Defines all available themes
+- Maps theme names to CSS custom properties
+- Provides theme metadata (names, preview colors, etc.)
 
-### 3. Swarm State Integration
-**Role**: Existing infrastructure, minimal changes needed
-**Requirement**: Recovery Agent and its spawned Executive Directors must register properly
-**Behavior**: Once agents register in swarm_state, they automatically appear in hierarchy API
+### 4. useTheme Hook
+**Responsibility**: Component-level theme integration
+- Provides current theme data to components
+- Offers theme switching functions
+- Enables theme-aware conditional rendering
 
-## Data Flow
-
+### Component Interaction Flow
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        CURRENT FLOW (TO BE REPLACED)                     │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  RecoveryOrchestrator                                                    │
-│         │                                                                │
-│         ▼                                                                │
-│  _retry_agent() ──────► Direct Agent Spawn                               │
-│         │                    (No swarm_state registration)               │
-│         ▼                                                                │
-│  Recovery Dashboard Only                                                 │
-│  (Jobs NOT visible in hierarchy)                                         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        NEW FLOW (TO BE IMPLEMENTED)                      │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  RecoveryOrchestrator                                                    │
-│         │                                                                │
-│         │ spawn_agent("leadership/recovery_agent", recovery_task)        │
-│         ▼                                                                │
-│  ┌─────────────────┐                                                     │
-│  │ Recovery Agent  │ ◄──── Registers in swarm_state                      │
-│  │ (leadership/)   │                                                     │
-│  └────────┬────────┘                                                     │
-│           │                                                              │
-│           │ spawn_agent("leadership/executive_director", original_task)  │
-│           ▼                                                              │
-│  ┌───────────────────────┐                                               │
-│  │  Executive Director   │ ◄──── Registers in swarm_state                │
-│  │  (recovered task)     │       Parent: Recovery Agent                  │
-│  └────────┬──────────────┘                                               │
-│           │                                                              │
-│           ▼ (normal ED workflow)                                         │
-│  ┌───────────────────────┐                                               │
-│  │  Dev Manager, etc.    │ ◄──── All children visible in hierarchy       │
-│  └───────────────────────┘                                               │
-│                                                                          │
-│  Result: All agents visible in Agent Hierarchy Tree                      │
-│          + Recovery Dashboard still shows recovery-specific info         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+App
+├── ThemeProvider (manages global theme state)
+    ├── Header
+    │   └── ThemeSwitcher (user interaction)
+    ├── MainContent
+    │   └── Various Components (consume theme via useTheme)
+    └── Footer
 ```
+
+### Data Flow
+1. User selects theme in ThemeSwitcher
+2. ThemeSwitcher calls setTheme function
+3. ThemeProvider updates state and localStorage
+4. CSS custom properties updated on document root
+5. All components instantly reflect new theme
 
 ## File/Directory Structure
 
-### New Files to Create
 ```
 src/
-└── ensemble/
-    └── docs/
-        └── agents/
-            └── leadership/
-                └── recovery_agent.md    # New agent definition
+├── components/
+│   ├── layout/
+│   │   ├── Header.jsx (existing - modified)
+│   │   └── ThemeSwitcher.jsx (new)
+│   └── ...existing components
+├── contexts/
+│   └── ThemeContext.js (new)
+├── hooks/
+│   └── useTheme.js (new)
+├── themes/
+│   ├── index.js (new - theme registry)
+│   ├── themes.js (new - theme definitions)
+│   └── theme-variables.css (new - CSS custom properties)
+├── utils/
+│   └── themeUtils.js (new - helper functions)
+└── App.js (modified to include ThemeProvider)
 ```
 
-### Files to Modify
-```
-src/
-└── ensemble/
-    └── runtime/
-        └── swarm_recovery.py    # Use spawn_agent instead of direct retry
-```
+## Data Model
 
-### No Changes Required
-```
-src/
-└── field/
-    └── ensemble_ui/
-        └── backend/
-            └── routes/
-                └── activity.py   # Hierarchy endpoint already works
-        └── frontend/
-            └── src/
-                └── components/
-                    └── AgentHierarchyTree.jsx  # Already displays swarm_state
-```
-
-## Recovery Agent Definition
-
-### Input Format
-```json
+### Theme State Structure
+```javascript
+// ThemeContext state
 {
-  "recovery_task": {
-    "original_agent_id": "string - ID of the failed agent",
-    "original_session_id": "string - Session that contained the failed agent",
-    "agent_type": "string - Type of agent that failed",
-    "agent_name": "string - Name of agent that failed",
-    "input_data": "object - Original input to the failed agent",
-    "failure_reason": "string - Why the agent failed/stalled",
-    "recovery_strategy": "string - Strategy to apply (retry, enhance_prompt, etc.)",
-    "recovery_attempt": "integer - Which recovery attempt this is"
-  },
-  "output_directory": "string - Where to write artifacts"
+  currentTheme: 'dark', // string: theme identifier
+  availableThemes: [    // array: all available themes
+    { id: 'dark', name: 'Dark', preview: '#1a1a1a' },
+    { id: 'light', name: 'Light', preview: '#ffffff' },
+    { id: 'blue', name: 'Ocean Blue', preview: '#1e3a8a' },
+    { id: 'purple', name: 'Purple', preview: '#7c3aed' }
+  ],
+  setTheme: function,   // function: theme setter
+  isLoading: false      // boolean: theme initialization state
 }
 ```
 
-### Output Format
-```json
+### Theme Definition Structure
+```javascript
+// themes.js
 {
-  "status": "success|failed|needs_user_input",
-  "recovery_id": "string - ID of this recovery attempt",
-  "spawned_executive_id": "string - ID of the Executive Director spawned",
-  "original_agent_id": "string - Reference to original failed agent",
-  "message": "string - Status message",
-  "self_analysis": "string - Performance analysis"
-}
-```
-
-### Agent Definition Structure
-```markdown
-# Recovery Agent
-
-## Purpose
-Governs job recovery by spawning Executive Directors for recovered tasks.
-
-## Instructions
-1. Receive recovery task from RecoveryOrchestrator
-2. Extract original input_data and task context
-3. Spawn Executive Director with original task + recovery metadata
-4. Monitor Executive Director completion
-5. Report recovery status
-
-## Permissions
-- can_spawn: ["leadership/executive_director"]
-- can_write_code: false
-
-## Input Format
-(as above)
-
-## Output Format
-(as above)
-```
-
-## API Changes
-
-### No New Endpoints Required
-The existing `/api/activity/hierarchy` endpoint will automatically include recovered jobs once they register in swarm_state.
-
-### Metadata Enhancement
-Recovery-spawned agents should include metadata:
-```json
-{
-  "agent_id": "recovery-exec-abc123",
-  "agent_type": "leadership/executive_director",
-  "metadata": {
-    "is_recovery": true,
-    "original_failed_agent_id": "original-abc123",
-    "recovery_attempt": 1,
-    "recovery_strategy": "retry",
-    "failure_reason": "timeout"
-  }
-}
-```
-
-## Integration Points
-
-### RecoveryOrchestrator Changes
-```python
-# BEFORE (swarm_recovery.py)
-async def _process_recovery_task(self, task):
-    await self._retry_agent(task)  # Direct retry, no hierarchy integration
-
-# AFTER
-async def _process_recovery_task(self, task):
-    recovery_input = {
-        "recovery_task": {
-            "original_agent_id": task.agent_id,
-            "original_session_id": task.session_id,
-            "agent_type": task.agent_type,
-            "agent_name": task.agent_name,
-            "input_data": task.input_data,
-            "failure_reason": task.failure_reason,
-            "recovery_strategy": task.recovery_strategy,
-            "recovery_attempt": task.attempt_count
-        },
-        "output_directory": self.output_directory
+  dark: {
+    id: 'dark',
+    name: 'Dark Theme',
+    preview: '#1a1a1a',
+    variables: {
+      '--primary-bg': '#1a1a1a',
+      '--secondary-bg': '#2d2d2d',
+      '--text-primary': '#ffffff',
+      '--text-secondary': '#cccccc',
+      '--accent-color': '#007bff',
+      '--border-color': '#404040'
+      // ... all theme variables
     }
-    
-    # Spawn Recovery Agent (which spawns ED, which registers in swarm_state)
-    result = await self.spawn_agent(
-        "leadership/recovery_agent",
-        recovery_input
-    )
+  }
+  // ... other themes
+}
 ```
+
+### localStorage Schema
+```javascript
+// Stored as JSON string
+{
+  "ensemble-ui-theme": "dark"
+}
+```
+
+## API Design
+
+### ThemeProvider API
+```javascript
+// Context value provided to all components
+{
+  currentTheme: string,
+  availableThemes: Array<ThemeDefinition>,
+  setTheme: (themeId: string) => void,
+  isLoading: boolean
+}
+```
+
+### useTheme Hook API
+```javascript
+// Returns theme context + utility functions
+{
+  currentTheme: string,
+  themeData: ThemeDefinition,
+  availableThemes: Array<ThemeDefinition>,
+  setTheme: (themeId: string) => void,
+  isTheme: (themeId: string) => boolean
+}
+```
+
+### ThemeSwitcher Component Props
+```javascript
+{
+  variant?: 'dropdown' | 'buttons', // default: 'dropdown'
+  size?: 'sm' | 'md' | 'lg',        // default: 'md'
+  showLabels?: boolean,             // default: true
+  className?: string                // additional CSS classes
+}
+```
+
+## CSS Architecture
+
+### CSS Custom Properties Strategy
+All theme-related styling will use CSS custom properties defined on the `:root` element:
+
+```css
+/* theme-variables.css */
+:root {
+  /* Default (dark) theme */
+  --primary-bg: #1a1a1a;
+  --secondary-bg: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  /* ... */
+}
+
+/* Bootstrap integration */
+:root {
+  --bs-primary: var(--accent-color);
+  --bs-secondary: var(--secondary-bg);
+  --bs-body-bg: var(--primary-bg);
+  --bs-body-color: var(--text-primary);
+}
+```
+
+### Theme Application
+Themes are applied by updating CSS custom properties on the document root:
+```javascript
+// Apply theme
+Object.entries(themeDefinition.variables).forEach(([property, value]) => {
+  document.documentElement.style.setProperty(property, value);
+});
+```
+
+## Deployment Strategy
+
+### Build Process
+- CSS custom properties file included in main CSS bundle
+- Theme definitions bundled with JavaScript
+- No additional build steps required
+
+### Environment Configuration
+- Theme persistence works in all environments (uses localStorage)
+- Default theme configurable via environment variable
+- Theme availability configurable per environment
+
+### Progressive Enhancement
+- Graceful degradation if localStorage unavailable
+- Default theme loads immediately, user preference applied after hydration
+- Works with server-side rendering (theme applied after client-side hydration)
 
 ## Testing Strategy
 
-### Unit Tests
-1. Recovery Agent definition parsing
-2. Input/output format validation
-3. Permission enforcement (can only spawn ED)
+### Unit Testing (Jest + React Testing Library)
+```javascript
+// ThemeProvider tests
+- ✓ Provides theme context to children
+- ✓ Persists theme selection to localStorage
+- ✓ Loads theme from localStorage on initialization
+- ✓ Falls back to default theme when localStorage corrupt
 
-### Integration Tests
-1. RecoveryOrchestrator → Recovery Agent spawning
-2. Recovery Agent → Executive Director spawning
-3. Swarm state registration verification
+// useTheme hook tests
+- ✓ Returns current theme data
+- ✓ Provides theme switching function
+- ✓ Updates when theme changes
 
-### End-to-End Tests
-1. Trigger a recoverable failure
-2. Verify job enters recovery queue
-3. Verify Recovery Agent spawns
-4. Verify Executive Director appears in hierarchy
-5. Verify recovery metadata preserved
+// ThemeSwitcher tests
+- ✓ Renders all available themes
+- ✓ Shows current theme as selected
+- ✓ Triggers theme change on selection
+- ✓ Responsive behavior on mobile/desktop
+```
 
-## Backward Compatibility
+### Integration Testing
+```javascript
+// End-to-end theme switching
+- ✓ Theme switcher updates all components visually
+- ✓ Theme preference persists across page reload
+- ✓ All Bootstrap components render correctly in each theme
+- ✓ Accessibility standards maintained across themes
+```
 
-### Preserved Functionality
-- Recovery queue continues to work
-- Recovery dashboard continues to show recovery status
-- Recovery history is still populated
-- Existing UI components unchanged
+### Visual Regression Testing
+- Screenshot tests for each theme across key pages
+- Contrast ratio validation for accessibility
+- Component rendering validation in all themes
 
-### New Behavior
-- Recovered jobs NOW also appear in Agent Hierarchy
-- Recovery metadata available in hierarchy view
+## Migration Strategy
+
+### Phase 1: Infrastructure (Iteration 1)
+1. Create ThemeProvider and context
+2. Add CSS custom properties system
+3. Create useTheme hook
+4. Update App.js to include ThemeProvider
+
+### Phase 2: Theme Switcher (Iteration 2)
+1. Build ThemeSwitcher component
+2. Add to header component
+3. Implement theme definitions (dark + light)
+4. Add localStorage persistence
+
+### Phase 3: Component Integration (Iteration 3)
+1. Update existing components to use theme variables
+2. Add additional themes (blue, purple)
+3. Test all components across themes
+4. Accessibility validation
+
+### Phase 4: Polish & Optimization (Iteration 4)
+1. Add smooth transitions
+2. Performance optimization
+3. Mobile experience refinement
+4. Documentation
+
+## Alternatives Considered
+
+### 1. CSS-in-JS Approach (Styled Components/Emotion)
+**Pros**: JavaScript theme management, dynamic styling
+**Cons**: Performance impact on theme switching, larger bundle size, runtime style generation
+**Decision**: CSS variables chosen for instant switching performance
+
+### 2. SCSS Variables + Build-time Generation
+**Pros**: Compile-time optimization
+**Cons**: Requires build step for theme switching, no runtime theme changes
+**Decision**: CSS custom properties chosen for runtime flexibility
+
+### 3. Redux for State Management
+**Pros**: Predictable state updates, dev tools, scalability
+**Cons**: Overkill for single state concern, additional bundle size
+**Decision**: Context API chosen for simplicity
+
+### 4. Multiple CSS Files per Theme
+**Pros**: Complete separation of theme styles
+**Cons**: Flash of unstyled content during theme switching, bundle size
+**Decision**: CSS variables chosen for instant switching
 
 ## Risks and Mitigations
 
-### Risk 1: spawn_agent Availability
-**Issue**: RecoveryOrchestrator may not have access to spawn_agent tool
-**Mitigation**: Ensure RecoveryOrchestrator runs in a context with tool access, or create a spawning utility
+### Risk 1: CSS Custom Property Browser Support
+**Risk**: Older browsers may not support CSS custom properties
+**Mitigation**: Graceful degradation to default theme, minimal browser support requirements for Ensemble AI
 
-### Risk 2: Session Management
-**Issue**: Recovered jobs may create orphaned sessions
-**Mitigation**: Recovery Agent should reuse existing session or create with proper parent reference
+### Risk 2: Bootstrap Theme Integration Complexity
+**Risk**: Bootstrap's CSS might not integrate smoothly with custom properties
+**Mitigation**: Comprehensive testing with Bootstrap components, fallback styling where needed
 
-### Risk 3: Infinite Recovery Loops
-**Issue**: Recovery Agent could fail, triggering more recovery
-**Mitigation**: Mark Recovery Agent as non-recoverable or add loop detection
+### Risk 3: Performance Impact of Large Theme Objects
+**Risk**: Theme definitions could become large and impact performance
+**Mitigation**: Lazy loading of theme definitions, optimization of CSS custom property updates
+
+### Risk 4: Theme Persistence Reliability
+**Risk**: localStorage might be unavailable or corrupted
+**Mitigation**: Error handling with fallback to default theme, validation of stored theme data
+
+### Risk 5: Accessibility Compliance Across Themes
+**Risk**: Some themes might not meet accessibility contrast requirements
+**Mitigation**: Automated contrast testing, accessibility validation in CI/CD, careful theme design
+
+## Open Questions
+
+### 1. Theme Transition Animation Style
+**Question**: Should theme switching include smooth transitions for colors?
+**Options**: 
+- A) Instant switching (better performance)
+- B) Smooth color transitions (better UX)
+**Recommendation**: Start with instant switching, add transitions if requested
+
+### 2. Theme Switcher UI Style
+**Question**: What's the preferred UI for theme selection?
+**Options**:
+- A) Dropdown menu (compact)
+- B) Button group (visual previews)
+- C) Modal with preview (detailed)
+**Recommendation**: Dropdown for header space efficiency, with small color preview dots
+
+### 3. Mobile Theme Switcher Placement
+**Question**: Where should theme switcher appear on mobile?
+**Options**:
+- A) Mobile header/navbar
+- B) Settings/menu drawer
+- C) Floating action button
+**Recommendation**: Mobile header with collapsed styling
+
+### 4. Theme Naming Convention
+**Question**: How should themes be named for user clarity?
+**Options**:
+- A) Descriptive names (Dark, Light, Ocean Blue)
+- B) Brand names (Professional, Creative, Focus)
+- C) Simple identifiers (Theme 1, Theme 2, Theme 3)
+**Recommendation**: Descriptive names with visual preview indicators
+
+### 5. Default Theme Selection
+**Question**: What should be the default theme for new users?
+**Options**:
+- A) Current dark theme (maintains existing experience)
+- B) Light theme (broader user preference)
+- C) System preference detection (OS-based)
+**Recommendation**: Current dark theme to maintain consistency
+
+## Implementation Priority
+
+### Must Have (MVP)
+- ThemeProvider and context system
+- Dark and Light themes
+- Theme switcher in header
+- localStorage persistence
+- Basic component theme integration
+
+### Should Have (V1.1)
+- Additional themes (2-3 options)
+- Smooth theme transitions
+- Mobile-optimized theme switcher
+- Complete component theme coverage
+
+### Could Have (Future)
+- System preference detection
+- Theme preview before selection
+- Advanced theme customization
+- Theme import/export functionality
 
 ## Success Criteria
 
-1. ✅ When a job is recovered, it appears in the main Agent Hierarchy tree
-2. ✅ Users can track recovery progress the same way as regular jobs
-3. ✅ Recovery metadata (attempt count, original failure) is preserved
-4. ✅ No regression in existing recovery functionality
-5. ✅ All tests pass
+### Technical Success
+- ✅ All existing components render correctly in all themes
+- ✅ Theme switching is instant (<100ms visual update)
+- ✅ No JavaScript errors during theme operations
+- ✅ localStorage persistence 100% reliable
+- ✅ Bundle size increase <50KB
 
-## Open Questions (None - Decisions Made)
+### User Experience Success
+- ✅ Theme switcher is discoverable and intuitive
+- ✅ Visual consistency maintained across all themes
+- ✅ Accessibility standards met (WCAG 2.1 AA)
+- ✅ Responsive behavior on all device sizes
+- ✅ No layout shifts during theme switching
 
-1. **Session handling**: Recovery Agent creates new session linked to recovery queue entry
-2. **Recovery Agent failures**: Mark Recovery Agent as non-recoverable to prevent loops
-3. **UI changes**: None required - existing UI auto-displays registered agents
+### Business Success
+- ✅ Feature is functionally complete within timeline
+- ✅ No regression in existing functionality
+- ✅ User preference persistence works reliably
+- ✅ Maintenance overhead remains minimal
+
+This architecture provides a robust, performant, and maintainable solution for the Theme Switcher feature that integrates seamlessly with the existing React + Bootstrap architecture while providing instant theme switching and reliable persistence.

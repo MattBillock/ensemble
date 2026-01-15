@@ -1,103 +1,82 @@
-# Memory Leak Investigation - Milestone Plan
+# Theme Switcher UI Feature - Milestone Plan
 
 ## Project Overview
-Investigate and address potential memory leaks in the ensemble agent system to ensure completed agents are not held in execution memory longer than necessary.
+Implement a theme switcher component that allows users to select from multiple color schemes, with preference persistence and seamless integration into the existing React Bootstrap UI.
 
-## Milestone 1: Memory Audit and Analysis
-**Duration**: 2-3 days  
-**Priority**: High  
+## Milestone Breakdown
 
-### Objective
-Profile current memory usage patterns and identify specific memory leak sources in the agent system.
+### Milestone 1: Theme Infrastructure & Core Switcher Component
+**Duration**: 2-3 days
+**Objective**: Build the foundational theme system and basic switcher UI component
 
-### Deliverables
-1. Memory profiling tool implementation
-2. Memory usage baseline documentation
-3. Circular reference detection analysis
-4. Object retention analysis report
-5. Hotspot identification for memory accumulation
+**Deliverables**:
+- Theme provider context system using React Context API
+- CSS variable-based theme system supporting multiple color schemes
+- Basic theme switcher component (dropdown/button group) in header
+- LocalStorage persistence for theme preferences
+- Default dark theme (preserving existing colors) + light theme
 
-### Acceptance Criteria
-- [ ] Memory profiling tool can track agent lifecycle memory usage
-- [ ] Baseline memory usage documented for normal operations
-- [ ] Identified all objects persisting after agent completion
-- [ ] Documented specific memory leak locations with evidence
-- [ ] Performance impact of profiling measured and acceptable
+**Acceptance Criteria**:
+- Theme context provides current theme and switching functionality
+- CSS variables are defined for all color tokens
+- Theme switcher renders in UI header with 2 theme options
+- Selected theme persists across page refreshes
+- Basic light and dark themes are functional
 
-### Dependencies
-- None (starting milestone)
+**Dependencies**: None
 
 ---
 
-## Milestone 2: Cleanup Implementation
-**Duration**: 3-4 days  
-**Priority**: High  
+### Milestone 2: Complete Theme Palette & Component Integration
+**Duration**: 3-4 days
+**Objective**: Complete all theme options and update existing components to use theme system
 
-### Objective
-Implement proper cleanup mechanisms for identified memory leaks and enhance existing memory management.
+**Deliverables**:
+- Additional 2-3 themed color schemes (blue, purple, branded options)
+- Update all existing React components to use theme variables
+- Ensure Bootstrap component compatibility with themes
+- Visual feedback for currently selected theme
+- Smooth transition animations for theme switching
 
-### Deliverables
-1. Enhanced agent cleanup methods
-2. Weak reference implementations where appropriate
-3. Improved message history pruning
-4. Tool result cleanup mechanisms
-5. Event bus memory management
-6. Metrics tracker bounded storage
+**Acceptance Criteria**:
+- At least 4 total themes available (dark, light, + 2 custom)
+- All existing components render correctly in all themes
+- Theme transitions are smooth and instant
+- Current theme is clearly indicated in switcher UI
+- No layout or functionality regressions
 
-### Acceptance Criteria
-- [ ] All agent instances properly cleaned up within 30 seconds of completion
-- [ ] Circular references broken using weak references
-- [ ] Tool execution results have bounded memory usage
-- [ ] Event bus prevents unbounded accumulation
-- [ ] Metrics tracking uses rolling windows or periodic cleanup
-- [ ] No regression in agent execution performance
-
-### Dependencies
-- Milestone 1 (requires analysis results to know what to fix)
+**Dependencies**: Milestone 1 complete
 
 ---
 
-## Milestone 3: Monitoring and Validation
-**Duration**: 2-3 days  
-**Priority**: Medium  
+### Milestone 3: Polish, Testing & Accessibility
+**Duration**: 2-3 days
+**Objective**: Finalize user experience, ensure accessibility compliance, and comprehensive testing
 
-### Objective
-Implement monitoring systems and validate that memory leaks are resolved through comprehensive testing.
+**Deliverables**:
+- Responsive design for mobile theme switcher
+- Accessibility compliance (WCAG contrast requirements)
+- Comprehensive test coverage for theme system
+- Performance optimization for theme switching
+- Documentation and code cleanup
 
-### Deliverables
-1. Memory monitoring dashboard/alerts
-2. Load testing framework for memory validation
-3. Automated memory regression tests
-4. Performance benchmarking suite
-5. Memory management documentation
+**Acceptance Criteria**:
+- Theme switcher works on mobile devices
+- All themes meet accessibility contrast requirements
+- Test suite covers theme functionality and persistence
+- Theme switching has minimal performance impact
+- Code is documented and production-ready
 
-### Acceptance Criteria
-- [ ] Monitoring system tracks memory usage trends
-- [ ] Load testing shows stable memory usage over 1000+ agent executions
-- [ ] Memory usage returns to baseline after agent completion
-- [ ] Performance benchmarks show <5% execution time regression
-- [ ] Complete documentation of memory management practices
-
-### Dependencies
-- Milestone 2 (requires cleanup implementations to validate)
-
----
+**Dependencies**: Milestone 2 complete
 
 ## Risk Assessment
+- **Low Risk**: Theme system integration (well-established patterns)
+- **Medium Risk**: Ensuring all components work across themes (extensive testing needed)
+- **Low Risk**: Performance impact (CSS variables are efficient)
 
-### High Risk Areas
-1. **ThreadPoolExecutor Management**: Complex lifecycle with potential for resource leaks
-2. **Agent Parent/Child Relationships**: Circular references between related agents
-3. **Tool Result Caching**: Accumulation without bounds checking
-
-### Mitigation Strategies
-1. Implement explicit shutdown procedures for all executors
-2. Use weak references for parent/child relationships
-3. Add bounded caches with LRU eviction policies
-
-## Success Metrics
-- Memory usage remains stable (<5% growth) during long-running operations
-- Agent cleanup completes within 30 seconds
-- No detectable memory leaks after 1000+ agent executions
-- System performance regression <5%
-- Zero service disruptions during implementation
+## Success Criteria
+- All acceptance criteria from requirements document are met
+- No degradation of existing functionality
+- User can seamlessly switch between 4+ themes
+- Preferences persist reliably across sessions
+- Professional visual quality maintained across all themes

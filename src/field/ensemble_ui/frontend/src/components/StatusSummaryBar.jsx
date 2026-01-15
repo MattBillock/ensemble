@@ -12,7 +12,8 @@ const STAGE_ICONS = {
 };
 
 const StatusSummaryBar = ({ agentStatus = {}, projectsSummary = null }) => {
-  const agents = agentStatus?.agents || {};
+  // Handle both structures: { agents: {...} } or direct agents object
+  const agents = agentStatus?.agents || agentStatus || {};
   const agentEntries = Object.entries(agents);
 
   // Calculate status counts

@@ -5,8 +5,8 @@
 #   │    Backend      │    Frontend     │
 #   │   (port 8001)   │   (port 5173)   │
 #   ├─────────────────┼─────────────────┤
-#   │      Logs       │      Shell      │
-#   │                 │                 │
+#   │      Logs       │     Claude      │
+#   │                 │  (ensemble root)│
 #   └─────────────────┴─────────────────┘
 
 SESSION_NAME="ensemble-dash"
@@ -46,23 +46,19 @@ tmux split-window -v -t "$SESSION_NAME:0.1" -c "$ENSEMBLE_DIR"
 # 0.2 = bottom-left (logs)
 # 0.3 = bottom-right (shell)
 
-# Start backend in top-left (pane 0)
-tmux send-keys -t "$SESSION_NAME:0.0" "source venv/bin/activate && python -m uvicorn src.field.ensemble_ui.backend.main:app --host 0.0.0.0 --port 8001 --reload" Enter
+# Source aliases and start backend in top-left (pane 0)
+tmux send-keys -t "$SESSION_NAME:0.0" "source $ENSEMBLE_DIR/.ensemble_aliases && ens-backend" Enter
 
-# Start frontend in top-right (pane 1)
-tmux send-keys -t "$SESSION_NAME:0.1" "npm run dev" Enter
+# Source aliases and start frontend in top-right (pane 1)
+tmux send-keys -t "$SESSION_NAME:0.1" "source $ENSEMBLE_DIR/.ensemble_aliases && ens-frontend" Enter
 
 # Start log tail in bottom-left (pane 2)
-# Watch both backend logs and any runtime logs
-tmux send-keys -t "$SESSION_NAME:0.2" "mkdir -p logs && touch logs/ensemble-backend.log && echo 'Waiting for logs...' && sleep 2 && tail -f logs/ensemble-backend.log logs/ensemble-runtime.log logs/ensemble-agents.log 2>/dev/null" Enter
+tmux send-keys -t "$SESSION_NAME:0.2" "source $ENSEMBLE_DIR/.ensemble_aliases && ens-logs" Enter
 
-# Setup shell in bottom-right (pane 3)
-tmux send-keys -t "$SESSION_NAME:0.3" "source venv/bin/activate && clear" Enter
-tmux send-keys -t "$SESSION_NAME:0.3" "echo '🎺 ENSEMBLE DASHBOARD'" Enter
-tmux send-keys -t "$SESSION_NAME:0.3" "echo ''" Enter
-tmux send-keys -t "$SESSION_NAME:0.3" "echo 'Panes: Ctrl-b + arrow keys to navigate'" Enter
-tmux send-keys -t "$SESSION_NAME:0.3" "echo 'Detach: Ctrl-b + d'" Enter
-tmux send-keys -t "$SESSION_NAME:0.3" "echo 'Reattach: ens-dash-attach'" Enter
+# Setup claude pane in bottom-right (pane 3) - in ensemble root
+tmux send-keys -t "$SESSION_NAME:0.3" "cd $ENSEMBLE_DIR && source .ensemble_aliases && clear" Enter
+tmux send-keys -t "$SESSION_NAME:0.3" "echo '🤖 CLAUDE PANE - Ensemble Root'" Enter
+tmux send-keys -t "$SESSION_NAME:0.3" "echo 'Ready for: claude'" Enter
 tmux send-keys -t "$SESSION_NAME:0.3" "echo ''" Enter
 
 # Select the shell pane (bottom-right) as active
