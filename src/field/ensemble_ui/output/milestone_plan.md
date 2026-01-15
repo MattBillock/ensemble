@@ -1,174 +1,103 @@
-# Ensemble V1 Cleanup - Milestone Plan
+# Memory Leak Investigation - Milestone Plan
 
-## Project: Ensemble V1 Cleanup
-## Project ID: 430c992f
-## Created: 2025-01-15
+## Project Overview
+Investigate and address potential memory leaks in the ensemble agent system to ensure completed agents are not held in execution memory longer than necessary.
 
----
-
-## Overview
-
-This cleanup project addresses 12+ discrete technical debt items organized into 4 priority phases. Each task has detailed specifications in `/docs/current/v1_cleanup_prompts/`.
-
----
-
-## Milestone 1: Critical Bug Fixes (Phase 1)
+## Milestone 1: Memory Audit and Analysis
+**Duration**: 2-3 days  
+**Priority**: High  
 
 ### Objective
-Fix all critical bugs that can crash the UI or cause silent failures.
-
-### Tasks (Can run in parallel - touch different files)
-| Task ID | Prompt File | Description | Files |
-|---------|-------------|-------------|-------|
-| 1.1 | 01_frontend_division_by_zero.md | Fix divide by zero in progress bars | HorizontalTimelineView.jsx, App.jsx, AchievementsDashboard.jsx |
-| 1.2 | 02_frontend_http_validation.md | Add HTTP response validation | api.js, dashboard components |
-| 1.3 | 03_backend_error_handling.md | Fix error responses and bare excepts | backend/main.py |
-| 1.4 | 04_runtime_activity_tracker.md | Fix request filtering and cleanup | activity_tracker.py |
+Profile current memory usage patterns and identify specific memory leak sources in the agent system.
 
 ### Deliverables
-- [ ] No NaN values in progress bars
-- [ ] HTTP errors handled gracefully in frontend
-- [ ] No bare `except:` clauses in backend
-- [ ] Request filtering and cleanup working in activity tracker
+1. Memory profiling tool implementation
+2. Memory usage baseline documentation
+3. Circular reference detection analysis
+4. Object retention analysis report
+5. Hotspot identification for memory accumulation
 
 ### Acceptance Criteria
-- No division by zero errors in any scenario
-- HTTP errors return meaningful messages
-- All exceptions properly typed and logged
-- Memory doesn't grow indefinitely for completed requests
+- [ ] Memory profiling tool can track agent lifecycle memory usage
+- [ ] Baseline memory usage documented for normal operations
+- [ ] Identified all objects persisting after agent completion
+- [ ] Documented specific memory leak locations with evidence
+- [ ] Performance impact of profiling measured and acceptable
 
 ### Dependencies
-None - this is the first milestone
+- None (starting milestone)
 
 ---
 
-## Milestone 2: High Priority Cleanup (Phase 2)
+## Milestone 2: Cleanup Implementation
+**Duration**: 3-4 days  
+**Priority**: High  
 
 ### Objective
-Remove dead code, add defensive null checks, update documentation.
-
-### Tasks
-| Task ID | Prompt File | Description | Files |
-|---------|-------------|-------------|-------|
-| 2.1 | 05_frontend_null_handling.md | Add null checks across components | Various React components |
-| 2.2 | 06_frontend_redux_removal.md | Remove unused Redux infrastructure | store/, main.jsx |
-| 2.3 | 07_agent_registry_update.md | Update AGENT_REGISTRY.md | docs/current/AGENT_REGISTRY.md |
-| 2.4 | 08_backend_runtime_cleanup.md | Fix system polish and metrics | Backend/runtime files |
+Implement proper cleanup mechanisms for identified memory leaks and enhance existing memory management.
 
 ### Deliverables
-- [ ] No null reference errors in frontend
-- [ ] Redux infrastructure removed (dead code eliminated)
-- [ ] Agent registry documents all 19+ agents
-- [ ] Backend runtime cleanup complete
+1. Enhanced agent cleanup methods
+2. Weak reference implementations where appropriate
+3. Improved message history pruning
+4. Tool result cleanup mechanisms
+5. Event bus memory management
+6. Metrics tracker bounded storage
 
 ### Acceptance Criteria
-- Frontend renders without null errors
-- Store directory removed, main.jsx simplified
-- AGENT_REGISTRY.md complete and accurate
-- Backend metrics and cleanup working
+- [ ] All agent instances properly cleaned up within 30 seconds of completion
+- [ ] Circular references broken using weak references
+- [ ] Tool execution results have bounded memory usage
+- [ ] Event bus prevents unbounded accumulation
+- [ ] Metrics tracking uses rolling windows or periodic cleanup
+- [ ] No regression in agent execution performance
 
 ### Dependencies
-- Requires Milestone 1 completion
+- Milestone 1 (requires analysis results to know what to fix)
 
 ---
 
-## Milestone 3: Medium Priority Polish (Phase 3)
+## Milestone 3: Monitoring and Validation
+**Duration**: 2-3 days  
+**Priority**: Medium  
 
 ### Objective
-Clean up terminology, unused components, and improve API hardening.
-
-### Tasks
-| Task ID | Prompt File | Description | Files |
-|---------|-------------|-------------|-------|
-| 3.1 | 09_agent_definitions_cleanup.md | Fix terminology in agent definitions | Agent markdown files |
-| 3.2 | 10_frontend_component_cleanup.md | Remove/integrate unused components | Various React components |
-| 3.3 | 11_api_service_hardening.md | Improve API error handling | Frontend API service |
+Implement monitoring systems and validate that memory leaks are resolved through comprehensive testing.
 
 ### Deliverables
-- [ ] Consistent terminology in agent definitions
-- [ ] Unused components removed or integrated
-- [ ] API service has retry logic and better error handling
+1. Memory monitoring dashboard/alerts
+2. Load testing framework for memory validation
+3. Automated memory regression tests
+4. Performance benchmarking suite
+5. Memory management documentation
 
 ### Acceptance Criteria
-- No drum corps terminology in agent definitions
-- No orphaned components
-- API calls handle failures gracefully
+- [ ] Monitoring system tracks memory usage trends
+- [ ] Load testing shows stable memory usage over 1000+ agent executions
+- [ ] Memory usage returns to baseline after agent completion
+- [ ] Performance benchmarks show <5% execution time regression
+- [ ] Complete documentation of memory management practices
 
 ### Dependencies
-- Requires Milestone 2 completion
-
----
-
-## Milestone 4: Low Priority Improvements (Phase 4)
-
-### Objective
-Add documentation and make hardcoded values configurable.
-
-### Tasks
-| Task ID | Prompt File | Description | Files |
-|---------|-------------|-------------|-------|
-| 4.1 | 13_documentation.md | Add missing documentation | backend/main.py, CLAUDE.md |
-| 4.2 | 14_configuration.md | Make hardcoded values configurable | Various files |
-
-### Deliverables
-- [ ] All API endpoints have docstrings
-- [ ] Hardcoded values in configuration
-- [ ] CLAUDE.md updated
-
-### Acceptance Criteria
-- FastAPI /docs shows endpoint documentation
-- Configuration via environment variables
-- Updated developer documentation
-
-### Dependencies
-- Requires Milestone 3 completion
-
----
-
-## Execution Strategy
-
-### Phase 1 Parallelization
-Tasks 1.1-1.4 touch different files and can run in parallel:
-- Frontend tasks (1.1, 1.2): Different components, can parallel
-- Backend task (1.3): Independent file
-- Runtime task (1.4): Independent file
-
-### Git Strategy
-- Commit after each task completion
-- Descriptive commit messages per task
-- Branch: main (cleanup tasks)
-
-### Verification
-Each task has its own test plan in the prompt file. Must verify:
-1. Run test plan from prompt
-2. Ensure no regression
-3. Manual UI verification where applicable
+- Milestone 2 (requires cleanup implementations to validate)
 
 ---
 
 ## Risk Assessment
 
-### High Risk
-- Task 1.4 (Activity Tracker): Complex state management changes
-- Task 2.2 (Redux Removal): Must verify no usage before removal
+### High Risk Areas
+1. **ThreadPoolExecutor Management**: Complex lifecycle with potential for resource leaks
+2. **Agent Parent/Child Relationships**: Circular references between related agents
+3. **Tool Result Caching**: Accumulation without bounds checking
 
-### Medium Risk
-- Task 1.2 (HTTP Validation): Many files to update
-- Task 2.4 (Backend Runtime): Complex system
+### Mitigation Strategies
+1. Implement explicit shutdown procedures for all executors
+2. Use weak references for parent/child relationships
+3. Add bounded caches with LRU eviction policies
 
-### Low Risk
-- Task 1.1 (Division by Zero): Simple fixes
-- Documentation tasks: No code impact
-
----
-
-## Timeline Estimate
-
-| Milestone | Estimated Duration | Notes |
-|-----------|-------------------|-------|
-| Milestone 1 | 2-4 hours | Critical path, parallel execution |
-| Milestone 2 | 3-5 hours | More complex, verification needed |
-| Milestone 3 | 2-3 hours | Polish work |
-| Milestone 4 | 1-2 hours | Documentation focus |
-
-**Total Estimated: 8-14 hours**
+## Success Metrics
+- Memory usage remains stable (<5% growth) during long-running operations
+- Agent cleanup completes within 30 seconds
+- No detectable memory leaks after 1000+ agent executions
+- System performance regression <5%
+- Zero service disruptions during implementation

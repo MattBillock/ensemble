@@ -1,320 +1,284 @@
-# Frontend Tasks - Foundation & Content Creation (Milestone 1)
+# Frontend Tasks - Foundation Infrastructure
 
-## Overview
-This milestone focuses on expanding the existing achievement system with 100 new themed achievements (50 DCI + 50 NABBA) and integrating them with the current UI components. The work is primarily content creation and frontend enhancement rather than new system development.
+## Milestone Overview
+Establish core frontend infrastructure for enhanced git workflows, state management, and security including frequent coherent commits, branch-based development, state persistence & recovery, and secrets management.
 
 ## Task Breakdown
 
-### Phase 1: Foundation & Schema Enhancement
+### Core Infrastructure Components
 
-#### Task 1: Enhance Achievement Type Definitions
-**Description**: Update TypeScript interfaces and types to support new DCI/NABBA metadata fields
-**Acceptance Criteria**:
-- Achievement interface includes theme_metadata fields (corps_name, instrument_section, performance_type, difficulty_level)
-- Category enum includes 'dci' and 'nabba' options
-- Subcategory type definitions for both DCI and NABBA classifications
-- Type safety maintained across all achievement-related components
-
-**Dependencies**: None
-**Complexity**: Simple
-**Files to Modify**:
-- `frontend/types/achievements.ts`
-
-#### Task 2: Create Achievement Schema Validation
-**Description**: Build client-side validation for new achievement schema format
-**Acceptance Criteria**:
-- Validates required fields for DCI achievements (corps_name, performance_type)
-- Validates required fields for NABBA achievements (instrument_section, difficulty_level)
-- Provides clear error messages for invalid achievement data
-- Integration with existing validation patterns
-
-**Dependencies**: Task 1
+#### Task 1: Project State Management Service
+**Description**: Create a frontend service to manage project state, task tracking, and milestone progress
+**Acceptance Criteria**: 
+- Service can create, read, update project state
+- Tracks tasks with status, assignments, and dependencies
+- Maintains milestone progress with completion metrics
+- Provides state persistence and recovery capabilities
+**Dependencies**: None (foundational)
 **Complexity**: Medium
-**Files to Create**:
-- `frontend/utils/achievementValidator.ts`
 
-### Phase 2: Content Structure & Assets
-
-#### Task 3: Create DCI Category Icons and Assets
-**Description**: Design and implement icon system for DCI achievement categories
+#### Task 2: Git Workflow Management Interface
+**Description**: Build UI components for git branch management, commit history, and merge operations
 **Acceptance Criteria**:
-- Icons for 5 DCI subcategories (performance, technical, competition, corps_pride, innovation)
-- Consistent with existing emoji/SVG icon style
-- Accessible with proper alt text and ARIA labels
-- Optimized file sizes for web performance
-
-**Dependencies**: None
-**Complexity**: Simple
-**Files to Create**:
-- `frontend/assets/icons/dci/performance.svg`
-- `frontend/assets/icons/dci/technical.svg`
-- `frontend/assets/icons/dci/competition.svg`
-- `frontend/assets/icons/dci/corps_pride.svg`
-- `frontend/assets/icons/dci/innovation.svg`
-
-#### Task 4: Create NABBA Category Icons and Assets
-**Description**: Design and implement icon system for NABBA achievement categories
-**Acceptance Criteria**:
-- Icons for 5 NABBA subcategories (musical, leadership, ensemble, artistic, community)
-- Matches DCI icon style for consistency
-- Proper accessibility attributes
-- Web-optimized formats
-
-**Dependencies**: Task 3 (for style consistency)
-**Complexity**: Simple
-**Files to Create**:
-- `frontend/assets/icons/nabba/musical.svg`
-- `frontend/assets/icons/nabba/leadership.svg`
-- `frontend/assets/icons/nabba/ensemble.svg`
-- `frontend/assets/icons/nabba/artistic.svg`
-- `frontend/assets/icons/nabba/community.svg`
-
-### Phase 3: UI Component Enhancements
-
-#### Task 5: Enhance Achievement Card Component
-**Description**: Update AchievementCard to display DCI/NABBA specific metadata
-**Acceptance Criteria**:
-- Shows corps name for DCI achievements
-- Shows instrument section for NABBA achievements
-- Displays difficulty level badge
-- Maintains existing card layout and styling
-- Responsive design for all screen sizes
-
-**Dependencies**: Task 1, Task 2
-**Complexity**: Medium
-**Files to Modify**:
-- `frontend/components/achievements/AchievementCard.tsx`
-
-#### Task 6: Enhance Category Filter Component
-**Description**: Add DCI and NABBA categories to existing filter system
-**Acceptance Criteria**:
-- New filter options for DCI and NABBA categories
-- Subcategory filtering within each main category
-- Maintains existing filter behavior for other categories
-- Clear visual distinction between category types
-- Filter state persistence during session
-
-**Dependencies**: Task 1, Task 3, Task 4
-**Complexity**: Medium
-**Files to Modify**:
-- `frontend/components/achievements/CategoryFilter.tsx`
-
-#### Task 7: Enhance Achievement Gallery Component
-**Description**: Update gallery to handle increased content volume and new categories
-**Acceptance Criteria**:
-- Lazy loading for improved performance with 100+ additional achievements
-- Category-based grouping and display
-- Search functionality works with new metadata fields
-- Maintains existing sorting and pagination
-- Smooth performance with expanded content
-
-**Dependencies**: Task 5, Task 6
+- Display current branch status and commit history
+- Allow branch creation, switching, and deletion through UI
+- Show merge conflicts and resolution options
+- Visualize branch topology and relationships
+**Dependencies**: Task 1 (project state)
 **Complexity**: Complex
-**Files to Modify**:
-- `frontend/components/achievements/AchievementGallery.tsx`
 
-### Phase 4: Category Management & Display
-
-#### Task 8: Create DCI Category Overview Component
-**Description**: Build dedicated component for DCI category information and navigation
+#### Task 3: Cost Tracking Dashboard Components
+**Description**: Create components to display API costs, usage metrics, and budget tracking
 **Acceptance Criteria**:
-- Overview of DCI achievement categories with descriptions
-- Progress tracking for DCI-specific achievements
-- Links to corps-specific achievements
-- Educational content about DCI for new users
-
-**Dependencies**: Task 1, Task 3
+- Real-time cost display with provider breakdown
+- Budget alerts and threshold warnings
+- Historical usage charts and trends
+- Export capabilities for cost reports
+**Dependencies**: Task 1 (project state)
 **Complexity**: Medium
-**Files to Create**:
-- `frontend/components/achievements/DCICategoryOverview.tsx`
 
-#### Task 9: Create NABBA Category Overview Component
-**Description**: Build dedicated component for NABBA category information and navigation
+#### Task 4: State Persistence Service
+**Description**: Implement frontend service for checkpoint creation, state backup, and recovery operations
 **Acceptance Criteria**:
-- Overview of NABBA achievement categories with descriptions
-- Musical instrument section organization
-- Leadership and community achievement highlighting
-- Educational content about marching band culture
-
-**Dependencies**: Task 1, Task 4
+- Create and restore application state checkpoints
+- Handle interrupted operations gracefully
+- Provide manual and automatic backup triggers
+- Display recovery options when state corruption detected
+**Dependencies**: Task 1 (project state)
 **Complexity**: Medium
-**Files to Create**:
-- `frontend/components/achievements/NABBACategoryOverview.tsx`
 
-#### Task 10: Enhance Achievement Notification System
-**Description**: Update notification components to handle DCI/NABBA achievements
+#### Task 5: Secrets Management Interface
+**Description**: Build secure UI for managing API keys, credentials, and configuration secrets
 **Acceptance Criteria**:
-- Custom notification styles for DCI achievements (corps colors/themes)
-- NABBA achievement notifications with instrument-specific icons
-- Maintains existing notification timing and behavior
-- No performance impact from enhanced notifications
-
-**Dependencies**: Task 1, Task 3, Task 4
-**Complexity**: Medium
-**Files to Modify**:
-- `frontend/components/achievements/AchievementNotification.tsx`
-
-### Phase 5: Search & Discovery Enhancement
-
-#### Task 11: Enhance Achievement Search Component
-**Description**: Update search functionality to include new metadata fields
-**Acceptance Criteria**:
-- Search by corps name for DCI achievements
-- Search by instrument section for NABBA achievements
-- Search by difficulty level across both categories
-- Maintains existing search performance
-- Clear search result categorization
-
-**Dependencies**: Task 1, Task 7
-**Complexity**: Medium
-**Files to Modify**:
-- `frontend/components/achievements/AchievementSearch.tsx`
-
-#### Task 12: Create Achievement Statistics Dashboard
-**Description**: Build dashboard component showing DCI/NABBA achievement statistics
-**Acceptance Criteria**:
-- Category completion percentages for DCI and NABBA
-- Most earned achievements in each category
-- User progress compared to community averages
-- Visual charts and progress indicators
-
-**Dependencies**: Task 8, Task 9
+- Secure form for adding/editing API credentials
+- Masked display of sensitive information
+- Validation of credential formats and permissions
+- Audit trail of credential access and modifications
+**Dependencies**: None (security critical)
 **Complexity**: Complex
-**Files to Create**:
-- `frontend/components/achievements/AchievementStats.tsx`
 
-### Phase 6: Content Integration & Testing
+### Agent Coordination Components
 
-#### Task 13: Create Achievement Content Loader
-**Description**: Build utility to load and validate DCI/NABBA achievement content
+#### Task 6: Agent Status Monitor
+**Description**: Create real-time display of agent execution status, progress, and health metrics
 **Acceptance Criteria**:
-- Loads achievement definitions from JSON files
-- Validates content against schema
-- Handles loading errors gracefully
-- Caches content for performance
-
-**Dependencies**: Task 2
+- Live status updates for active agents
+- Progress indicators for long-running tasks
+- Error state display with diagnostic information
+- Agent performance metrics and success rates
+**Dependencies**: Task 1 (project state)
 **Complexity**: Medium
-**Files to Create**:
-- `frontend/utils/achievementContentLoader.ts`
 
-#### Task 14: Create Achievement Preview Component
-**Description**: Build component for previewing achievements during content creation
+#### Task 7: Agent Communication Panel
+**Description**: Build interface for inter-agent messaging, coordination, and conflict resolution
 **Acceptance Criteria**:
-- Live preview of achievement appearance
-- Validation feedback for content creators
-- Test different device layouts
-- Export preview for documentation
+- Display agent-to-agent communication logs
+- Show coordination events and handoffs
+- Provide manual intervention options for conflicts
+- Visual representation of agent collaboration workflows
+**Dependencies**: Task 6 (agent status)
+**Complexity**: Complex
 
-**Dependencies**: Task 5, Task 13
-**Complexity**: Medium
-**Files to Create**:
-- `frontend/components/achievements/AchievementPreview.tsx`
-
-### Phase 7: Performance & Accessibility
-
-#### Task 15: Implement Achievement Lazy Loading
-**Description**: Add lazy loading for achievement components and images
+#### Task 8: Commit Attribution Display
+**Description**: Create components to show agent authorship, commit quality, and automated commit formatting
 **Acceptance Criteria**:
-- Components load only when needed
-- Images load progressively as user scrolls
-- Maintains smooth scrolling performance
-- Proper loading states and placeholders
-
-**Dependencies**: Task 7
-**Complexity**: Medium
-**Files to Modify**:
-- `frontend/components/achievements/AchievementGallery.tsx`
-- `frontend/components/achievements/AchievementCard.tsx`
-
-#### Task 16: Accessibility Enhancements for New Content
-**Description**: Ensure all new DCI/NABBA components meet accessibility standards
-**Acceptance Criteria**:
-- Screen reader support for category names and descriptions
-- Keyboard navigation through all new components
-- High contrast support for category icons
-- ARIA labels for achievement metadata
-
-**Dependencies**: All previous tasks
-**Complexity**: Medium
-**Files to Modify**:
-- All component files created/modified in previous tasks
-
-### Phase 8: Integration Testing Support
-
-#### Task 17: Create Achievement Component Test Utilities
-**Description**: Build test utilities for testing DCI/NABBA achievement components
-**Acceptance Criteria**:
-- Mock data generators for DCI/NABBA achievements
-- Test helpers for component rendering with new props
-- Utilities for simulating achievement events
-- Integration with existing test framework
-
-**Dependencies**: All previous tasks
+- Display commits with proper agent attribution
+- Show commit quality scores and metrics
+- Format commit messages according to standards
+- Link commits to originating tasks and agents
+**Dependencies**: Task 2 (git workflow)
 **Complexity**: Simple
-**Files to Create**:
-- `frontend/utils/test/achievementTestUtils.ts`
 
-#### Task 18: Responsive Design Validation
-**Description**: Ensure all enhanced components work across device sizes
+### User Experience Components
+
+#### Task 9: Navigation and Layout Framework
+**Description**: Build responsive navigation system and page layout components
 **Acceptance Criteria**:
-- Mobile-first responsive design for all new components
-- Tablet layout optimization
-- Desktop layout with enhanced spacing and features
-- Cross-browser compatibility testing
+- Responsive sidebar navigation with collapsible sections
+- Header with breadcrumb navigation and user context
+- Main content area with proper spacing and typography
+- Mobile-friendly responsive design
+**Dependencies**: None (foundational)
+**Complexity**: Simple
 
-**Dependencies**: All previous tasks
+#### Task 10: Form Components Library
+**Description**: Create reusable form components with validation, error handling, and accessibility
+**Acceptance Criteria**:
+- Input components with built-in validation
+- Form containers with error state management
+- Accessible form labels and ARIA attributes
+- Consistent styling matching design system
+**Dependencies**: Task 9 (layout framework)
 **Complexity**: Medium
-**Files to Modify**:
-- All component files with responsive styling updates
 
-## Task Dependencies Summary
+#### Task 11: Data Visualization Components
+**Description**: Build charts, graphs, and metrics display components for dashboards
+**Acceptance Criteria**:
+- Line charts for cost and performance trends
+- Progress bars and completion indicators
+- Real-time updating charts with smooth animations
+- Responsive design for different screen sizes
+**Dependencies**: Task 9 (layout framework)
+**Complexity**: Medium
 
-```
-Phase 1 (Foundation)
-Task 1 → Task 2
+#### Task 12: Modal and Dialog System
+**Description**: Create modal dialogs for confirmations, forms, and detailed views
+**Acceptance Criteria**:
+- Reusable modal component with different sizes
+- Form modals for editing configurations
+- Confirmation dialogs for destructive actions
+- Accessibility features (focus management, escape key)
+**Dependencies**: Task 9 (layout framework)
+**Complexity**: Simple
 
-Phase 2 (Assets)
-Task 3 → Task 4
+### Integration and API Components
 
-Phase 3 (Core Components)
-Task 1,2 → Task 5
-Task 1,3,4 → Task 6
-Task 5,6 → Task 7
+#### Task 13: API Client Service
+**Description**: Build frontend service for backend communication with error handling and retry logic
+**Acceptance Criteria**:
+- RESTful API client with standardized error handling
+- Automatic retry logic for failed requests
+- Request/response logging for debugging
+- Authentication token management
+**Dependencies**: Task 5 (secrets management)
+**Complexity**: Medium
 
-Phase 4 (Category Management)
-Task 1,3 → Task 8
-Task 1,4 → Task 9
-Task 1,3,4 → Task 10
+#### Task 14: WebSocket Connection Manager
+**Description**: Implement real-time communication service for live updates and agent events
+**Acceptance Criteria**:
+- Persistent WebSocket connection with reconnection logic
+- Event-driven updates for agent status and progress
+- Connection status indicators
+- Message queuing for offline scenarios
+**Dependencies**: Task 13 (API client)
+**Complexity**: Complex
 
-Phase 5 (Search & Stats)
-Task 1,7 → Task 11
-Task 8,9 → Task 12
+#### Task 15: Notification System
+**Description**: Create toast notifications, alerts, and status indicators for user feedback
+**Acceptance Criteria**:
+- Toast notifications for success/error/info messages
+- System-wide alert banners for important status
+- Progress notifications for long operations
+- Dismissible notifications with auto-timeout
+**Dependencies**: Task 9 (layout framework)
+**Complexity**: Simple
 
-Phase 6 (Content)
-Task 2 → Task 13
-Task 5,13 → Task 14
+### Testing and Quality Components
 
-Phase 7 (Performance)
-Task 7 → Task 15
-All tasks → Task 16
+#### Task 16: Component Testing Framework
+**Description**: Set up testing infrastructure for React components with mocking and assertions
+**Acceptance Criteria**:
+- Jest and React Testing Library configuration
+- Component test utilities and helpers
+- Mock services for isolated component testing
+- Test coverage reporting and thresholds
+**Dependencies**: All component tasks
+**Complexity**: Medium
 
-Phase 8 (Testing)
-All tasks → Task 17,18
+#### Task 17: Integration Testing Suite
+**Description**: Create end-to-end testing for user workflows and component interactions
+**Acceptance Criteria**:
+- Cypress or Playwright test configuration
+- Critical user journey test scenarios
+- API integration testing with mock backends
+- Visual regression testing capabilities
+**Dependencies**: Task 16 (component testing)
+**Complexity**: Complex
+
+#### Task 18: Error Boundary Implementation
+**Description**: Add error boundaries for graceful failure handling and user error reporting
+**Acceptance Criteria**:
+- Component-level error boundaries with fallback UI
+- Global error boundary for unhandled exceptions
+- Error reporting to logging service
+- User-friendly error messages with recovery options
+**Dependencies**: Task 9 (layout framework)
+**Complexity**: Simple
+
+## Task Dependencies
+
+```mermaid
+graph TD
+    T1[Project State Service] --> T2[Git Workflow Interface]
+    T1 --> T3[Cost Tracking Dashboard]
+    T1 --> T4[State Persistence Service]
+    T1 --> T6[Agent Status Monitor]
+    
+    T5[Secrets Management] --> T13[API Client Service]
+    T6 --> T7[Agent Communication Panel]
+    T2 --> T8[Commit Attribution Display]
+    
+    T9[Navigation Layout] --> T10[Form Components]
+    T9 --> T11[Data Visualization]
+    T9 --> T12[Modal System]
+    T9 --> T15[Notification System]
+    T9 --> T18[Error Boundaries]
+    
+    T13 --> T14[WebSocket Manager]
+    
+    T10 --> T16[Component Testing]
+    T11 --> T16
+    T12 --> T16
+    T16 --> T17[Integration Testing]
 ```
 
-## Estimated Timeline
-- Phase 1-2: 1-2 days (Foundation & Assets)
-- Phase 3: 3-4 days (Core UI Enhancements)
-- Phase 4: 2-3 days (Category Management)
-- Phase 5: 2-3 days (Search & Discovery)
-- Phase 6: 2 days (Content Integration)
-- Phase 7-8: 2-3 days (Performance & Testing)
+## Implementation Order
 
-**Total Frontend Development: 12-17 days**
+### Phase 1: Foundation (Tasks 1, 5, 9)
+- Project State Management Service
+- Secrets Management Interface
+- Navigation and Layout Framework
 
-## Integration Notes
-- All tasks maintain backward compatibility with existing achievement system
-- New components follow existing design system patterns
-- Performance optimizations ensure no degradation with expanded content
-- Content loading supports both development (test data) and production (full 100 achievements)
+### Phase 2: Core Infrastructure (Tasks 2, 3, 4, 13)
+- Git Workflow Management Interface
+- Cost Tracking Dashboard Components
+- State Persistence Service
+- API Client Service
+
+### Phase 3: User Experience (Tasks 6, 10, 11, 12, 15, 18)
+- Agent Status Monitor
+- Form Components Library
+- Data Visualization Components
+- Modal and Dialog System
+- Notification System
+- Error Boundary Implementation
+
+### Phase 4: Advanced Features (Tasks 7, 8, 14)
+- Agent Communication Panel
+- Commit Attribution Display
+- WebSocket Connection Manager
+
+### Phase 5: Quality Assurance (Tasks 16, 17)
+- Component Testing Framework
+- Integration Testing Suite
+
+## Technical Architecture
+
+### State Management
+- React Context API for global state (project, user, settings)
+- Local component state for UI interactions
+- Persistent state service for checkpoints and recovery
+
+### Styling Approach
+- Tailwind CSS for utility-first styling
+- CSS Modules for component-specific styles
+- Design system tokens for consistent theming
+
+### API Integration
+- Axios for HTTP requests with interceptors
+- WebSocket for real-time updates
+- Error boundary pattern for resilient API handling
+
+### Testing Strategy
+- Unit tests for all utility functions and services
+- Component tests for UI behavior and interactions
+- Integration tests for critical user workflows
+- Visual regression tests for UI consistency
+
+## Complexity Summary
+- Simple Tasks: 4 (Tasks 8, 9, 12, 15, 18)
+- Medium Tasks: 8 (Tasks 1, 3, 4, 6, 10, 11, 13, 16)
+- Complex Tasks: 6 (Tasks 2, 5, 7, 14, 17)
+
+**Total Estimated Tasks: 18**
+**Implementation Timeline: 4-5 sprints**

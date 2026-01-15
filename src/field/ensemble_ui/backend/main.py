@@ -71,6 +71,7 @@ load_dotenv()
 class ProblemRequest(BaseModel):
     problem: str
     budget_tier: str = "balanced"  # full_firepower, balanced, economical
+    auto_continue: bool = True  # If True, auto-continue through milestones without approval
 
 class ModelOverrideRequest(BaseModel):
     agent_name: str
@@ -297,8 +298,14 @@ class AgentOrchestrator:
                                 'error_type': type(e).__name__
                             })
 
-    async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced"):
-        """Spawn the Executive Director agent to handle the problem."""
+    async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced", auto_continue: bool = True):
+        """Spawn the Executive Director agent to handle the problem.
+
+        Args:
+            problem_description: The task/problem for the agent to solve
+            budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
+            auto_continue: If True, agents automatically continue through milestones without approval
+        """
         # Generate request ID for tracing
         request_id = str(uuid.uuid4())[:8]
         self.request_count += 1
@@ -358,7 +365,8 @@ class AgentOrchestrator:
                 budget_tier=budget_tier,  # Pass budget tier to spawned agents
                 parent_agent_id=agent_id,  # This agent is the parent for spawned agents
                 request_id=request_id,  # Pass request ID for tracing
-                session_id=session_id  # Pass session ID for swarm state tracking
+                session_id=session_id,  # Pass session ID for swarm state tracking
+                auto_continue=auto_continue  # Pass auto_continue for milestone handling
             )
             tools.register(spawn_tool)
 
@@ -392,7 +400,8 @@ class AgentOrchestrator:
                 agent_id=agent_id,
                 request_id=request_id,
                 parent_agent_id=None,  # Top-level agent
-                session_id=session_id  # For swarm state tracking
+                session_id=session_id,  # For swarm state tracking
+                auto_continue=auto_continue  # For milestone handling
             )
 
             # Prepare input data
@@ -614,7 +623,8 @@ async def generate_solution(request: ProblemRequest):
         # Spawn Executive Director with problem description and budget tier
         agent_id, result = await orchestrator.spawn_executive_director(
             request.problem,
-            budget_tier=request.budget_tier
+            budget_tier=request.budget_tier,
+            auto_continue=request.auto_continue
         )
 
         orchestrator.logger.info(f"API response: generate-solution success",

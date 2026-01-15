@@ -1,243 +1,190 @@
-# Backend Tasks - Foundation & Content Creation
+# Backend Tasks - Memory Audit and Analysis
 
-## Milestone Overview
-Create 100 achievement definitions (50 DCI + 50 NABBA themed) and integrate with existing achievement system.
+## Overview
+This milestone focuses on profiling current memory usage patterns and identifying specific memory leak sources in the agent system. Based on the architecture review, the system already has robust memory management features, but requires targeted investigation to identify where completed agents or their data might be persisting in RAM.
 
-## Task Breakdown
+## Tasks
 
-### **Phase 1: Schema & Infrastructure Enhancement**
+### 1. Memory Usage Profiling Infrastructure
+**Description**: Create comprehensive memory profiling tools to monitor RAM usage patterns during agent execution cycles.
 
-#### Task 1: Enhance Achievement Schema
-**Description**: Extend the existing achievement JSON schema to support DCI/NABBA metadata and new category organization.
 **Acceptance Criteria**:
-- Schema supports new `theme_metadata` field for DCI/NABBA specific data
-- Schema validates `subcategory` field for detailed classification  
-- Schema supports `unlock_requirements` for sequential achievements
-- Backwards compatible with existing achievements
-- Schema validation passes for all test cases
+- Memory profiler utility that tracks Python object allocations
+- Agent lifecycle memory tracking (creation → execution → completion)
+- Real-time memory usage monitoring dashboard
+- Memory usage reports with object counts and sizes
+- Integration with existing metrics system
 
-**Dependencies**: None (foundational)
+**Dependencies**: None
+**Complexity**: Medium
+
+### 2. Agent Instance Retention Analysis
+**Description**: Investigate whether completed agent objects are being held in global collections or registries beyond their lifecycle.
+
+**Acceptance Criteria**:
+- Audit all agent registries and collections in SwarmStateManager
+- Check ParallelAgentExecutor running_tasks cleanup behavior  
+- Verify agent objects are garbage collected after completion
+- Document agent object lifecycle and cleanup points
+- Identify any global references preventing garbage collection
+
+**Dependencies**: Task 1 (Memory profiling infrastructure)
+**Complexity**: Medium
+
+### 3. Circular Reference Detection
+**Description**: Analyze agent parent/child relationships and cross-references that might create circular dependencies preventing garbage collection.
+
+**Acceptance Criteria**:
+- Map all object relationships in agent hierarchy
+- Use Python's gc module to detect circular references
+- Check agent spawn relationships for reference cycles
+- Verify weak references are used appropriately
+- Document circular reference patterns found
+
+**Dependencies**: Task 1 (Memory profiling infrastructure)  
+**Complexity**: Medium
+
+### 4. Tool Execution Result Analysis
+**Description**: Investigate whether tool execution results and cached data accumulate without proper cleanup.
+
+**Acceptance Criteria**:
+- Audit tool result storage and caching mechanisms
+- Check if tool outputs persist after agent completion
+- Analyze function call result retention
+- Verify tool context cleanup on agent termination
+- Measure tool result memory footprint over time
+
+**Dependencies**: Task 1 (Memory profiling infrastructure)
 **Complexity**: Simple
-**Estimated Points**: 3
 
-#### Task 2: Create Content Validation Framework
-**Description**: Build validation scripts to ensure new achievement definitions meet quality standards and schema compliance.
+### 5. Message History Memory Audit
+**Description**: Verify the existing message history pruning mechanism is working effectively and not contributing to memory accumulation.
+
 **Acceptance Criteria**:
-- Validates JSON schema compliance for all achievement files
-- Detects duplicate achievement IDs across categories
-- Validates icon references exist
-- Checks category/subcategory consistency
-- Provides detailed validation error reports
+- Confirm _prune_message_history() is executing correctly
+- Validate max_message_history (50) and prune_frequency (10) settings
+- Check for message objects persisting after pruning
+- Measure actual memory usage of message history storage
+- Verify SQLite storage is not causing RAM retention
 
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium  
-**Estimated Points**: 5
-
-#### Task 3: Enhance Category Management System
-**Description**: Extend the existing category management to handle DCI/NABBA categories with subcategory support.
-**Acceptance Criteria**:
-- Loads achievements from new DCI and NABBA JSON files
-- Supports subcategory filtering and organization
-- Maintains existing category functionality
-- Provides category statistics including new categories
-- Handles category metadata (icons, descriptions, counts)
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium
-**Estimated Points**: 5
-
-### **Phase 2: DCI Content Creation**
-
-#### Task 4: Create DCI Performance Excellence Achievements (15)
-**Description**: Define 15 DCI-themed achievements focused on performance excellence, inspired by top corps like Blue Devils, Phantom Regiment, Carolina Crown.
-**Acceptance Criteria**:
-- 15 unique achievements with DCI performance themes
-- Cover range from novice to world-class difficulty levels
-- Include corps-specific references where appropriate
-- All achievements pass schema validation
-- Achievements have appropriate rarity distribution (common to legendary)
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium
-**Estimated Points**: 8
-
-#### Task 5: Create DCI Technical Mastery Achievements (15)
-**Description**: Define 15 DCI achievements focused on technical skills like marching precision, musical complexity, and visual coordination.
-**Acceptance Criteria**:
-- 15 unique technical skill achievements
-- Progressive difficulty from basic to advanced techniques
-- Cover instrumental, marching, and visual elements
-- Include specific DCI terminology and concepts
-- Appropriate trigger conditions for each achievement
-
-**Dependencies**: Task 1 (Schema Enhancement)  
-**Complexity**: Medium
-**Estimated Points**: 8
-
-#### Task 6: Create DCI Competition & Corps Pride Achievements (20)
-**Description**: Define 20 achievements covering competition milestones (10) and corps pride/innovation (10).
-**Acceptance Criteria**:
-- 10 competition milestone achievements (regionals, nationals, rankings)
-- 10 corps pride and innovation achievements
-- Include references to DCI competition structure
-- Achievement triggers aligned with competition cycles
-- Celebrate both individual and ensemble accomplishments
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium  
-**Estimated Points**: 8
-
-### **Phase 3: NABBA Content Creation**
-
-#### Task 7: Create NABBA Musical Mastery Achievements (15)
-**Description**: Define 15 NABBA achievements focused on musical excellence across different instruments and ensemble roles.
-**Acceptance Criteria**:
-- 15 musical achievement definitions
-- Cover multiple instrument families (brass, woodwind, percussion)
-- Include ensemble harmony and individual excellence
-- Range from beginner to advanced musical concepts
-- Appropriate for high school and college marching bands
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium
-**Estimated Points**: 8
-
-#### Task 8: Create NABBA Leadership & Community Achievements (20)
-**Description**: Define 20 achievements covering leadership roles (10) and community impact (10) specific to marching band culture.
-**Acceptance Criteria**:
-- 10 leadership achievements (section leader, drum major, etc.)
-- 10 community impact achievements (mentoring, service, etc.)
-- Reflect marching band organizational structure
-- Include educational and developmental milestones
-- Celebrate both formal and informal leadership
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium
-**Estimated Points**: 8
-
-#### Task 9: Create NABBA Ensemble & Artistic Achievements (15)
-**Description**: Define 15 achievements covering ensemble harmony (10) and artistic expression (5).
-**Acceptance Criteria**:
-- 10 ensemble coordination and teamwork achievements
-- 5 artistic expression and creativity achievements
-- Focus on collaborative musical experiences
-- Include performance and rehearsal accomplishments
-- Celebrate artistic growth and expression
-
-**Dependencies**: Task 1 (Schema Enhancement)
-**Complexity**: Medium
-**Estimated Points**: 6
-
-### **Phase 4: Integration & Enhancement**
-
-#### Task 10: Enhance Achievement API Endpoints
-**Description**: Update existing achievement API endpoints to support new categories, subcategories, and enhanced filtering.
-**Acceptance Criteria**:
-- GET /api/achievements supports DCI/NABBA category filtering
-- GET /api/achievements/categories returns enhanced category data with subcategories
-- GET /api/achievements/stats includes DCI/NABBA statistics
-- All existing endpoints maintain backwards compatibility
-- API returns proper metadata for new achievement fields
-
-**Dependencies**: Task 3 (Category Management), Tasks 4-9 (Content Creation)
-**Complexity**: Medium
-**Estimated Points**: 5
-
-#### Task 11: Create Achievement Icons and Visual Assets
-**Description**: Design and implement category icons and visual assets for DCI and NABBA themes.
-**Acceptance Criteria**:
-- Category icons for DCI and NABBA main categories
-- Subcategory icons for all subcategories
-- Achievement rarity visual indicators
-- Icons consistent with existing visual design
-- SVG format for scalability, fallback emojis provided
-
-**Dependencies**: Tasks 4-9 (Content Creation)
+**Dependencies**: Task 1 (Memory profiling infrastructure)
 **Complexity**: Simple
-**Estimated Points**: 3
 
-#### Task 12: Implement Content Quality Assurance
-**Description**: Create comprehensive testing and validation for all 100 new achievements to ensure quality and consistency.
+### 6. SwarmStateManager Memory Efficiency Review
+**Description**: Analyze SwarmStateManager for potential memory inefficiencies despite its SQLite-backed design.
+
 **Acceptance Criteria**:
-- All 100 achievements pass schema validation
-- No duplicate IDs across entire achievement system
-- All icon references resolve correctly  
-- Achievement trigger logic is testable
-- Content quality review process documented
+- Profile thread-local database connection usage
+- Check for in-memory caches that might be growing
+- Verify WAL mode and connection cleanup effectiveness
+- Analyze query result caching behavior
+- Measure SwarmStateManager memory footprint over time
 
-**Dependencies**: Tasks 4-9 (Content Creation), Task 2 (Validation Framework)
+**Dependencies**: Task 1 (Memory profiling infrastructure)
 **Complexity**: Medium
-**Estimated Points**: 5
 
-### **Phase 5: Testing & Documentation**
+### 7. ThreadPoolExecutor Resource Analysis
+**Description**: Investigate ThreadPoolExecutor resource management and cleanup in ParallelAgentExecutor.
 
-#### Task 13: Create Achievement Integration Tests  
-**Description**: Build comprehensive test suite for new achievement categories and integration with existing system.
 **Acceptance Criteria**:
-- Test achievement loading from DCI/NABBA JSON files
-- Test category filtering and subcategory organization
-- Test achievement trigger logic for new categories
-- Test API endpoint responses with new data
-- Integration tests pass with existing achievement system
+- Verify ThreadPoolExecutor.shutdown() is called properly
+- Check for thread resource cleanup after agent completion
+- Analyze running_tasks dict cleanup behavior
+- Verify max_workers configuration and resource limits
+- Check for thread pool resource accumulation
 
-**Dependencies**: Tasks 10-12 (Integration & QA)
-**Complexity**: Medium
-**Estimated Points**: 6
-
-#### Task 14: Create Achievement Content Documentation
-**Description**: Document the new achievement system extensions, content guidelines, and maintenance procedures.
-**Acceptance Criteria**:
-- Content creation guidelines for future achievements
-- DCI/NABBA achievement catalog documentation
-- Category organization and subcategory definitions
-- Validation and quality assurance procedures
-- Maintenance and update procedures documented
-
-**Dependencies**: Tasks 4-12 (All content and integration tasks)
+**Dependencies**: Task 1 (Memory profiling infrastructure)
 **Complexity**: Simple
-**Estimated Points**: 3
 
-## Task Dependency Map
+### 8. Event Bus and Activity Tracker Memory Review
+**Description**: Analyze event handling and activity tracking systems for potential memory accumulation issues.
+
+**Acceptance Criteria**:
+- Check for unprocessed events accumulating in memory
+- Verify activity tracker state cleanup
+- Analyze event listener registration/deregistration
+- Check for activity history retention limits
+- Measure event system memory footprint
+
+**Dependencies**: Task 1 (Memory profiling infrastructure)
+**Complexity**: Simple
+
+### 9. Memory Leak Load Testing
+**Description**: Create comprehensive load tests that simulate long-running agent execution cycles to identify memory leak patterns.
+
+**Acceptance Criteria**:
+- Load test with 100+ sequential agent executions
+- Memory growth monitoring during extended runs
+- Garbage collection trigger testing
+- Memory usage baseline establishment
+- Automated memory leak detection alerts
+
+**Dependencies**: Tasks 1-8 (All analysis tasks completed)
+**Complexity**: Complex
+
+### 10. Memory Management Documentation
+**Description**: Document discovered memory management patterns, issues found, and recommended practices.
+
+**Acceptance Criteria**:
+- Complete memory management architecture document
+- Agent lifecycle memory cleanup checklist
+- Memory monitoring best practices guide
+- Troubleshooting guide for memory issues
+- Performance optimization recommendations
+
+**Dependencies**: Tasks 1-9 (All previous tasks completed)
+**Complexity**: Simple
+
+## Task Dependencies
 
 ```
-Phase 1 (Foundation):
-Task 1 (Schema) → Task 2 (Validation), Task 3 (Category Mgmt)
-
-Phase 2 (DCI Content):
-Task 1 → Task 4 (DCI Performance)
-Task 1 → Task 5 (DCI Technical) 
-Task 1 → Task 6 (DCI Competition)
-
-Phase 3 (NABBA Content):
-Task 1 → Task 7 (NABBA Musical)
-Task 1 → Task 8 (NABBA Leadership)
-Task 1 → Task 9 (NABBA Ensemble)
-
-Phase 4 (Integration):
-Task 3 + Tasks 4-9 → Task 10 (API Enhancement)
-Tasks 4-9 → Task 11 (Visual Assets)
-Tasks 4-9 + Task 2 → Task 12 (Quality Assurance)
-
-Phase 5 (Testing):
-Tasks 10-12 → Task 13 (Integration Tests)
-Tasks 4-12 → Task 14 (Documentation)
+1. Memory Profiling Infrastructure
+   └── 2. Agent Instance Retention Analysis
+   └── 3. Circular Reference Detection  
+   └── 4. Tool Execution Result Analysis
+   └── 5. Message History Memory Audit
+   └── 6. SwarmStateManager Memory Review
+   └── 7. ThreadPoolExecutor Resource Analysis
+   └── 8. Event Bus and Activity Tracker Review
+       └── 9. Memory Leak Load Testing
+           └── 10. Memory Management Documentation
 ```
 
-## Summary Statistics
-- **Total Tasks**: 14
-- **Total Estimated Points**: 81  
-- **Simple Tasks**: 3 (Tasks 1, 11, 14)
-- **Medium Tasks**: 11 (Tasks 2-10, 12-13)
-- **Complex Tasks**: 0
+## Priority Order
 
-## Critical Path
-1. Task 1 (Schema Enhancement) - Foundational for all content creation
-2. Tasks 4-9 (Content Creation) - Core milestone deliverable  
-3. Task 10 (API Enhancement) - Required for frontend integration
-4. Task 12 (Quality Assurance) - Required for production readiness
+1. **High Priority** (Critical Path):
+   - Task 1: Memory Usage Profiling Infrastructure
+   - Task 2: Agent Instance Retention Analysis
+   - Task 3: Circular Reference Detection
 
-## Implementation Notes
-- Content creation tasks (4-9) can be parallelized after schema completion
-- Quality assurance should run continuously during content creation
-- Integration testing critical before handoff to frontend team
-- All tasks follow TDD methodology with test-first development
+2. **Medium Priority** (Parallel Analysis):
+   - Task 4: Tool Execution Result Analysis
+   - Task 5: Message History Memory Audit
+   - Task 6: SwarmStateManager Memory Efficiency Review
+   - Task 7: ThreadPoolExecutor Resource Analysis
+   - Task 8: Event Bus and Activity Tracker Memory Review
+
+3. **Final Phase**:
+   - Task 9: Memory Leak Load Testing
+   - Task 10: Memory Management Documentation
+
+## Technical Notes
+
+### Memory Profiling Tools
+- Use `memory_profiler` for line-by-line memory usage
+- Implement `gc` module integration for garbage collection analysis
+- Create custom decorators for agent lifecycle memory tracking
+- Use `psutil` for system-level memory monitoring
+
+### Key Investigation Areas
+- Global agent registries in SwarmStateManager
+- Agent spawn parent/child relationship cleanup
+- Tool result caching and retention policies
+- Message history pruning effectiveness
+- Thread pool resource management
+
+### Expected Outcomes
+- Identification of 3-5 specific memory leak sources
+- Memory usage reduction of 20-40% for long-running processes
+- Stable memory usage patterns during extended operations
+- Clear memory management guidelines for future development

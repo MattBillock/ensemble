@@ -1,177 +1,273 @@
-# Test Strategy: State Preservation Hooks (Milestone 2)
+# Test Strategy - Frontend Fix Implementation
 
-## Overview
-This document outlines the comprehensive testing strategy for two critical custom React hooks: `useScrollPreservation` and `useStableState`. The goal is to ensure robust, reliable state preservation across various UI scenarios.
+## Milestone Overview
+Frontend Fix Implementation - Implement CSS/styling fixes to resolve all text contrast issues in the SelfImprovementDashboard component
 
-## Test Suites & Coverage Goals
+## Test Strategy Summary
+This milestone focuses on CSS/styling fixes for accessibility compliance (WCAG 2.1 AA standards). The testing strategy emphasizes visual regression testing, accessibility validation, and cross-browser compatibility to ensure the fixes resolve contrast issues without breaking existing functionality.
 
-### 1. `useScrollPreservation` Hook Tests
-**Coverage Goal**: 90%+ (Unit + Integration)
+## Coverage Goals
+- **Unit Test Coverage**: 90% (CSS styling logic, conditional class application)
+- **Integration Coverage**: 100% (component rendering with different themes)
+- **E2E Coverage**: Critical user paths (normal mode, "bumpers off" mode)
+- **Visual Regression**: 100% (before/after screenshots for all styling states)
+- **Accessibility Coverage**: 100% WCAG 2.1 AA compliance verification
 
-#### Unit Tests
-1. **Initialization**
-   - Verify ref is correctly initialized
-   - Check initial scroll position storage
-   - Test with different container types (div, scrollable list)
+## Test Types Required
 
-2. **Scroll Position Tracking**
-   - Simulate manual scrolling
-   - Verify scroll position is captured accurately
-   - Test horizontal and vertical scrolling
-   - Verify coordinate precision
+### 1. Unit Tests
+**Target**: CSS class generation logic, conditional styling functions
+**Framework**: Jest + React Testing Library
+**Coverage**: 90%
 
-3. **State Restoration**
-   - Trigger artificial re-renders
-   - Verify scroll position is restored correctly
-   - Test different scroll distances
-   - Handle edge cases (near top/bottom, large scrollable areas)
+### 2. Visual Regression Tests  
+**Target**: Component appearance in different modes
+**Framework**: Jest + React Testing Library (snapshot testing)
+**Coverage**: All visual states
 
-4. **Dependency Handling**
-   - Test hook with varying dependency arrays
-   - Verify scroll preservation triggers
-   - Check conditional preservation logic
+### 3. Accessibility Tests
+**Target**: WCAG 2.1 compliance verification
+**Framework**: jest-axe + manual validation
+**Coverage**: 100% color contrast compliance
 
-#### Integration Tests
-1. **React Component Integration**
-   - Embed hook in sample scrollable components
-   - Test preservation across data updates
-   - Verify no unintended side effects
+### 4. Integration Tests
+**Target**: Component behavior with theme switching
+**Framework**: React Testing Library
+**Coverage**: All theme combinations
 
-2. **Performance Scenarios**
-   - Test with large lists
-   - Verify minimal performance overhead
-   - Measure re-render impact
+### 5. Cross-Browser Tests
+**Target**: Visual consistency across browsers
+**Framework**: Manual testing (Chrome, Firefox, Safari, Edge)
+**Coverage**: Primary user flows
 
-### 2. `useStableState` Hook Tests
-**Coverage Goal**: 90%+ (Unit + Integration)
+## Test Task Breakdown
 
-#### Unit Tests
-1. **State Update Behavior**
-   - Verify initial state setting
-   - Test default shallow comparison
-   - Implement custom comparison function tests
+### Task 1: Unit Tests for Styling Logic
+**Type**: Unit Test  
+**Priority**: High  
+**Estimated Effort**: 2 hours  
+**Framework**: Jest + React Testing Library
 
-2. **Comparison Logic**
-   - Test with primitive values
-   - Test with complex objects
-   - Verify meaningful change detection
-   - Check equality threshold behaviors
+**Test Cases**:
+- Test conditional CSS class generation for normal mode
+- Test conditional CSS class generation for "bumpers off" mode  
+- Test color class selection logic for different background types
+- Test Bootstrap class combination logic
+- Test edge cases (undefined states, invalid inputs)
 
-3. **Update Suppression**
-   - Simulate rapid state changes
-   - Verify only meaningful updates propagate
-   - Test performance of comparison logic
+**Files to Test**:
+- `SelfImprovementDashboard.jsx` - styling logic functions
+- Any utility functions for theme/color management
 
-#### Integration Tests
-1. **Component State Management**
-   - Integrate with sample React components
-   - Test state stability during frequent updates
-   - Verify UI doesn't flicker unnecessarily
+### Task 2: Visual Regression Tests
+**Type**: Visual Regression  
+**Priority**: High  
+**Estimated Effort**: 3 hours  
+**Framework**: Jest snapshot testing
 
-2. **Complex State Scenarios**
-   - Test with nested objects
-   - Handle array mutations
-   - Test with dynamic comparison functions
+**Test Cases**:
+- Snapshot test: Dashboard in normal mode
+- Snapshot test: Dashboard in "bumpers off" mode
+- Snapshot test: Individual card components with different backgrounds
+- Snapshot test: Badge components in both themes
+- Snapshot test: Table elements with proper contrast
+- Snapshot test: Responsive breakpoints (mobile, tablet, desktop)
 
-### 3. Browser Compatibility Tests
-**Target Browsers**: 
-- Chrome 120+
-- Firefox 120+
-- Safari 17+
-- Edge 120+
+**Files to Test**:
+- `SelfImprovementDashboard.jsx` - complete component rendering
 
-#### Compatibility Checks
-1. Scroll preservation consistency
-2. State update behaviors
-3. Performance profiling
-4. Memory usage tracking
+### Task 3: Accessibility Compliance Tests
+**Type**: Accessibility  
+**Priority**: Critical  
+**Estimated Effort**: 4 hours  
+**Framework**: jest-axe + manual validation
 
-## Test Execution Plan
+**Test Cases**:
+- WCAG 2.1 AA contrast ratio testing (4.5:1 normal text, 3:1 large text)
+- Color contrast validation for all text/background combinations
+- Focus management and keyboard navigation
+- Screen reader compatibility testing
+- Color-blind accessibility verification
 
-### Tools & Frameworks
-- Jest
-- React Testing Library
-- Playwright (for browser testing)
+**Files to Test**:
+- `SelfImprovementDashboard.jsx` - all rendered text elements
 
-### Test Phases
-1. **Unit Testing** (Local Development Environment)
-   - Isolated hook behavior verification
-   - Fast, comprehensive coverage
+### Task 4: Theme Integration Tests
+**Type**: Integration  
+**Priority**: High  
+**Estimated Effort**: 2 hours  
+**Framework**: React Testing Library
 
-2. **Integration Testing** (Simulated Component Environment)
-   - Hooks in realistic component contexts
-   - Interaction with data flows
+**Test Cases**:
+- Test component rendering with normal theme state
+- Test component rendering with danger theme state
+- Test theme switching behavior (if applicable)
+- Test prop passing for theme-related data
+- Test component rerender behavior on theme changes
 
-3. **Browser Compatibility Testing**
-   - Cross-browser validation
-   - Performance and behavior consistency
+**Files to Test**:
+- `SelfImprovementDashboard.jsx` - full component integration
 
-## Specific Test Scenarios
+### Task 5: Cross-Browser Compatibility Tests
+**Type**: Manual/E2E  
+**Priority**: Medium  
+**Estimated Effort**: 3 hours  
+**Framework**: Manual testing + browser dev tools
 
-### Scroll Preservation Scenarios
-1. Short content refresh
-2. Large list updates
-3. Rapid polling environments
-4. Mixed scroll directions
-5. Mobile viewport simulations
+**Test Cases**:
+- Chrome: Visual verification of all styling fixes
+- Firefox: Ensure CSS compatibility and rendering consistency
+- Safari: macOS-specific rendering validation
+- Edge: Windows compatibility verification
+- Mobile browsers: Responsive behavior validation
 
-### State Stability Scenarios
-1. Frequent but shallow updates
-2. Deep object mutations
-3. Array element changes
-4. Reference vs. value comparisons
+**Files to Test**:
+- Complete application in browser environments
 
-## Expected Outcomes
-- 90%+ test coverage
-- Consistent behavior across browsers
-- Minimal performance overhead
-- Reliable state preservation
+### Task 6: Performance Impact Tests
+**Type**: Performance  
+**Priority**: Low  
+**Estimated Effort**: 1 hour  
+**Framework**: React DevTools Profiler
 
-## Non-Functional Testing Aspects
-- Performance profiling
-- Memory usage tracking
-- Event listener management
-- Cleanup mechanism validation
+**Test Cases**:
+- Measure component render time before/after fixes
+- Verify no additional CSS bundle size impact  
+- Test for any memory leaks from styling changes
+- Validate smooth animations/transitions
 
-## Potential Edge Cases to Test
-1. Very rapid state changes
-2. Extremely large data sets
-3. Nested scroll containers
-4. Mixed data type updates
-5. Boundary condition scrolling
+**Files to Test**:
+- `SelfImprovementDashboard.jsx` - performance characteristics
 
-## Reporting & Metrics
-- Detailed test report generation
-- Performance benchmark logging
-- Coverage percentage tracking
-- Browser-specific behavior documentation
+## Test Environment Setup
 
-## Risks & Mitigation
-1. **Performance Overhead**
-   - Continuous profiling
-   - Optimize comparison functions
-   - Implement memoization strategies
+### Local Development
+```bash
+npm test                    # Run unit tests
+npm test -- --coverage     # Generate coverage report
+npm test -- --watch        # Run tests in watch mode
+```
 
-2. **Browser Inconsistencies**
-   - Comprehensive cross-browser testing
-   - Fallback mechanisms
-   - Feature detection
+### Browser Testing
+```bash
+npm start                   # Start development server
+# Manual testing in multiple browsers
+```
 
-## Out of Scope
-- Full UI component testing
-- Backend integration testing
-- Performance optimization beyond testing
+### Accessibility Testing
+```bash
+npm install --save-dev jest-axe
+# Additional manual testing with screen readers
+```
 
-## Test Execution Priority
-1. Unit Tests (Highest Priority)
-2. Integration Tests
-3. Browser Compatibility Tests
+## Success Criteria
+
+### Unit Tests
+- [ ] 90%+ code coverage for styling logic
+- [ ] All conditional styling functions tested
+- [ ] Edge cases handled appropriately
+- [ ] No false positives in test assertions
+
+### Visual Regression
+- [ ] Snapshot tests capture all visual states
+- [ ] Screenshots validate contrast improvements
+- [ ] No unintended visual changes detected
+- [ ] Responsive design preserved
+
+### Accessibility
+- [ ] WCAG 2.1 AA compliance achieved (4.5:1 contrast)
+- [ ] All text readable in both normal and danger modes
+- [ ] No accessibility regressions introduced
+- [ ] Screen reader compatibility maintained
+
+### Integration
+- [ ] Component behavior consistent across theme states
+- [ ] No breaking changes to existing functionality
+- [ ] Props and state management working correctly
+- [ ] Performance impact negligible
+
+### Cross-Browser
+- [ ] Consistent appearance across Chrome, Firefox, Safari, Edge
+- [ ] Mobile responsiveness maintained
+- [ ] CSS compatibility verified
+- [ ] No browser-specific rendering issues
+
+## Risk Mitigation
+
+### Risk: CSS Specificity Conflicts
+**Mitigation**: Use inline styles where needed, test in actual browser environment
+
+### Risk: Breaking Existing Visual Design
+**Mitigation**: Comprehensive snapshot testing, before/after visual comparison
+
+### Risk: Accessibility Non-Compliance  
+**Mitigation**: Automated jest-axe testing + manual validation with accessibility tools
+
+### Risk: Performance Degradation
+**Mitigation**: Performance testing with React DevTools, bundle size analysis
+
+### Risk: Cross-Browser Inconsistencies
+**Mitigation**: Test in multiple browsers, use standard Bootstrap classes
+
+## Test Data Requirements
+
+### Mock Data
+- Component props for different dashboard states
+- Sample performance data for display testing
+- Various user permission states
+- Error state mock data
+
+### Test Fixtures
+- Theme configuration objects
+- CSS class mapping fixtures
+- Accessibility test scenarios
+- Browser compatibility matrices
+
+## Automation Strategy
+
+### Continuous Integration
+- Unit tests run on every commit
+- Accessibility tests in CI pipeline
+- Visual regression tests on PR creation
+- Coverage reports generated automatically
+
+### Manual Testing Checkpoints
+- Cross-browser testing before release
+- User acceptance testing for readability
+- Accessibility audit with real users
+- Performance validation in production-like environment
+
+## Dependencies
+
+### Testing Dependencies
+- jest (existing)
+- @testing-library/react (existing)
+- jest-axe (to be added)
+- @testing-library/jest-dom (existing)
+
+### Development Dependencies
+- React DevTools (for performance testing)
+- Browser dev tools (for accessibility testing)
+- Multiple browser installations
+
+## Documentation Requirements
+
+### Test Documentation
+- Test case descriptions and rationale
+- Coverage reports with explanations
+- Accessibility compliance documentation
+- Cross-browser compatibility matrix
+- Performance impact analysis
+
+### User Documentation
+- Before/after screenshots showing improvements
+- Accessibility compliance statement
+- Browser support documentation
+- Known issues and workarounds (if any)
 
 ---
 
-**Testing Phase**: Milestone 2
-**Estimated Effort**: 8-12 hours
-**Critical Success Factors**:
-- 90%+ Test Coverage
-- Cross-browser Consistency
-- Minimal Performance Impact
+**Total Estimated Effort**: 15 hours
+**Total Test Tasks**: 6 tasks
+**Primary Focus**: Accessibility compliance and visual regression prevention
+**Success Metric**: 100% WCAG 2.1 AA compliance with no visual regressions

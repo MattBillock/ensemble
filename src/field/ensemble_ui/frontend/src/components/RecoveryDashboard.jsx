@@ -105,7 +105,8 @@ function RecoveryDashboard() {
       'enhance_prompt': 'warning',
       'refactor_agent': 'secondary',
       'escalate_model': 'danger',
-      'manual': 'dark'
+      'manual': 'dark',
+      'abort': 'danger'
     };
     return <Badge bg={colors[strategy] || 'secondary'}>{strategy}</Badge>;
   };
@@ -117,9 +118,15 @@ function RecoveryDashboard() {
       'completed': 'success',
       'failed': 'danger',
       'needs_review': 'info',
-      'aborted': 'dark'
+      'aborted': 'dark',
+      'forever_failed': 'danger',
+      'permanently_failed': 'danger'
     };
-    return <Badge bg={colors[status] || 'secondary'}>{status}</Badge>;
+    // Show custom text for forever_failed
+    const displayText = status === 'forever_failed' || status === 'permanently_failed'
+      ? '☠️ ' + status.replace('_', ' ').toUpperCase()
+      : status;
+    return <Badge bg={colors[status] || 'secondary'}>{displayText}</Badge>;
   };
 
   const formatTimestamp = (timestamp) => {

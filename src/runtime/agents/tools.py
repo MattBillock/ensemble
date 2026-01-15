@@ -789,7 +789,8 @@ class SpawnAgentTool:
         budget_tier: str = "balanced",
         parent_agent_id: Optional[str] = None,
         request_id: Optional[str] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        auto_continue: bool = True
     ):
         """
         Initialize spawn agent tool.
@@ -802,6 +803,7 @@ class SpawnAgentTool:
             parent_agent_id: ID of the agent spawning this tool (for metrics)
             request_id: Request ID for tracing (for metrics)
             session_id: Session ID for swarm state tracking
+            auto_continue: Whether spawned agents auto-continue through milestones
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
@@ -810,6 +812,7 @@ class SpawnAgentTool:
         self.parent_agent_id = parent_agent_id
         self.request_id = request_id or "unknown"
         self.session_id = session_id
+        self.auto_continue = auto_continue
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
@@ -864,7 +867,8 @@ class SpawnAgentTool:
                 budget_tier=self.budget_tier,
                 parent_agent_id=spawned_agent_id,
                 request_id=self.request_id,
-                session_id=self.session_id
+                session_id=self.session_id,
+                auto_continue=self.auto_continue  # Propagate auto_continue
             )
             spawned_tools.register(spawned_spawn_tool)
 
@@ -877,7 +881,8 @@ class SpawnAgentTool:
                 agent_id=spawned_agent_id,
                 request_id=self.request_id,
                 parent_agent_id=self.parent_agent_id,
-                session_id=self.session_id  # Pass session ID for swarm state tracking
+                session_id=self.session_id,  # Pass session ID for swarm state tracking
+                auto_continue=self.auto_continue  # Propagate auto_continue
             )
 
             # Execute the agent

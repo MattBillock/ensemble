@@ -123,7 +123,8 @@ function App() {
 
   const runningAgents = Object.values(agentStates).filter(s => s.status === 'running').length;
   const completedAgents = Object.values(agentStates).filter(s => s.status === 'completed').length;
-  const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed').length;
+  const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed' || s.status === 'forever_failed').length;
+  const foreverFailedAgents = Object.values(agentStates).filter(s => s.status === 'forever_failed').length;
 
   // Filter agents based on hideCompleted
   const filteredAgentStates = Object.entries(agentStates).filter(([_, state]) => {
@@ -165,6 +166,7 @@ function App() {
                   <Badge bg="warning" text="dark">{runningAgents} Running</Badge>
                   <Badge bg="success">{completedAgents} Completed</Badge>
                   {failedAgents > 0 && <Badge bg="danger">{failedAgents} Failed</Badge>}
+                  {foreverFailedAgents > 0 && <Badge bg="dark" style={{ border: '1px solid #dc3545' }}>☠️ {foreverFailedAgents} Terminated</Badge>}
                 </div>
 
                 {/* View Switcher and Poll interval control */}
@@ -478,12 +480,15 @@ function App() {
                             state.status === 'running' ? 'warning' :
                             state.status === 'completed' ? 'success' :
                             state.status === 'failed' ? 'danger' :
+                            state.status === 'forever_failed' ? 'dark' :
+                            state.status === 'needs_review' ? 'info' :
                             state.status === 'awaiting_user_input' ? 'info' :
+                            state.status === 'stalled' ? 'warning' :
                             'secondary'
                           }
-                          style={{ fontSize: '10px' }}
+                          style={{ fontSize: '10px', ...(state.status === 'forever_failed' ? { border: '1px solid #dc3545' } : {}) }}
                         >
-                          {state.status}
+                          {state.status === 'forever_failed' ? '☠️ TERMINATED' : state.status}
                         </Badge>
                       </div>
 

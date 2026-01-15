@@ -97,7 +97,8 @@ class AgentRuntime:
         request_id: Optional[str] = None,
         parent_agent_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        use_dynamic_model_selection: bool = True
+        use_dynamic_model_selection: bool = True,
+        auto_continue: bool = True
     ):
         """
         Initialize agent runtime.
@@ -113,6 +114,7 @@ class AgentRuntime:
             parent_agent_id: Optional parent agent ID for hierarchy tracking
             session_id: Optional session ID for swarm state tracking
             use_dynamic_model_selection: Whether to use dynamic model router with fuzzing
+            auto_continue: If True, automatically continue through milestones without approval
         """
         self.definition = definition
         self.api_key = api_key
@@ -122,6 +124,7 @@ class AgentRuntime:
         self.state_manager = StateManager(state_file) if state_file else None
         self.budget_tier = budget_tier
         self.use_dynamic_model_selection = use_dynamic_model_selection
+        self.auto_continue = auto_continue  # Whether to auto-continue through milestones
         # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
         self.agent_id = agent_id or generate_agent_name(
             agent_type=definition.name,
@@ -423,6 +426,12 @@ class AgentRuntime:
                 needs_clarification = response_data.get("needs_clarification", False)
                 needs_user_input = response_data.get("status") == "needs_user_input"
 
+                # Check if agent is still working (in_progress or phase not complete)
+                status = response_data.get("status", "")
+                phase = response_data.get("phase", "")
+                is_still_working = status == "in_progress"
+                phase_not_complete = phase and phase.lower() not in ["complete", "completed", "done", "success"]
+
                 if needs_clarification or needs_user_input:
                     # Agent needs user input - record question and wait
                     question = response_data.get("user_question") or response_data.get("clarification_question", "")
@@ -454,6 +463,72 @@ class AgentRuntime:
                     else:
                         logger.warning("Agent indicated needs_clarification/needs_user_input but didn't provide question")
                         # Continue anyway if no question provided
+                elif is_still_working or phase_not_complete:
+                    # Agent reported progress but stopped without using tools
+                    logger.info(f"Agent reported status='{status}', phase='{phase}'")
+
+                    if not self.auto_continue:
+                        # Pause for approval - return with milestone status
+                        logger.info(f"auto_continue=False, pausing for milestone approval")
+
+                        # Generate approval question
+                        import uuid
+                        question_id = f"milestone_{self.agent_id}_{uuid.uuid4().hex[:8]}"
+
+                        current_milestone = response_data.get("current_milestone", "")
+                        milestone_msg = f" (Milestone: {current_milestone})" if current_milestone else ""
+
+                        activity_tracker.record_question(
+                            agent_id=self.agent_id,
+                            agent_name=self.definition.name,
+                            request_id=self.request_id,
+                            question_id=question_id,
+                            question=f"Milestone complete{milestone_msg}. Continue to next milestone?",
+                            options=["Yes, continue", "No, stop here"]
+                        )
+
+                        response_data["question_id"] = question_id
+                        response_data["awaiting_approval"] = True
+                        response_data["approval_type"] = "milestone"
+
+                        return response_data
+
+                    # Auto-continue mode: nudge agent to continue
+                    logger.info(f"auto_continue=True, nudging to continue with next phase/milestone")
+
+                    # Add the agent's progress report to messages
+                    text_content = ""
+                    for block in response.content:
+                        if hasattr(block, 'text'):
+                            text_content = block.text
+                            break
+
+                    if text_content:
+                        messages.append({
+                            "role": "assistant",
+                            "content": text_content
+                        })
+
+                    # Send continuation prompt
+                    continuation_prompt = (
+                        f"Good progress! You reported status='{status}' and phase='{phase}'. "
+                        f"Please continue with the next step. Use the appropriate tools to proceed "
+                        f"with implementation. Do not stop until all milestones are complete and "
+                        f"status='success' with phase='complete'."
+                    )
+                    messages.append({
+                        "role": "user",
+                        "content": continuation_prompt
+                    })
+
+                    api_kwargs["messages"] = messages
+
+                    # Prune if needed
+                    if self.iteration_count % self.prune_frequency == 0:
+                        messages = self._prune_message_history(messages)
+                        api_kwargs["messages"] = messages
+
+                    continue
                 else:
                     # Agent completed successfully
                     logger.info("Agent completed successfully")

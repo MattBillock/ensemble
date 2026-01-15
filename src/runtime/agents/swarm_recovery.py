@@ -303,9 +303,13 @@ class RecoveryOrchestrator:
             # Fourth attempt - escalate to more powerful model
             return RecoveryStrategy.ESCALATE_MODEL
 
-        elif attempts >= 4:
-            # Too many failures - need human review
+        elif attempts == 4:
+            # Fifth attempt - flag for manual review
             return RecoveryStrategy.MANUAL_INTERVENTION
+
+        elif attempts >= 5:
+            # All recovery stages exhausted - mark as permanently failed
+            return RecoveryStrategy.ABORT
 
         # Based on stall reason for edge cases
         if stall_reason == "max_iterations_reached":
@@ -417,13 +421,24 @@ class RecoveryOrchestrator:
             elif strategy == RecoveryStrategy.SPAWN_REPLACEMENT:
                 success = self._spawn_replacement(task)
             elif strategy == RecoveryStrategy.MANUAL_INTERVENTION:
-                # Just mark for manual review
+                # Mark for manual review - will escalate to ABORT on next failure
                 swarm_state.update_recovery_status(recovery_id, "needs_review")
+                swarm_state.update_agent_status(agent_id, "needs_review")
                 logger.info(f"Agent {agent_id} flagged for manual intervention")
                 return
+            elif strategy == RecoveryStrategy.ABORT:
+                # All recovery stages exhausted - mark as permanently failed
+                swarm_state.update_agent_status(
+                    agent_id,
+                    "forever_failed",
+                    error_message="Recovery pipeline exhausted - all strategies failed"
+                )
+                swarm_state.update_recovery_status(recovery_id, "permanently_failed")
+                logger.warning(f"Agent {agent_id} marked as FOREVER FAILED after exhausting all recovery strategies")
+                return
             else:
-                # Abort
-                swarm_state.update_agent_status(agent_id, "failed", error_message="Recovery aborted")
+                # Unknown strategy - abort
+                swarm_state.update_agent_status(agent_id, "failed", error_message="Recovery aborted - unknown strategy")
                 swarm_state.update_recovery_status(recovery_id, "aborted")
                 return
 

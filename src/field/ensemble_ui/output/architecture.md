@@ -1,336 +1,283 @@
-# Achievement System Expansion - DCI and NABBA Categories Architecture
+# Architecture: Recovery Agent System
 
 ## Architecture Overview
 
-### High-Level System Design
-This project expands an existing achievements system by adding 100 new achievements themed around Drum Corps International (DCI) and marching band/NABBA (National Association for the Advancement of Baroque Art) concepts. The architecture follows the existing system patterns while adding new achievement categories and content.
+This architecture introduces a **Recovery Agent** into the agent hierarchy to govern job recovery. The key innovation is replacing direct retry mechanisms with agent-spawned recovery, ensuring recovered jobs appear in the main agent hierarchy alongside regular jobs.
 
-### Architecture Pattern
-**Modular Extension Pattern** - Extending existing achievement system with new content categories while maintaining backward compatibility. Uses the existing data model and tracking infrastructure with category-specific achievement definitions.
-
-### Rationale
-- **Leverages Existing Infrastructure**: Builds on proven achievement tracking and display systems
-- **Content-Focused Approach**: Primary work is content creation rather than new system development
-- **Maintainable Expansion**: New achievements integrate seamlessly with existing categories
-- **Performance Neutral**: No architectural changes that could impact system performance
-
-## Tech Stack
-
-### Languages and Frameworks
-- **Backend**: Python 3.8+ with FastAPI (existing)
-  - *Why*: Already implemented achievement tracking service
-  - *Alternatives Considered*: Node.js (rejected - would require rewriting existing logic)
-- **Frontend**: React 18+ with TypeScript (existing)
-  - *Why*: Existing achievement gallery and notification components
-  - *Alternatives Considered*: Vue.js (rejected - inconsistent with existing UI)
-- **Data Storage**: JSON files + optional SQLite extension (existing)
-  - *Why*: Existing achievement persistence pattern
-  - *Alternatives Considered*: MongoDB (rejected - overkill for achievement data)
-
-### Libraries and Dependencies
-- **Content Management**: Custom JSON schema validator
-  - *Why*: Ensures achievement definitions follow existing format
-  - *Alternatives Considered*: External CMS (rejected - adds unnecessary complexity)
-- **Icon/Asset Management**: Existing emoji + SVG icon system
-  - *Why*: Consistent with current achievement visual design
-  - *Alternatives Considered*: Custom illustration set (rejected - scope creep)
-
-### Tools and Platforms
-- **Content Validation**: Python jsonschema library
-- **Testing**: Jest (frontend) + pytest (backend) - existing
-- **Version Control**: Git with existing branching strategy
+**Architecture Pattern**: Agent-based Recovery Orchestration
+**Rationale**: By treating recovery as a first-class agent-spawned operation, recovered jobs automatically integrate with existing swarm state tracking, hierarchy visualization, and monitoring infrastructure.
 
 ## System Components
 
-### Component Breakdown
+### 1. Recovery Agent (`leadership/recovery_agent.md`)
+**Role**: Specialized leadership agent that governs recovery operations
+**Responsibilities**:
+- Accept recovery task information from RecoveryOrchestrator
+- Spawn Executive Directors to handle recovered tasks
+- Track recovery attempts and maintain metadata
+- Report recovery status back to orchestrator
+
+**Can Spawn**: Executive Director only
+**Cannot Spawn**: Direct code writers, coordinators, or other agents
+
+### 2. Modified RecoveryOrchestrator (`swarm_recovery.py`)
+**Role**: Orchestrates recovery queue processing
+**Changes Required**:
+- Instead of calling `_retry_agent()` directly, spawn Recovery Agent via `spawn_agent` tool
+- Pass recovery context (original input, failure reason, strategy) to Recovery Agent
+- Monitor spawned Recovery Agent for completion
+
+### 3. Swarm State Integration
+**Role**: Existing infrastructure, minimal changes needed
+**Requirement**: Recovery Agent and its spawned Executive Directors must register properly
+**Behavior**: Once agents register in swarm_state, they automatically appear in hierarchy API
+
+## Data Flow
 
 ```
-Achievement System (Existing)
-├── Achievement Engine (existing)
-│   ├── Definition Loader
-│   ├── Tracking Service  
-│   └── Award Logic
-├── Storage Layer (existing)
-│   ├── Achievement Definitions
-│   └── Award History
-├── API Layer (existing)
-│   ├── Achievement Endpoints
-│   └── Statistics Endpoints
-├── UI Components (existing)
-│   ├── Notification System
-│   ├── Achievement Gallery
-│   └── Progress Tracking
-└── **NEW: DCI/NABBA Content Pack**
-    ├── DCI Achievement Definitions (50 achievements)
-    ├── NABBA Achievement Definitions (50 achievements)  
-    ├── Category Icons and Assets
-    └── Content Validation Scripts
-```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        CURRENT FLOW (TO BE REPLACED)                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  RecoveryOrchestrator                                                    │
+│         │                                                                │
+│         ▼                                                                │
+│  _retry_agent() ──────► Direct Agent Spawn                               │
+│         │                    (No swarm_state registration)               │
+│         ▼                                                                │
+│  Recovery Dashboard Only                                                 │
+│  (Jobs NOT visible in hierarchy)                                         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 
-### Component Responsibilities
-
-#### DCI Achievement Definitions
-- **Responsibility**: Define 50 DCI-themed achievements
-- **Examples**: "Blue Devils Precision", "Phantom Regiment Intensity", "Carolina Crown Excellence"
-- **Categories**: Performance excellence, technical mastery, creativity, competition milestones
-
-#### NABBA Achievement Definitions  
-- **Responsibility**: Define 50 NABBA/general marching band achievements
-- **Examples**: "Section Leader", "Perfect Pitch", "Marching Marathon", "Show Stopper"
-- **Categories**: Leadership, musical mastery, endurance, showmanship
-
-#### Content Validation Scripts
-- **Responsibility**: Ensure new achievements follow existing schema and quality standards
-- **Functions**: Schema validation, duplicate detection, content review automation
-
-### Data Flow
-
-```
-New Achievement Triggers (DCI/NABBA specific)
-    ↓
-Existing Achievement Tracking Service
-    ↓
-Enhanced Category Logic (checks DCI/NABBA conditions)
-    ↓
-Existing Award System
-    ↓
-Enhanced UI (displays new categories)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        NEW FLOW (TO BE IMPLEMENTED)                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  RecoveryOrchestrator                                                    │
+│         │                                                                │
+│         │ spawn_agent("leadership/recovery_agent", recovery_task)        │
+│         ▼                                                                │
+│  ┌─────────────────┐                                                     │
+│  │ Recovery Agent  │ ◄──── Registers in swarm_state                      │
+│  │ (leadership/)   │                                                     │
+│  └────────┬────────┘                                                     │
+│           │                                                              │
+│           │ spawn_agent("leadership/executive_director", original_task)  │
+│           ▼                                                              │
+│  ┌───────────────────────┐                                               │
+│  │  Executive Director   │ ◄──── Registers in swarm_state                │
+│  │  (recovered task)     │       Parent: Recovery Agent                  │
+│  └────────┬──────────────┘                                               │
+│           │                                                              │
+│           ▼ (normal ED workflow)                                         │
+│  ┌───────────────────────┐                                               │
+│  │  Dev Manager, etc.    │ ◄──── All children visible in hierarchy       │
+│  └───────────────────────┘                                               │
+│                                                                          │
+│  Result: All agents visible in Agent Hierarchy Tree                      │
+│          + Recovery Dashboard still shows recovery-specific info         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## File/Directory Structure
 
+### New Files to Create
 ```
-ensemble_ui/
-├── backend/
-│   ├── achievements/
-│   │   ├── definitions/
-│   │   │   ├── existing_categories/ (unchanged)
-│   │   │   ├── dci_achievements.json (NEW)
-│   │   │   └── nabba_achievements.json (NEW)
-│   │   ├── tracking/ (existing)
-│   │   ├── validation/
-│   │   │   └── content_validator.py (ENHANCED)
-│   │   └── categories/
-│   │       └── category_manager.py (ENHANCED)
-│   └── api/achievements/ (existing endpoints)
-├── frontend/
-│   ├── components/achievements/
-│   │   ├── AchievementGallery.tsx (ENHANCED)
-│   │   ├── CategoryFilter.tsx (ENHANCED)
-│   │   └── AchievementCard.tsx (ENHANCED)
-│   ├── assets/icons/
-│   │   ├── dci/ (NEW - category icons)
-│   │   └── nabba/ (NEW - category icons)
-│   └── types/
-│       └── achievements.ts (ENHANCED)
-├── content/
-│   ├── achievement_definitions/
-│   │   ├── dci_content_spec.md (NEW)
-│   │   └── nabba_content_spec.md (NEW)
-│   └── validation/
-│       └── content_quality_guidelines.md (NEW)
-└── tests/
-    ├── content/
-    │   ├── dci_achievement_tests.py (NEW)
-    │   └── nabba_achievement_tests.py (NEW)
-    └── integration/
-        └── category_display_tests.js (ENHANCED)
+src/
+└── ensemble/
+    └── docs/
+        └── agents/
+            └── leadership/
+                └── recovery_agent.md    # New agent definition
 ```
 
-## Data Model
+### Files to Modify
+```
+src/
+└── ensemble/
+    └── runtime/
+        └── swarm_recovery.py    # Use spawn_agent instead of direct retry
+```
 
-### Enhanced Achievement Schema
+### No Changes Required
+```
+src/
+└── field/
+    └── ensemble_ui/
+        └── backend/
+            └── routes/
+                └── activity.py   # Hierarchy endpoint already works
+        └── frontend/
+            └── src/
+                └── components/
+                    └── AgentHierarchyTree.jsx  # Already displays swarm_state
+```
+
+## Recovery Agent Definition
+
+### Input Format
 ```json
 {
-  "id": "string (unique)",
-  "name": "string", 
-  "description": "string",
-  "category": "dci|nabba|existing_categories",
-  "subcategory": "string (NEW - for detailed classification)",
-  "agent_class": "string|array",
-  "rarity": "common|rare|epic|legendary",
-  "trigger": {
-    "event_type": "string",
-    "conditions": "object"
+  "recovery_task": {
+    "original_agent_id": "string - ID of the failed agent",
+    "original_session_id": "string - Session that contained the failed agent",
+    "agent_type": "string - Type of agent that failed",
+    "agent_name": "string - Name of agent that failed",
+    "input_data": "object - Original input to the failed agent",
+    "failure_reason": "string - Why the agent failed/stalled",
+    "recovery_strategy": "string - Strategy to apply (retry, enhance_prompt, etc.)",
+    "recovery_attempt": "integer - Which recovery attempt this is"
   },
-  "theme_metadata": {  // NEW
-    "corps_name": "string (for DCI)",
-    "instrument_section": "string (for NABBA)",  
-    "performance_type": "string",
-    "difficulty_level": "novice|intermediate|advanced|world_class"
-  },
-  "points": "number",
-  "icon": "string",
-  "unlock_requirements": "array (NEW - for sequential achievements)"
+  "output_directory": "string - Where to write artifacts"
 }
 ```
 
-### Category Organization
-```
-DCI Category (50 achievements)
-├── Performance Excellence (15)
-├── Technical Mastery (15) 
-├── Competition Milestones (10)
-├── Corps Pride (5)
-└── Innovation (5)
-
-NABBA Category (50 achievements)  
-├── Musical Mastery (15)
-├── Leadership (10)
-├── Ensemble Harmony (10)
-├── Artistic Expression (10)
-└── Community Impact (5)
-```
-
-## API Design
-
-### Enhanced Endpoints (existing endpoints unchanged)
-
-#### GET /api/achievements/categories
+### Output Format
 ```json
 {
-  "categories": [
-    {
-      "id": "dci",
-      "name": "DCI Excellence", 
-      "description": "Drum Corps International themed achievements",
-      "icon": "🥁",
-      "achievement_count": 50,
-      "subcategories": ["performance", "technical", "competition", "corps_pride", "innovation"]
-    },
-    {
-      "id": "nabba", 
-      "name": "NABBA Mastery",
-      "description": "Marching band and musical achievement",
-      "icon": "🎺", 
-      "achievement_count": 50,
-      "subcategories": ["musical", "leadership", "ensemble", "artistic", "community"]
+  "status": "success|failed|needs_user_input",
+  "recovery_id": "string - ID of this recovery attempt",
+  "spawned_executive_id": "string - ID of the Executive Director spawned",
+  "original_agent_id": "string - Reference to original failed agent",
+  "message": "string - Status message",
+  "self_analysis": "string - Performance analysis"
+}
+```
+
+### Agent Definition Structure
+```markdown
+# Recovery Agent
+
+## Purpose
+Governs job recovery by spawning Executive Directors for recovered tasks.
+
+## Instructions
+1. Receive recovery task from RecoveryOrchestrator
+2. Extract original input_data and task context
+3. Spawn Executive Director with original task + recovery metadata
+4. Monitor Executive Director completion
+5. Report recovery status
+
+## Permissions
+- can_spawn: ["leadership/executive_director"]
+- can_write_code: false
+
+## Input Format
+(as above)
+
+## Output Format
+(as above)
+```
+
+## API Changes
+
+### No New Endpoints Required
+The existing `/api/activity/hierarchy` endpoint will automatically include recovered jobs once they register in swarm_state.
+
+### Metadata Enhancement
+Recovery-spawned agents should include metadata:
+```json
+{
+  "agent_id": "recovery-exec-abc123",
+  "agent_type": "leadership/executive_director",
+  "metadata": {
+    "is_recovery": true,
+    "original_failed_agent_id": "original-abc123",
+    "recovery_attempt": 1,
+    "recovery_strategy": "retry",
+    "failure_reason": "timeout"
+  }
+}
+```
+
+## Integration Points
+
+### RecoveryOrchestrator Changes
+```python
+# BEFORE (swarm_recovery.py)
+async def _process_recovery_task(self, task):
+    await self._retry_agent(task)  # Direct retry, no hierarchy integration
+
+# AFTER
+async def _process_recovery_task(self, task):
+    recovery_input = {
+        "recovery_task": {
+            "original_agent_id": task.agent_id,
+            "original_session_id": task.session_id,
+            "agent_type": task.agent_type,
+            "agent_name": task.agent_name,
+            "input_data": task.input_data,
+            "failure_reason": task.failure_reason,
+            "recovery_strategy": task.recovery_strategy,
+            "recovery_attempt": task.attempt_count
+        },
+        "output_directory": self.output_directory
     }
-  ]
-}
-```
-
-#### GET /api/achievements?category=dci&subcategory=performance
-Returns DCI performance achievements with enhanced filtering
-
-#### GET /api/achievements/stats
-Enhanced to include DCI/NABBA category statistics
-
-### Authentication Approach
-Uses existing JWT authentication - no changes required
-
-## Deployment Strategy
-
-### Deployment Approach
-**Incremental Content Deployment** - Deploy achievements in batches to allow for testing and feedback
-
-### Environment Configuration
-- **Development**: Load test achievement set (10 DCI + 10 NABBA)
-- **Staging**: Full 100 achievement set for validation
-- **Production**: Phased rollout (25 DCI → 25 NABBA → remaining 50)
-
-### CI/CD Considerations
-```yaml
-# Enhanced pipeline steps
-- content_validation: Validate new achievement JSON schemas
-- duplicate_detection: Ensure no ID conflicts with existing achievements  
-- icon_verification: Verify all referenced icons exist
-- category_consistency: Ensure category metadata is correct
-- localization_prep: Validate content for future i18n
+    
+    # Spawn Recovery Agent (which spawns ED, which registers in swarm_state)
+    result = await self.spawn_agent(
+        "leadership/recovery_agent",
+        recovery_input
+    )
 ```
 
 ## Testing Strategy
 
-### Content Validation Testing
-- **Schema Compliance**: All 100 new achievements pass JSON schema validation
-- **ID Uniqueness**: No duplicate achievement IDs across all categories
-- **Icon References**: All referenced icons exist and load correctly
-- **Category Integrity**: All achievements properly categorized and filterable
+### Unit Tests
+1. Recovery Agent definition parsing
+2. Input/output format validation
+3. Permission enforcement (can only spawn ED)
 
-### Integration Testing  
-- **Gallery Display**: New categories appear in existing achievement gallery
-- **Filtering**: Category and subcategory filters work with new content
-- **Notification**: New achievements trigger existing notification system
-- **Progress Tracking**: Multi-step DCI/NABBA achievements track progress correctly
+### Integration Tests
+1. RecoveryOrchestrator → Recovery Agent spawning
+2. Recovery Agent → Executive Director spawning
+3. Swarm state registration verification
 
-### Performance Testing
-- **Load Impact**: Verify 100 additional achievements don't slow gallery rendering
-- **Search Performance**: Category filtering remains fast with expanded content
-- **Memory Usage**: Achievement data loading doesn't increase memory footprint significantly
+### End-to-End Tests
+1. Trigger a recoverable failure
+2. Verify job enters recovery queue
+3. Verify Recovery Agent spawns
+4. Verify Executive Director appears in hierarchy
+5. Verify recovery metadata preserved
 
-## Alternatives Considered
+## Backward Compatibility
 
-### Content Management Approach
-**Chosen**: JSON file-based definitions with validation scripts
-**Alternative 1**: Database-driven CMS - Rejected (over-engineering for content-only expansion)
-**Alternative 2**: External content management system - Rejected (adds deployment complexity)
+### Preserved Functionality
+- Recovery queue continues to work
+- Recovery dashboard continues to show recovery status
+- Recovery history is still populated
+- Existing UI components unchanged
 
-### Category Organization 
-**Chosen**: Two main categories (DCI, NABBA) with subcategories
-**Alternative 1**: Single "Marching Arts" category - Rejected (lacks thematic distinction)
-**Alternative 2**: Individual corps/band categories - Rejected (too granular, maintenance burden)
-
-### Icon Strategy
-**Chosen**: Emoji + simple SVG icons consistent with existing style
-**Alternative 1**: Custom illustrated icon set - Rejected (scope creep, design resource requirements)
-**Alternative 2**: Licensed DCI/band imagery - Rejected (legal complexity, cost)
+### New Behavior
+- Recovered jobs NOW also appear in Agent Hierarchy
+- Recovery metadata available in hierarchy view
 
 ## Risks and Mitigations
 
-### Content Quality Risk
-**Risk**: Achievement descriptions may lack authenticity or contain errors
-**Mitigation**: Subject matter expert review, community feedback integration, iterative refinement
+### Risk 1: spawn_agent Availability
+**Issue**: RecoveryOrchestrator may not have access to spawn_agent tool
+**Mitigation**: Ensure RecoveryOrchestrator runs in a context with tool access, or create a spawning utility
 
-### Category Confusion Risk  
-**Risk**: Users may not understand DCI/NABBA distinctions
-**Mitigation**: Clear category descriptions, helpful tooltips, educational content links
+### Risk 2: Session Management
+**Issue**: Recovered jobs may create orphaned sessions
+**Mitigation**: Recovery Agent should reuse existing session or create with proper parent reference
 
-### Performance Degradation Risk
-**Risk**: 100 new achievements could slow UI performance
-**Mitigation**: Lazy loading for achievement gallery, efficient filtering algorithms, performance monitoring
+### Risk 3: Infinite Recovery Loops
+**Issue**: Recovery Agent could fail, triggering more recovery
+**Mitigation**: Mark Recovery Agent as non-recoverable or add loop detection
 
-### Maintenance Overhead Risk
-**Risk**: 100 additional achievements increase ongoing maintenance burden
-**Mitigation**: Automated validation tools, clear content guidelines, community contribution process
+## Success Criteria
 
-## Open Questions
+1. ✅ When a job is recovered, it appears in the main Agent Hierarchy tree
+2. ✅ Users can track recovery progress the same way as regular jobs
+3. ✅ Recovery metadata (attempt count, original failure) is preserved
+4. ✅ No regression in existing recovery functionality
+5. ✅ All tests pass
 
-### Content Authenticity
-- Should achievements reference specific DCI corps by name or use generic references?
-- What level of marching band technical detail is appropriate for general users?
+## Open Questions (None - Decisions Made)
 
-### Unlock Progression  
-- Should some achievements be locked behind others (e.g., "World Class" requires "Regional Champion")?
-- How should difficulty scaling work across novice to world-class levels?
-
-### Community Integration
-- Should there be mechanisms for users to suggest additional achievements?
-- How should achievement difficulty be calibrated for different user experience levels?
-
-## Implementation Priority
-
-### Phase 1: Foundation (Week 1)
-1. Enhance achievement schema to support DCI/NABBA metadata
-2. Create content validation framework
-3. Design category organization structure
-
-### Phase 2: Content Creation (Week 2-3) 
-1. Create 50 DCI achievement definitions
-2. Create 50 NABBA achievement definitions  
-3. Design category icons and visual assets
-
-### Phase 3: Integration (Week 4)
-1. Enhance UI components for new categories
-2. Update filtering and search functionality
-3. Test achievement triggering with new categories
-
-### Phase 4: Validation & Launch (Week 5)
-1. Comprehensive testing of all 100 achievements
-2. Performance optimization
-3. Documentation and deployment
-
----
-
-**Architecture Status**: Complete - Ready for Implementation  
-**Key Decision**: Content-focused expansion leveraging existing infrastructure  
-**Next Step**: Begin Phase 1 implementation with enhanced schema design
+1. **Session handling**: Recovery Agent creates new session linked to recovery queue entry
+2. **Recovery Agent failures**: Mark Recovery Agent as non-recoverable to prevent loops
+3. **UI changes**: None required - existing UI auto-displays registered agents
