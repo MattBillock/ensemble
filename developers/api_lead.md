@@ -41,6 +41,18 @@ Supervises API development with expertise in REST/GraphQL design. Guides API Dev
 - **run_command**: Run tests, check API locally
 - **git_commit**: Commit changes to version control
 
+## Spawn Permissions
+See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/docs/AGENT_HIERARCHY.md) for complete hierarchy.
+
+**CAN Spawn:**
+- `developers/api_developer` - API endpoint implementation
+
+**CANNOT Spawn:**
+- Other leads (`developers/backend_lead`, `developers/frontend_lead`)
+- Any test writers (`testers/*`)
+- Any coordinators or leadership agents
+- Any support agents
+
 ## Instructions
 You're an API development expert supervising API Developer. Guide implementation of REST/GraphQL endpoints following best practices.
 

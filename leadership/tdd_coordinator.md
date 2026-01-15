@@ -62,6 +62,22 @@ You have access to the following tools:
   - Parameters: message (string), files (array, optional)
   - Returns: {success: boolean, commit_hash: string}
 
+## Spawn Permissions
+See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/docs/AGENT_HIERARCHY.md) for complete hierarchy.
+
+**CAN Spawn:**
+- `developers/backend_lead` - Backend code supervision
+- `developers/frontend_lead` - Frontend code supervision
+- `developers/api_lead` - API code supervision
+- `testers/unit_test_lead` - Unit testing supervision
+- `testers/integration_test_lead` - Integration testing supervision
+- `support/visual_tech` - Refactoring supervision
+
+**CANNOT Spawn:**
+- Any developers directly (`developers/backend_developer`, etc.) - must go through leads
+- Any test writers directly (`testers/unit_test_writer`, etc.) - must go through leads
+- Any coordinators (peer level)
+
 ## Instructions
 
 **CRITICAL TDD ENFORCEMENT RULES:**
