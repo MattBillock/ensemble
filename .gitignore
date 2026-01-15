@@ -44,6 +44,8 @@ htmlcov/
 # Generated files
 *.log
 *.out
+logs/*.log.*
+logs/
 
 # Rehearsals and performances
 rehearsals/*/
@@ -53,3 +55,8 @@ charts/*/
 # OS
 .DS_Store
 Thumbs.db
+logs/ensemble-backend.log.1
+logs/ensemble-backend.log.2
+logs/ensemble-backend.log.3
+logs/ensemble-backend.log.4
+logs/ensemble-backend.log.5
