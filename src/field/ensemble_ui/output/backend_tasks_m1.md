@@ -1,190 +1,120 @@
-# Backend Tasks - Memory Audit and Analysis
+# Backend Tasks - Runtime Token Extraction and Basic Integration
 
-## Overview
-This milestone focuses on profiling current memory usage patterns and identifying specific memory leak sources in the agent system. Based on the architecture review, the system already has robust memory management features, but requires targeted investigation to identify where completed agents or their data might be persisting in RAM.
+## Task Breakdown
 
-## Tasks
+### 1. Token Extraction Core Implementation
+- **Name**: Implement TokenUsage Data Class
+- **Description**: Create robust token tracking data structure
+- **Location**: `src/runtime/agents/runtime.py`
+- **Acceptance Criteria**:
+  - Correctly captures input_tokens, output_tokens
+  - Provides total_tokens calculation
+  - Supports token accumulation across iterations
+- **Complexity**: Simple
+- **Dependencies**: None
 
-### 1. Memory Usage Profiling Infrastructure
-**Description**: Create comprehensive memory profiling tools to monitor RAM usage patterns during agent execution cycles.
+### 2. Activity Tracker Token Enhancement
+- **Name**: Modify Activity Tracker to Store Token Data
+- **Description**: Update activity tracking to include token usage information
+- **Location**: `src/runtime/agents/activity_tracker.py`
+- **Acceptance Criteria**:
+  - Can store token data alongside existing agent state
+  - Maintains backward compatibility
+  - Provides token data retrieval methods
+- **Complexity**: Medium
+- **Dependencies**: 
+  - Task 1: TokenUsage Data Class
 
-**Acceptance Criteria**:
-- Memory profiler utility that tracks Python object allocations
-- Agent lifecycle memory tracking (creation → execution → completion)
-- Real-time memory usage monitoring dashboard
-- Memory usage reports with object counts and sizes
-- Integration with existing metrics system
+### 3. Runtime Token Extraction from Anthropic Responses
+- **Name**: Develop Token Extraction Mechanism
+- **Description**: Implement reliable token extraction from Anthropic API responses
+- **Location**: `src/runtime/agents/runtime.py`
+- **Acceptance Criteria**:
+  - Successfully extracts tokens from mock and real API responses
+  - Handles cases where token data might be missing
+  - Provides default/fallback token values
+- **Complexity**: Medium
+- **Dependencies**: 
+  - Task 1: TokenUsage Data Class
+  - Task 2: Activity Tracker Token Enhancement
 
-**Dependencies**: None
-**Complexity**: Medium
+### 4. API Endpoint Token Data Integration
+- **Name**: Enhance API Responses with Token Usage
+- **Description**: Modify existing API endpoints to include token data
+- **Location**: `src/field/ensemble_ui/backend/main.py`
+- **Acceptance Criteria**:
+  - `/api/agents/state` includes token usage data
+  - `/api/requests/{request_id}/timeline` shows token information
+  - No breaking changes to existing API contract
+- **Complexity**: Medium
+- **Dependencies**:
+  - Task 1: TokenUsage Data Class
+  - Task 2: Activity Tracker Token Enhancement
+  - Task 3: Runtime Token Extraction
 
-### 2. Agent Instance Retention Analysis
-**Description**: Investigate whether completed agent objects are being held in global collections or registries beyond their lifecycle.
+### 5. Token Extraction Error Handling and Logging
+- **Name**: Implement Robust Error Handling for Token Extraction
+- **Description**: Create defensive mechanisms for token data collection
+- **Location**: `src/runtime/agents/runtime.py`
+- **Acceptance Criteria**:
+  - Gracefully handles missing token data
+  - Logs warnings for token extraction failures
+  - Does not interrupt agent execution
+- **Complexity**: Simple
+- **Dependencies**:
+  - Task 3: Runtime Token Extraction
 
-**Acceptance Criteria**:
-- Audit all agent registries and collections in SwarmStateManager
-- Check ParallelAgentExecutor running_tasks cleanup behavior  
-- Verify agent objects are garbage collected after completion
-- Document agent object lifecycle and cleanup points
-- Identify any global references preventing garbage collection
+## Testing Tasks
 
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Medium
+### 6. Unit Tests for Token Extraction
+- **Name**: Develop Comprehensive Unit Tests
+- **Description**: Create unit tests for token extraction and tracking
+- **Location**: `tests/runtime/test_token_extraction.py`
+- **Acceptance Criteria**:
+  - 100% coverage of TokenUsage data class
+  - Verify token accumulation logic
+  - Test edge cases with missing/incomplete token data
+- **Complexity**: Medium
+- **Dependencies**:
+  - Task 1: TokenUsage Data Class
+  - Task 3: Runtime Token Extraction
 
-### 3. Circular Reference Detection
-**Description**: Analyze agent parent/child relationships and cross-references that might create circular dependencies preventing garbage collection.
+### 7. Integration Tests for Token Flow
+- **Name**: Create End-to-End Token Tracking Tests
+- **Description**: Verify token data flows correctly through system
+- **Location**: `tests/integration/test_token_tracking.py`
+- **Acceptance Criteria**:
+  - Token data correctly stored in activity tracker
+  - API endpoints return token information
+  - No performance degradation
+- **Complexity**: Complex
+- **Dependencies**:
+  - Task 2: Activity Tracker Token Enhancement
+  - Task 4: API Endpoint Token Data Integration
+  - Task 6: Unit Tests for Token Extraction
 
-**Acceptance Criteria**:
-- Map all object relationships in agent hierarchy
-- Use Python's gc module to detect circular references
-- Check agent spawn relationships for reference cycles
-- Verify weak references are used appropriately
-- Document circular reference patterns found
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)  
-**Complexity**: Medium
-
-### 4. Tool Execution Result Analysis
-**Description**: Investigate whether tool execution results and cached data accumulate without proper cleanup.
-
-**Acceptance Criteria**:
-- Audit tool result storage and caching mechanisms
-- Check if tool outputs persist after agent completion
-- Analyze function call result retention
-- Verify tool context cleanup on agent termination
-- Measure tool result memory footprint over time
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Simple
-
-### 5. Message History Memory Audit
-**Description**: Verify the existing message history pruning mechanism is working effectively and not contributing to memory accumulation.
-
-**Acceptance Criteria**:
-- Confirm _prune_message_history() is executing correctly
-- Validate max_message_history (50) and prune_frequency (10) settings
-- Check for message objects persisting after pruning
-- Measure actual memory usage of message history storage
-- Verify SQLite storage is not causing RAM retention
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Simple
-
-### 6. SwarmStateManager Memory Efficiency Review
-**Description**: Analyze SwarmStateManager for potential memory inefficiencies despite its SQLite-backed design.
-
-**Acceptance Criteria**:
-- Profile thread-local database connection usage
-- Check for in-memory caches that might be growing
-- Verify WAL mode and connection cleanup effectiveness
-- Analyze query result caching behavior
-- Measure SwarmStateManager memory footprint over time
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Medium
-
-### 7. ThreadPoolExecutor Resource Analysis
-**Description**: Investigate ThreadPoolExecutor resource management and cleanup in ParallelAgentExecutor.
-
-**Acceptance Criteria**:
-- Verify ThreadPoolExecutor.shutdown() is called properly
-- Check for thread resource cleanup after agent completion
-- Analyze running_tasks dict cleanup behavior
-- Verify max_workers configuration and resource limits
-- Check for thread pool resource accumulation
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Simple
-
-### 8. Event Bus and Activity Tracker Memory Review
-**Description**: Analyze event handling and activity tracking systems for potential memory accumulation issues.
-
-**Acceptance Criteria**:
-- Check for unprocessed events accumulating in memory
-- Verify activity tracker state cleanup
-- Analyze event listener registration/deregistration
-- Check for activity history retention limits
-- Measure event system memory footprint
-
-**Dependencies**: Task 1 (Memory profiling infrastructure)
-**Complexity**: Simple
-
-### 9. Memory Leak Load Testing
-**Description**: Create comprehensive load tests that simulate long-running agent execution cycles to identify memory leak patterns.
-
-**Acceptance Criteria**:
-- Load test with 100+ sequential agent executions
-- Memory growth monitoring during extended runs
-- Garbage collection trigger testing
-- Memory usage baseline establishment
-- Automated memory leak detection alerts
-
-**Dependencies**: Tasks 1-8 (All analysis tasks completed)
-**Complexity**: Complex
-
-### 10. Memory Management Documentation
-**Description**: Document discovered memory management patterns, issues found, and recommended practices.
-
-**Acceptance Criteria**:
-- Complete memory management architecture document
-- Agent lifecycle memory cleanup checklist
-- Memory monitoring best practices guide
-- Troubleshooting guide for memory issues
-- Performance optimization recommendations
-
-**Dependencies**: Tasks 1-9 (All previous tasks completed)
-**Complexity**: Simple
-
-## Task Dependencies
-
+## Task Dependencies Graph
 ```
-1. Memory Profiling Infrastructure
-   └── 2. Agent Instance Retention Analysis
-   └── 3. Circular Reference Detection  
-   └── 4. Tool Execution Result Analysis
-   └── 5. Message History Memory Audit
-   └── 6. SwarmStateManager Memory Review
-   └── 7. ThreadPoolExecutor Resource Analysis
-   └── 8. Event Bus and Activity Tracker Review
-       └── 9. Memory Leak Load Testing
-           └── 10. Memory Management Documentation
+1. TokenUsage Data Class
+│
+├─→ 2. Activity Tracker Token Enhancement
+│   │
+│   └─→ 4. API Endpoint Token Data Integration
+│
+├─→ 3. Runtime Token Extraction
+│   │
+│   ├─→ 5. Token Extraction Error Handling
+│   │
+│   └─→ 6. Unit Tests for Token Extraction
+│       │
+│       └─→ 7. Integration Tests for Token Flow
 ```
 
-## Priority Order
+## Estimated Timeline
+- **Week 1**: Tasks 1-3 (Core Token Extraction)
+- **Week 2**: Tasks 4-7 (Integration and Testing)
 
-1. **High Priority** (Critical Path):
-   - Task 1: Memory Usage Profiling Infrastructure
-   - Task 2: Agent Instance Retention Analysis
-   - Task 3: Circular Reference Detection
-
-2. **Medium Priority** (Parallel Analysis):
-   - Task 4: Tool Execution Result Analysis
-   - Task 5: Message History Memory Audit
-   - Task 6: SwarmStateManager Memory Efficiency Review
-   - Task 7: ThreadPoolExecutor Resource Analysis
-   - Task 8: Event Bus and Activity Tracker Memory Review
-
-3. **Final Phase**:
-   - Task 9: Memory Leak Load Testing
-   - Task 10: Memory Management Documentation
-
-## Technical Notes
-
-### Memory Profiling Tools
-- Use `memory_profiler` for line-by-line memory usage
-- Implement `gc` module integration for garbage collection analysis
-- Create custom decorators for agent lifecycle memory tracking
-- Use `psutil` for system-level memory monitoring
-
-### Key Investigation Areas
-- Global agent registries in SwarmStateManager
-- Agent spawn parent/child relationship cleanup
-- Tool result caching and retention policies
-- Message history pruning effectiveness
-- Thread pool resource management
-
-### Expected Outcomes
-- Identification of 3-5 specific memory leak sources
-- Memory usage reduction of 20-40% for long-running processes
-- Stable memory usage patterns during extended operations
-- Clear memory management guidelines for future development
+## Performance and Quality Gates
+- All tasks must maintain <1ms latency impact
+- 100% unit test coverage
+- Zero breaking changes to existing system

@@ -1,82 +1,100 @@
-# Theme Switcher UI Feature - Milestone Plan
+# Fix Metrics Pane Agent Display - Milestone Plan
 
 ## Project Overview
-Implement a theme switcher component that allows users to select from multiple color schemes, with preference persistence and seamless integration into the existing React Bootstrap UI.
+Fix UI panes to properly display all agent types and activity states with dynamic filtering based on actual system data rather than hardcoded values.
 
-## Milestone Breakdown
+## Milestone 1: Dynamic Activity Feed Enhancement (Priority: HIGH)
 
-### Milestone 1: Theme Infrastructure & Core Switcher Component
-**Duration**: 2-3 days
-**Objective**: Build the foundational theme system and basic switcher UI component
+### Objective
+Replace hardcoded activity filter dropdown with dynamic generation based on actual activity data, including semantic groupings for better user experience.
 
-**Deliverables**:
-- Theme provider context system using React Context API
-- CSS variable-based theme system supporting multiple color schemes
-- Basic theme switcher component (dropdown/button group) in header
-- LocalStorage persistence for theme preferences
-- Default dark theme (preserving existing colors) + light theme
+### Deliverables
+1. Dynamic filter generation logic that scans activities for unique types
+2. Semantic grouping implementation (Agent Lifecycle, Tool Usage, Errors, etc.)
+3. Enhanced filter logic supporting category-based filtering
+4. Activity count display per filter option
+5. Real-time filter updates as new activities arrive
 
-**Acceptance Criteria**:
-- Theme context provides current theme and switching functionality
-- CSS variables are defined for all color tokens
-- Theme switcher renders in UI header with 2 theme options
-- Selected theme persists across page refreshes
-- Basic light and dark themes are functional
+### Acceptance Criteria
+- Activity feed shows ALL activity types present in the system
+- Filter options generated dynamically from actual data
+- Semantic categories work correctly (e.g., "Agent Lifecycle" shows spawned, completed, failed)
+- Activity counts displayed next to each filter option
+- Filters update when new activity types appear
+- Performance maintained with 200+ activities
 
-**Dependencies**: None
+### Dependencies
+- Current activity data structure analysis
+- Frontend React component modifications
 
----
-
-### Milestone 2: Complete Theme Palette & Component Integration
-**Duration**: 3-4 days
-**Objective**: Complete all theme options and update existing components to use theme system
-
-**Deliverables**:
-- Additional 2-3 themed color schemes (blue, purple, branded options)
-- Update all existing React components to use theme variables
-- Ensure Bootstrap component compatibility with themes
-- Visual feedback for currently selected theme
-- Smooth transition animations for theme switching
-
-**Acceptance Criteria**:
-- At least 4 total themes available (dark, light, + 2 custom)
-- All existing components render correctly in all themes
-- Theme transitions are smooth and instant
-- Current theme is clearly indicated in switcher UI
-- No layout or functionality regressions
-
-**Dependencies**: Milestone 1 complete
+### Estimated Duration: 3-5 days
 
 ---
 
-### Milestone 3: Polish, Testing & Accessibility
-**Duration**: 2-3 days
-**Objective**: Finalize user experience, ensure accessibility compliance, and comprehensive testing
+## Milestone 2: Agent Type Visibility & Error State Enhancement (Priority: MEDIUM)
 
-**Deliverables**:
-- Responsive design for mobile theme switcher
-- Accessibility compliance (WCAG contrast requirements)
-- Comprehensive test coverage for theme system
-- Performance optimization for theme switching
-- Documentation and code cleanup
+### Objective
+Ensure all agent types are visible across UI panes and improve error/failed state visibility for better debugging.
 
-**Acceptance Criteria**:
-- Theme switcher works on mobile devices
-- All themes meet accessibility contrast requirements
-- Test suite covers theme functionality and persistence
-- Theme switching has minimal performance impact
-- Code is documented and production-ready
+### Deliverables
+1. Enhanced agent type filtering in relevant panes
+2. Better error state highlighting and visibility
+3. Agent type categorization display
+4. "Problem agents" quick filter
+5. Error details display enhancement
 
-**Dependencies**: Milestone 2 complete
+### Acceptance Criteria
+- All spawned agent types visible in UI panes (Executive Director, Development Manager, System Architect, TDD Coordinator, etc.)
+- Failed agents prominently displayed with clear visual distinction
+- Error activities easy to filter and find
+- Agent type categories shown in displays
+- Quick access to problematic agents
 
-## Risk Assessment
-- **Low Risk**: Theme system integration (well-established patterns)
-- **Medium Risk**: Ensuring all components work across themes (extensive testing needed)
-- **Low Risk**: Performance impact (CSS variables are efficient)
+### Dependencies
+- Milestone 1 completion
+- Agent state data structure analysis
 
-## Success Criteria
-- All acceptance criteria from requirements document are met
-- No degradation of existing functionality
-- User can seamlessly switch between 4+ themes
-- Preferences persist reliably across sessions
-- Professional visual quality maintained across all themes
+### Estimated Duration: 2-3 days
+
+---
+
+## Milestone 3: Metrics Pane Verification & Polish (Priority: MEDIUM)
+
+### Objective
+Verify metrics pane includes all agent types and add any missing coverage, plus final polish of the enhanced filtering system.
+
+### Deliverables
+1. Backend metrics aggregation verification
+2. Frontend metrics display enhancements
+3. Agent type distribution in summary views
+4. Final UI polish and testing
+5. Documentation updates
+
+### Acceptance Criteria
+- Metrics pane shows performance data for ALL agent types
+- Agent type distribution visible in summary
+- All new filtering features work reliably
+- UI remains performant and responsive
+- User experience improvements validated
+
+### Dependencies
+- Milestone 2 completion
+- Backend API analysis
+
+### Estimated Duration: 1-2 days
+
+---
+
+## Total Project Timeline: 6-10 days
+
+## Risk Mitigation
+- **Performance Risk**: Implement efficient filtering algorithms, test with large datasets
+- **Data Structure Changes**: Analyze existing activity format first to ensure compatibility
+- **Real-time Update Issues**: Leverage existing polling logic, avoid breaking changes
+
+## Success Metrics
+1. User can see all spawned agent types in UI
+2. Activity feed shows all actual activity types (no missing types)
+3. Failed/error states are clearly visible and filterable
+4. Filter dropdown is dynamic and reflects real system state
+5. Performance remains acceptable with large activity datasets

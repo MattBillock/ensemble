@@ -1,428 +1,444 @@
-# Theme Switcher UI Feature - Architecture Proposal
+# UI Panes Enhancement Architecture Proposal
 
 ## Architecture Overview
 
-### High-Level Design
-The Theme Switcher feature will implement a **Context-based state management pattern** with **CSS Custom Properties (variables)** for theme styling. This approach provides instant theme switching, easy maintenance, and seamless integration with the existing React + Bootstrap architecture.
+This solution implements a **dynamic filtering and state management enhancement** to the existing React-based ensemble UI. The architecture follows a **reactive data-driven approach** where UI components dynamically adapt to the actual system state rather than relying on hardcoded configurations.
 
-**Architecture Pattern**: Provider Pattern + CSS Variables
-- **ThemeProvider** manages theme state globally
-- **CSS Custom Properties** enable instant visual updates
-- **Hook-based** component integration for theme awareness
+**Core Pattern**: Observer-reactive pattern with dynamic filter generation and real-time state updates.
 
-### Rationale
-- **Instant switching**: CSS variables allow immediate visual updates without re-rendering components
-- **Bootstrap compatibility**: CSS variables can override Bootstrap's default values
-- **Performance**: Minimal JavaScript execution during theme changes
-- **Maintainability**: Centralized theme definitions and easy extensibility
+**Rationale**: The existing UI was designed with a static mindset but needs to handle a dynamic, evolving agent ecosystem. Rather than redesigning the entire UI, we'll enhance the existing components with smart, data-driven behavior.
 
 ## Tech Stack
 
-### Core Technologies
-- **React Context API**: Theme state management (chosen over Redux for simplicity - single state concern)
-- **CSS Custom Properties**: Theme variable system (chosen over CSS-in-JS for performance)
-- **localStorage**: Theme persistence (standard browser API, reliable)
-- **Bootstrap 5**: Existing UI framework (maintained for compatibility)
+### Frontend Framework
+- **React 18+** (existing) - Component-based architecture with hooks
+- **React Context** (enhance existing) - For shared filter state
+- **Custom Hooks** (new) - For filter logic and data transformation
 
-### Libraries and Dependencies
-- **No additional dependencies required** - using built-in browser and React APIs
-- **Optional**: `react-transition-group` for smooth theme transitions (if smoother animations needed)
+### State Management
+- **Enhanced React Context** - Centralized filter state across panes
+- **useState/useEffect** - Local component state and side effects
+- **useMemo/useCallback** - Performance optimization for dynamic calculations
 
-### Rationale for Tech Choices
-- **CSS Variables over CSS-in-JS**: Better performance for theme switching, no runtime style generation
-- **Context API over Redux**: Simpler for single-concern state, reduces bundle size
-- **localStorage over cookies**: Larger storage capacity, no server overhead, perfect for UI preferences
+### Data Processing
+- **JavaScript Array methods** - filter(), reduce(), map() for activity processing
+- **Set objects** - Efficient unique value tracking
+- **WeakMap** - Memoization for expensive calculations
+
+### Styling (Maintain Existing)
+- **CSS Modules** or existing styling approach
+- **CSS Custom Properties** - For consistent theming
+- **Flexbox/Grid** - Responsive layout (existing)
+
+**Why this stack**:
+- **Minimal disruption**: Builds on existing React foundation
+- **Performance focused**: Memoization and efficient data structures
+- **Type safety**: Leverages existing TypeScript if present
+- **Future-proof**: Easy to extend as new agent types emerge
 
 ## System Components
 
-### 1. ThemeProvider Component
-**Responsibility**: Global theme state management and persistence
-- Wraps the entire application
-- Manages current theme state
-- Handles localStorage persistence
-- Provides theme context to all children
-
-### 2. ThemeSwitcher Component
-**Responsibility**: User interface for theme selection
-- Renders theme selection dropdown/buttons
-- Triggers theme changes
-- Shows current theme indication
-- Responsive design for mobile/desktop
-
-### 3. Theme Configuration
-**Responsibility**: Theme definitions and CSS variable mappings
-- Defines all available themes
-- Maps theme names to CSS custom properties
-- Provides theme metadata (names, preview colors, etc.)
-
-### 4. useTheme Hook
-**Responsibility**: Component-level theme integration
-- Provides current theme data to components
-- Offers theme switching functions
-- Enables theme-aware conditional rendering
-
-### Component Interaction Flow
+### 1. Enhanced Activity Feed Component
 ```
-App
-├── ThemeProvider (manages global theme state)
-    ├── Header
-    │   └── ThemeSwitcher (user interaction)
-    ├── MainContent
-    │   └── Various Components (consume theme via useTheme)
-    └── Footer
+ActivityFeed
+├── DynamicActivityFilter (new)
+│   ├── FilterOptionGenerator (new)
+│   ├── ActivityCategorizer (new)
+│   └── FilterState Management
+├── ActivityList (existing, enhanced)
+└── ActivityItem (existing)
 ```
 
-### Data Flow
-1. User selects theme in ThemeSwitcher
-2. ThemeSwitcher calls setTheme function
-3. ThemeProvider updates state and localStorage
-4. CSS custom properties updated on document root
-5. All components instantly reflect new theme
+**Responsibilities**:
+- `DynamicActivityFilter`: Generates filter options from actual activity data
+- `FilterOptionGenerator`: Scans activities, creates semantic groupings
+- `ActivityCategorizer`: Maps activity types to logical categories
+- Enhanced `ActivityList`: Applies dynamic filters to activity rendering
+
+### 2. Enhanced Metrics Pane Component
+```
+MetricsPane
+├── AgentTypeDetector (new)
+├── MetricsAggregator (enhanced)
+├── AgentPerformanceTable (enhanced)
+└── AgentTypeDistribution (new)
+```
+
+**Responsibilities**:
+- `AgentTypeDetector`: Identifies all agent types in system
+- Enhanced `MetricsAggregator`: Includes all discovered agent types
+- Enhanced `AgentPerformanceTable`: Shows newly spawned agent types
+- `AgentTypeDistribution`: Visual breakdown of agent type usage
+
+### 3. Enhanced Agent States Pane
+```
+AgentStatesPane
+├── AgentCategoryFilter (new)
+├── AgentStatesList (enhanced)
+├── ErrorStateHighlighter (new)
+└── AgentTaskDisplay (enhanced)
+```
+
+**Responsibilities**:
+- `AgentCategoryFilter`: Filter by agent roles (leadership, dev, test)
+- `ErrorStateHighlighter`: Visually emphasize failed agents
+- Enhanced `AgentTaskDisplay`: Show agent type alongside tasks
+
+### 4. Shared Infrastructure
+```
+hooks/
+├── useActivityAnalyzer (new) - Dynamic activity analysis
+├── useDynamicFilters (new) - Filter state management
+├── useAgentTypeRegistry (new) - Agent type tracking
+└── useErrorStateTracker (new) - Error detection and highlighting
+
+utils/
+├── activityCategorizer.js (new) - Activity type mapping
+├── agentTypeDetector.js (new) - Agent discovery logic
+├── filterGenerator.js (new) - Dynamic filter creation
+└── errorStateDetector.js (new) - Error pattern detection
+```
+
+## Data Flow
+
+### Filter Generation Flow
+```
+Activities Array → ActivityAnalyzer → CategoryMappings → FilterOptions → UI
+```
+
+1. **Raw activities** arrive from existing polling mechanism
+2. **ActivityAnalyzer hook** processes activities to extract unique types
+3. **Category mappings** group similar activities into semantic filters
+4. **Filter options** generated with counts and descriptions
+5. **UI updates** reactively with new filter options
+
+### Real-time Updates Flow
+```
+New Activity → Context Update → Component Re-render → Dynamic Recalculation
+```
+
+1. **New activity** added to activities array (existing mechanism)
+2. **Context update** triggers throughout component tree
+3. **Components re-render** with updated filter calculations
+4. **Dynamic recalculation** adds new activity types to filters if needed
+
+### Error State Detection Flow
+```
+Activities → Error Pattern Detection → Error State Tracking → Visual Highlighting
+```
 
 ## File/Directory Structure
 
 ```
 src/
 ├── components/
-│   ├── layout/
-│   │   ├── Header.jsx (existing - modified)
-│   │   └── ThemeSwitcher.jsx (new)
-│   └── ...existing components
-├── contexts/
-│   └── ThemeContext.js (new)
+│   ├── ActivityFeed/
+│   │   ├── ActivityFeed.jsx (enhanced)
+│   │   ├── DynamicActivityFilter.jsx (new)
+│   │   ├── FilterOptionGenerator.jsx (new)
+│   │   └── ActivityCategorizer.jsx (new)
+│   ├── MetricsPane/
+│   │   ├── MetricsPane.jsx (enhanced)
+│   │   ├── AgentTypeDetector.jsx (new)
+│   │   ├── AgentPerformanceTable.jsx (enhanced)
+│   │   └── AgentTypeDistribution.jsx (new)
+│   └── AgentStatesPane/
+│       ├── AgentStatesPane.jsx (enhanced)
+│       ├── AgentCategoryFilter.jsx (new)
+│       ├── ErrorStateHighlighter.jsx (new)
+│       └── AgentTaskDisplay.jsx (enhanced)
 ├── hooks/
-│   └── useTheme.js (new)
-├── themes/
-│   ├── index.js (new - theme registry)
-│   ├── themes.js (new - theme definitions)
-│   └── theme-variables.css (new - CSS custom properties)
+│   ├── useActivityAnalyzer.js (new)
+│   ├── useDynamicFilters.js (new)
+│   ├── useAgentTypeRegistry.js (new)
+│   └── useErrorStateTracker.js (new)
 ├── utils/
-│   └── themeUtils.js (new - helper functions)
-└── App.js (modified to include ThemeProvider)
+│   ├── activityCategorizer.js (new)
+│   ├── agentTypeDetector.js (new)
+│   ├── filterGenerator.js (new)
+│   └── errorStateDetector.js (new)
+├── context/
+│   └── FilterContext.jsx (enhanced)
+└── constants/
+    └── activityCategories.js (new)
 ```
 
 ## Data Model
 
-### Theme State Structure
+### Activity Categories Structure
 ```javascript
-// ThemeContext state
-{
-  currentTheme: 'dark', // string: theme identifier
-  availableThemes: [    // array: all available themes
-    { id: 'dark', name: 'Dark', preview: '#1a1a1a' },
-    { id: 'light', name: 'Light', preview: '#ffffff' },
-    { id: 'blue', name: 'Ocean Blue', preview: '#1e3a8a' },
-    { id: 'purple', name: 'Purple', preview: '#7c3aed' }
-  ],
-  setTheme: function,   // function: theme setter
-  isLoading: false      // boolean: theme initialization state
-}
-```
-
-### Theme Definition Structure
-```javascript
-// themes.js
-{
-  dark: {
-    id: 'dark',
-    name: 'Dark Theme',
-    preview: '#1a1a1a',
-    variables: {
-      '--primary-bg': '#1a1a1a',
-      '--secondary-bg': '#2d2d2d',
-      '--text-primary': '#ffffff',
-      '--text-secondary': '#cccccc',
-      '--accent-color': '#007bff',
-      '--border-color': '#404040'
-      // ... all theme variables
-    }
+const ACTIVITY_CATEGORIES = {
+  AGENT_LIFECYCLE: {
+    label: 'Agent Lifecycle',
+    activityTypes: ['agent_spawned', 'agent_started', 'agent_completed', 'agent_failed'],
+    icon: 'agent'
+  },
+  ITERATIONS: {
+    label: 'Task Iterations', 
+    activityTypes: ['iteration_started', 'iteration_completed'],
+    icon: 'cycle'
+  },
+  TOOL_USAGE: {
+    label: 'Tool Operations',
+    activityTypes: ['tool_use', 'tool_use_started', 'tool_use_completed', 'tool_use_failed'],
+    icon: 'tool'
+  },
+  COMMUNICATIONS: {
+    label: 'Communications',
+    activityTypes: ['message', 'question', 'answer', 'clarification'],
+    icon: 'chat'
+  },
+  ERRORS: {
+    label: 'Errors & Issues',
+    filter: (activity) => activity.status === 'error' || activity.activity_type.includes('error'),
+    icon: 'warning'
   }
-  // ... other themes
 }
 ```
 
-### localStorage Schema
+### Filter State Structure
 ```javascript
-// Stored as JSON string
-{
-  "ensemble-ui-theme": "dark"
+const FilterState = {
+  selectedCategories: Set<string>,
+  activityCounts: Map<string, number>,
+  availableTypes: Set<string>,
+  semanticFilters: Map<string, FilterDefinition>
+}
+```
+
+### Agent Type Registry
+```javascript
+const AgentTypeRegistry = {
+  discoveredTypes: Set<string>,
+  typeCategories: Map<string, AgentCategory>,
+  typeMetrics: Map<string, AgentMetrics>,
+  lastUpdated: timestamp
 }
 ```
 
 ## API Design
 
-### ThemeProvider API
+### Enhanced Filter Hooks API
 ```javascript
-// Context value provided to all components
-{
-  currentTheme: string,
-  availableThemes: Array<ThemeDefinition>,
-  setTheme: (themeId: string) => void,
-  isLoading: boolean
-}
+// Dynamic activity filtering
+const {
+  availableFilters,
+  selectedFilters,
+  setSelectedFilters,
+  filteredActivities,
+  activityCounts
+} = useDynamicFilters(activities);
+
+// Agent type discovery  
+const {
+  discoveredAgentTypes,
+  agentTypeCategories,
+  newAgentTypes
+} = useAgentTypeRegistry(activities, agents);
+
+// Error state tracking
+const {
+  errorStates,
+  failedAgents,
+  errorActivities,
+  isHealthy
+} = useErrorStateTracker(activities, agents);
 ```
 
-### useTheme Hook API
+### Component Props API
 ```javascript
-// Returns theme context + utility functions
-{
-  currentTheme: string,
-  themeData: ThemeDefinition,
-  availableThemes: Array<ThemeDefinition>,
-  setTheme: (themeId: string) => void,
-  isTheme: (themeId: string) => boolean
-}
-```
+// DynamicActivityFilter component
+<DynamicActivityFilter
+  activities={activities}
+  onFilterChange={handleFilterChange}
+  selectedFilters={selectedFilters}
+  showCounts={true}
+  enableSemanticGrouping={true}
+/>
 
-### ThemeSwitcher Component Props
-```javascript
-{
-  variant?: 'dropdown' | 'buttons', // default: 'dropdown'
-  size?: 'sm' | 'md' | 'lg',        // default: 'md'
-  showLabels?: boolean,             // default: true
-  className?: string                // additional CSS classes
-}
-```
-
-## CSS Architecture
-
-### CSS Custom Properties Strategy
-All theme-related styling will use CSS custom properties defined on the `:root` element:
-
-```css
-/* theme-variables.css */
-:root {
-  /* Default (dark) theme */
-  --primary-bg: #1a1a1a;
-  --secondary-bg: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  /* ... */
-}
-
-/* Bootstrap integration */
-:root {
-  --bs-primary: var(--accent-color);
-  --bs-secondary: var(--secondary-bg);
-  --bs-body-bg: var(--primary-bg);
-  --bs-body-color: var(--text-primary);
-}
-```
-
-### Theme Application
-Themes are applied by updating CSS custom properties on the document root:
-```javascript
-// Apply theme
-Object.entries(themeDefinition.variables).forEach(([property, value]) => {
-  document.documentElement.style.setProperty(property, value);
-});
+// AgentTypeDetector component  
+<AgentTypeDetector
+  activities={activities}
+  onNewAgentType={handleNewAgentType}
+  includeInMetrics={true}
+/>
 ```
 
 ## Deployment Strategy
 
+### Development Approach
+1. **Feature flags**: Implement behind feature toggle for safe rollout
+2. **Incremental deployment**: Start with Activity Feed, then Metrics, then Agent States
+3. **A/B testing**: Compare performance of old vs. new filtering approaches
+
 ### Build Process
-- CSS custom properties file included in main CSS bundle
-- Theme definitions bundled with JavaScript
-- No additional build steps required
+- **Existing build pipeline**: No changes needed to build process
+- **Bundle size**: New code adds ~15KB gzipped (estimated)
+- **Performance testing**: Validate with 500+ activities dataset
 
-### Environment Configuration
-- Theme persistence works in all environments (uses localStorage)
-- Default theme configurable via environment variable
-- Theme availability configurable per environment
-
-### Progressive Enhancement
-- Graceful degradation if localStorage unavailable
-- Default theme loads immediately, user preference applied after hydration
-- Works with server-side rendering (theme applied after client-side hydration)
+### Configuration
+- **Feature toggles**: `ENABLE_DYNAMIC_FILTERS=true`
+- **Performance tuning**: `FILTER_DEBOUNCE_MS=150`
+- **Error boundaries**: Wrap new components to prevent crashes
 
 ## Testing Strategy
 
-### Unit Testing (Jest + React Testing Library)
-```javascript
-// ThemeProvider tests
-- ✓ Provides theme context to children
-- ✓ Persists theme selection to localStorage
-- ✓ Loads theme from localStorage on initialization
-- ✓ Falls back to default theme when localStorage corrupt
-
-// useTheme hook tests
-- ✓ Returns current theme data
-- ✓ Provides theme switching function
-- ✓ Updates when theme changes
-
-// ThemeSwitcher tests
-- ✓ Renders all available themes
-- ✓ Shows current theme as selected
-- ✓ Triggers theme change on selection
-- ✓ Responsive behavior on mobile/desktop
+### Unit Tests (Jest + React Testing Library)
+```
+tests/
+├── hooks/
+│   ├── useActivityAnalyzer.test.js
+│   ├── useDynamicFilters.test.js
+│   └── useAgentTypeRegistry.test.js
+├── utils/
+│   ├── activityCategorizer.test.js
+│   ├── agentTypeDetector.test.js
+│   └── filterGenerator.test.js
+└── components/
+    ├── DynamicActivityFilter.test.jsx
+    ├── AgentTypeDetector.test.jsx
+    └── ErrorStateHighlighter.test.jsx
 ```
 
-### Integration Testing
-```javascript
-// End-to-end theme switching
-- ✓ Theme switcher updates all components visually
-- ✓ Theme preference persists across page reload
-- ✓ All Bootstrap components render correctly in each theme
-- ✓ Accessibility standards maintained across themes
-```
+**Test Coverage Requirements**:
+- **Hook logic**: 95% coverage on filter generation and state management
+- **Utility functions**: 100% coverage on categorization and detection logic  
+- **Components**: 85% coverage on render logic and user interactions
 
-### Visual Regression Testing
-- Screenshot tests for each theme across key pages
-- Contrast ratio validation for accessibility
-- Component rendering validation in all themes
+### Integration Tests
+1. **Filter application**: Verify filters correctly reduce activity lists
+2. **Real-time updates**: Test new activity types trigger filter updates
+3. **Performance**: Validate filtering performance with large datasets
+4. **Error states**: Confirm error detection and highlighting works
 
-## Migration Strategy
-
-### Phase 1: Infrastructure (Iteration 1)
-1. Create ThemeProvider and context
-2. Add CSS custom properties system
-3. Create useTheme hook
-4. Update App.js to include ThemeProvider
-
-### Phase 2: Theme Switcher (Iteration 2)
-1. Build ThemeSwitcher component
-2. Add to header component
-3. Implement theme definitions (dark + light)
-4. Add localStorage persistence
-
-### Phase 3: Component Integration (Iteration 3)
-1. Update existing components to use theme variables
-2. Add additional themes (blue, purple)
-3. Test all components across themes
-4. Accessibility validation
-
-### Phase 4: Polish & Optimization (Iteration 4)
-1. Add smooth transitions
-2. Performance optimization
-3. Mobile experience refinement
-4. Documentation
+### End-to-End Tests (Cypress)
+1. **User workflow**: User can filter activities and see all agent types
+2. **Dynamic updates**: New agent spawn appears in UI within seconds
+3. **Error visibility**: Failed agents are prominently displayed
+4. **Cross-pane consistency**: Agent appears in all relevant panes
 
 ## Alternatives Considered
 
-### 1. CSS-in-JS Approach (Styled Components/Emotion)
-**Pros**: JavaScript theme management, dynamic styling
-**Cons**: Performance impact on theme switching, larger bundle size, runtime style generation
-**Decision**: CSS variables chosen for instant switching performance
+### Alternative 1: Complete UI Redesign
+**Rejected because**:
+- Higher risk and longer timeline
+- Would require extensive user retraining
+- Current UI structure is fundamentally sound
 
-### 2. SCSS Variables + Build-time Generation
-**Pros**: Compile-time optimization
-**Cons**: Requires build step for theme switching, no runtime theme changes
-**Decision**: CSS custom properties chosen for runtime flexibility
+### Alternative 2: Backend-driven Filtering
+**Considered**: Add filter API endpoints to backend
+**Rejected because**:
+- Adds unnecessary complexity and latency
+- Frontend has all data needed for filtering
+- Would require backend changes (out of scope)
 
-### 3. Redux for State Management
-**Pros**: Predictable state updates, dev tools, scalability
-**Cons**: Overkill for single state concern, additional bundle size
-**Decision**: Context API chosen for simplicity
+### Alternative 3: External State Management (Redux)
+**Considered**: Use Redux for complex state management
+**Rejected because**:
+- Overkill for this enhancement
+- React Context sufficient for cross-component state
+- Would add significant bundle size
 
-### 4. Multiple CSS Files per Theme
-**Pros**: Complete separation of theme styles
-**Cons**: Flash of unstyled content during theme switching, bundle size
-**Decision**: CSS variables chosen for instant switching
+### Alternative 4: Virtual Scrolling/Pagination
+**Considered**: Handle large activity lists with virtual scrolling
+**Deferred because**:
+- Current performance acceptable for expected activity volume
+- Can be added later if performance issues arise
+- Increases implementation complexity
 
 ## Risks and Mitigations
 
-### Risk 1: CSS Custom Property Browser Support
-**Risk**: Older browsers may not support CSS custom properties
-**Mitigation**: Graceful degradation to default theme, minimal browser support requirements for Ensemble AI
+### Risk 1: Performance Degradation with Large Activity Sets
+**Impact**: UI becomes slow with 1000+ activities
+**Probability**: Medium
+**Mitigation**: 
+- Implement debounced filtering
+- Use memoization extensively
+- Add virtual scrolling if needed
+- Performance testing with large datasets
 
-### Risk 2: Bootstrap Theme Integration Complexity
-**Risk**: Bootstrap's CSS might not integrate smoothly with custom properties
-**Mitigation**: Comprehensive testing with Bootstrap components, fallback styling where needed
+### Risk 2: Memory Leaks from Dynamic Filter Creation
+**Impact**: Browser memory usage grows over time
+**Probability**: Low
+**Mitigation**:
+- Proper cleanup in useEffect hooks
+- WeakMap usage for temporary caching
+- Memory usage monitoring in tests
 
-### Risk 3: Performance Impact of Large Theme Objects
-**Risk**: Theme definitions could become large and impact performance
-**Mitigation**: Lazy loading of theme definitions, optimization of CSS custom property updates
+### Risk 3: Missing Edge Cases in Activity Categorization
+**Impact**: Some activities don't appear in appropriate filters
+**Probability**: Medium
+**Mitigation**:
+- Comprehensive test cases with real activity data
+- Fallback "Other" category for uncategorized activities
+- Monitoring and logging for missed categories
 
-### Risk 4: Theme Persistence Reliability
-**Risk**: localStorage might be unavailable or corrupted
-**Mitigation**: Error handling with fallback to default theme, validation of stored theme data
-
-### Risk 5: Accessibility Compliance Across Themes
-**Risk**: Some themes might not meet accessibility contrast requirements
-**Mitigation**: Automated contrast testing, accessibility validation in CI/CD, careful theme design
+### Risk 4: Backward Compatibility Issues
+**Impact**: Breaks existing functionality for some users
+**Probability**: Low
+**Mitigation**:
+- Feature flag for rollback capability
+- Extensive regression testing
+- Gradual rollout approach
 
 ## Open Questions
 
-### 1. Theme Transition Animation Style
-**Question**: Should theme switching include smooth transitions for colors?
-**Options**: 
-- A) Instant switching (better performance)
-- B) Smooth color transitions (better UX)
-**Recommendation**: Start with instant switching, add transitions if requested
+### User Interface Decisions
+1. **Filter UI placement**: Keep existing dropdown or expand to multi-select checkboxes?
+   - **Recommendation**: Start with enhanced dropdown, add checkboxes if user feedback requests it
 
-### 2. Theme Switcher UI Style
-**Question**: What's the preferred UI for theme selection?
-**Options**:
-- A) Dropdown menu (compact)
-- B) Button group (visual previews)
-- C) Modal with preview (detailed)
-**Recommendation**: Dropdown for header space efficiency, with small color preview dots
+2. **Activity count display**: Show counts in filter labels or separate indicators?
+   - **Recommendation**: In filter labels for immediate visibility
 
-### 3. Mobile Theme Switcher Placement
-**Question**: Where should theme switcher appear on mobile?
-**Options**:
-- A) Mobile header/navbar
-- B) Settings/menu drawer
-- C) Floating action button
-**Recommendation**: Mobile header with collapsed styling
+3. **Error state prominence**: How aggressively should errors be highlighted?
+   - **Recommendation**: Red badge + separate error filter, not overwhelming
 
-### 4. Theme Naming Convention
-**Question**: How should themes be named for user clarity?
-**Options**:
-- A) Descriptive names (Dark, Light, Ocean Blue)
-- B) Brand names (Professional, Creative, Focus)
-- C) Simple identifiers (Theme 1, Theme 2, Theme 3)
-**Recommendation**: Descriptive names with visual preview indicators
+### Technical Implementation Choices
+1. **Filter debouncing**: What delay provides best UX vs. performance balance?
+   - **Recommendation**: 150ms based on UX research standards
 
-### 5. Default Theme Selection
-**Question**: What should be the default theme for new users?
-**Options**:
-- A) Current dark theme (maintains existing experience)
-- B) Light theme (broader user preference)
-- C) System preference detection (OS-based)
-**Recommendation**: Current dark theme to maintain consistency
+2. **Agent type categorization**: How granular should agent role categorization be?
+   - **Recommendation**: High-level roles (Leadership, Development, Testing, Coordination)
 
-## Implementation Priority
+3. **Real-time update frequency**: How often should dynamic filters recalculate?
+   - **Recommendation**: On every activity update, memoized to prevent unnecessary recalculation
 
-### Must Have (MVP)
-- ThemeProvider and context system
-- Dark and Light themes
-- Theme switcher in header
-- localStorage persistence
-- Basic component theme integration
+## Implementation Timeline
 
-### Should Have (V1.1)
-- Additional themes (2-3 options)
-- Smooth theme transitions
-- Mobile-optimized theme switcher
-- Complete component theme coverage
+### Phase 1: Activity Feed Enhancement (Week 1)
+- Dynamic filter generation infrastructure
+- Activity categorization logic
+- Basic filter UI updates
 
-### Could Have (Future)
-- System preference detection
-- Theme preview before selection
-- Advanced theme customization
-- Theme import/export functionality
+### Phase 2: Agent Type Detection (Week 2)
+- Agent type registry implementation
+- Metrics pane enhancement
+- Agent states pane updates
 
-## Success Criteria
+### Phase 3: Error State & Polish (Week 3)
+- Error detection and highlighting
+- Performance optimization
+- Comprehensive testing
 
-### Technical Success
-- ✅ All existing components render correctly in all themes
-- ✅ Theme switching is instant (<100ms visual update)
-- ✅ No JavaScript errors during theme operations
-- ✅ localStorage persistence 100% reliable
-- ✅ Bundle size increase <50KB
+### Phase 4: Integration & Deployment (Week 4)
+- End-to-end testing
+- User acceptance testing  
+- Gradual rollout with feature flags
+
+## Success Metrics
+
+### Functional Success
+- [ ] All activity types present in system appear in filters
+- [ ] All spawned agent types visible in metrics pane
+- [ ] Failed/error states clearly highlighted
+- [ ] Filters update in real-time as system evolves
+
+### Performance Success
+- [ ] Filter application completes within 100ms for 500 activities
+- [ ] Memory usage remains stable over extended usage
+- [ ] No regression in existing UI performance
 
 ### User Experience Success
-- ✅ Theme switcher is discoverable and intuitive
-- ✅ Visual consistency maintained across all themes
-- ✅ Accessibility standards met (WCAG 2.1 AA)
-- ✅ Responsive behavior on all device sizes
-- ✅ No layout shifts during theme switching
-
-### Business Success
-- ✅ Feature is functionally complete within timeline
-- ✅ No regression in existing functionality
-- ✅ User preference persistence works reliably
-- ✅ Maintenance overhead remains minimal
-
-This architecture provides a robust, performant, and maintainable solution for the Theme Switcher feature that integrates seamlessly with the existing React + Bootstrap architecture while providing instant theme switching and reliable persistence.
+- [ ] Users can find specific agent activity within 3 clicks
+- [ ] Error states are noticed within 5 seconds of occurrence
+- [ ] Filter options are self-explanatory without training
