@@ -1,42 +1,58 @@
-# Test Persistence Verification Requirements
+# Activity Tracker Cleanup System Requirements
 
-## Project Overview
-This is a test task to verify that persistence is working correctly by examining the output directory structure.
+## Problem Statement
+Memory growth issues in the request cleanup system due to incomplete implementation of clear_request() and lack of activity filtering.
 
-## User Vision
-"Test task: Verify persistence is working by checking the output directory structure."
+## Objectives
+1. Complete the clear_request() method in ActivityTracker
+2. Implement request-based activity filtering
+3. Add configurable activity retention and cleanup mechanism
+4. Prevent memory leaks during long-running sessions
 
-## Verification Objectives
-1. **Directory Structure Analysis**: Examine the output directory to confirm it contains persistent project data
-2. **File Type Distribution**: Verify appropriate mix of documentation and project artifacts
-3. **Project Organization**: Confirm projects are properly organized in directories
-4. **Data Integrity**: Ensure files and directories demonstrate successful persistence across multiple project executions
+## Detailed Requirements
+### 1. Request Cleanup
+- Fully remove request-specific data when clear_request() is called
+- Ensure no orphaned data remains after cleanup
+- Preserve data for active requests
 
-## Scope
-**In Scope:**
-- Directory structure examination
-- File count analysis
-- Organization assessment
-- Persistence verification
+### 2. Activity Filtering
+- Enable filtering activities by request_id
+- Support complex filter conditions (date, status, type)
+- Minimal performance overhead
 
-**Out of Scope:**
-- Code implementation
-- New feature development
-- System modifications
+### 3. Retention Mechanism
+- Configurable retention period for activities
+- Automatic cleanup of old activities
+- Configurable retention policies (time-based, count-based)
 
-## Success Criteria
-✓ Output directory exists and is accessible
-✓ Contains multiple project directories (evidence of persistence)
-✓ Contains appropriate mix of documentation files (.md files)
-✓ Shows evidence of multiple project executions
-✓ Demonstrates proper project organization
+## Acceptance Criteria
+- ✓ clear_request() removes all associated request data
+- ✓ Activities can be filtered by request_id
+- ✓ Old activities automatically cleaned up
+- ✓ Memory usage remains stable
+- ✓ No impact on existing system functionality
 
-## Assumptions
-- Output directory at `/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output`
-- Persistence working correctly if directory contains project artifacts
-- Standard ensemble project structure expected
+## Files to Modify
+- src/runtime/agents/activity_tracker.py
+- Related test files in test/ directory
 
 ## Constraints
-- Read-only verification task
-- No modifications to existing files or directories
-- Test completion required within single execution
+- Use TDD approach: Write tests first, then implementation
+- Maintain existing API contract
+- Minimal performance impact
+- No data loss for active requests
+
+## Assumptions
+- Retention configuration will be handled via configuration file
+- Default retention period of 30 days for inactive requests
+- Cleanup process runs periodically in background
+
+## Out of Scope
+- Complete rewrite of activity tracking system
+- Changes to core logging mechanisms
+- Performance optimizations beyond cleanup
+
+## Risks
+- Potential data loss if cleanup logic is incorrect
+- Performance overhead from filtering/cleanup
+- Compatibility with existing integrations
