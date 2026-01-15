@@ -95,11 +95,17 @@ function AgentSummaryPane({ agentStatus }) {
                     agentInfo.status === 'completed' ? 'bg-green-500/30 text-green-200' :
                     agentInfo.status === 'error' ? 'bg-red-500/30 text-red-200' :
                     agentInfo.status === 'running' ? 'bg-blue-500/30 text-blue-200' :
+                    agentInfo.status === 'awaiting_user_input' ? 'bg-yellow-500/30 text-yellow-200' :
+                    agentInfo.status === 'superseded' ? 'bg-gray-500/30 text-gray-300' :
+                    agentInfo.status === 'forever_failed' ? 'bg-red-700/30 text-red-300' :
                     'bg-yellow-500/30 text-yellow-200'
                   }`}>
                     {agentInfo.status === 'running' && '⚙️'}
                     {agentInfo.status === 'completed' && '✅'}
                     {agentInfo.status === 'error' && '❌'}
+                    {agentInfo.status === 'awaiting_user_input' && '❓'}
+                    {agentInfo.status === 'superseded' && '➡️'}
+                    {agentInfo.status === 'forever_failed' && '☠️'}
                   </span>
                 </div>
                 <div className="text-xs text-gray-400">

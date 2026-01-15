@@ -255,7 +255,6 @@ class AgentOrchestrator:
                     )
 
             # Update with result
-            self.active_agents[agent_id]["status"] = "completed"
             self.active_agents[agent_id]["result"] = result
             self.active_agents[agent_id]["generated_files"] = generated_files
             self.active_agents[agent_id]["completed_at"] = end_time.isoformat()
@@ -265,15 +264,42 @@ class AgentOrchestrator:
                 file_count = len(generated_files)
                 self.active_agents[agent_id]["logs"].append(f"📁 Generated {file_count} file(s)")
 
-            self.active_agents[agent_id]["logs"].append(f"✅ Completed successfully")
+            # Check if agent is waiting for user input
+            if result and result.get("status") == "needs_user_input":
+                self.active_agents[agent_id]["status"] = "awaiting_user_input"
+                self.active_agents[agent_id]["awaiting_question_id"] = result.get("question_id")
+                self.active_agents[agent_id]["continuation_context"] = {
+                    "original_input": input_data,
+                    "question": result.get("user_question"),
+                    "agent_type": self.active_agents[agent_id].get("type"),
+                    "budget_tier": self.active_agents[agent_id].get("budget_tier"),
+                    "request_id": request_id
+                }
+                self.active_agents[agent_id]["logs"].append(
+                    f"❓ Waiting for user input: {result.get('user_question', 'No question provided')}"
+                )
+                self.logger.info(
+                    f"Agent awaiting user input",
+                    extra={
+                        'request_id': request_id,
+                        'agent_id': agent_id,
+                        'question_id': result.get('question_id'),
+                        'duration_ms': duration_ms
+                    }
+                )
+            else:
+                self.active_agents[agent_id]["status"] = "completed"
+                self.active_agents[agent_id]["logs"].append(f"✅ Completed successfully")
 
-            self.logger.info(f"Agent execution completed successfully",
-                           extra={
-                               'request_id': request_id,
-                               'agent_id': agent_id,
-                               'duration_ms': duration_ms,
-                               'files_generated': len(generated_files)
-                           })
+            # Only log completion if actually completed (not waiting for input)
+            if self.active_agents[agent_id]["status"] == "completed":
+                self.logger.info(f"Agent execution completed successfully",
+                               extra={
+                                   'request_id': request_id,
+                                   'agent_id': agent_id,
+                                   'duration_ms': duration_ms,
+                                   'files_generated': len(generated_files)
+                               })
 
         except Exception as e:
             import traceback
@@ -448,6 +474,60 @@ class AgentOrchestrator:
                                 'error_type': type(e).__name__
                             })
             return agent_id, {"status": "error", **error_details}
+
+    async def continue_agent_with_answer(self, agent_id: str, answer: str):
+        """Continue an agent execution after receiving user answer.
+
+        Args:
+            agent_id: ID of the agent that was waiting for input
+            answer: User's answer to the agent's question
+        """
+        agent_info = self.active_agents.get(agent_id)
+        if not agent_info:
+            self.logger.warning(f"Attempted to continue non-existent agent",
+                              extra={'request_id': 'continuation', 'agent_id': agent_id})
+            return None, {"error": "Agent not found"}
+
+        context = agent_info.get("continuation_context", {})
+        original_input = context.get("original_input", {})
+        question = context.get("question", "")
+        original_request_id = context.get("request_id", "unknown")
+        budget_tier = context.get("budget_tier", "balanced")
+
+        self.logger.info(f"Continuing agent with user answer",
+                        extra={
+                            'request_id': original_request_id,
+                            'agent_id': agent_id,
+                            'answer_length': len(answer)
+                        })
+
+        # Build continuation problem description
+        original_problem = original_input.get("user_vision", "")
+        continuation_problem = f"""CONTINUATION OF PREVIOUS TASK
+
+## Original Task
+{original_problem}
+
+## Previous Question
+{question}
+
+## User's Answer
+{answer}
+
+## Instructions
+The user has answered your question above. Please continue with implementation based on their clarification. Do not ask the same question again - proceed with the approach based on their answer."""
+
+        # Mark old agent as superseded
+        self.active_agents[agent_id]["status"] = "superseded"
+        self.active_agents[agent_id]["superseded_by_answer"] = True
+        self.active_agents[agent_id]["logs"].append(f"➡️ Continued with new agent after user answer")
+
+        # Spawn a new executive director with continuation context
+        return await self.spawn_executive_director(
+            problem_description=continuation_problem,
+            budget_tier=budget_tier,
+            auto_continue=True
+        )
 
     def _generate_title_async(self, request_id: str, prompt: str):
         """Generate title for request asynchronously in background thread."""
@@ -1014,15 +1094,37 @@ async def get_pending_questions():
     return {"questions": questions}
 
 @app.post("/api/activity/questions/{question_id}/answer")
-async def answer_question(question_id: str, answer: dict):
-    """Answer a pending question"""
+async def answer_question(question_id: str, answer: dict, background_tasks: BackgroundTasks):
+    """Answer a pending question and trigger agent continuation"""
     from src.runtime.agents.runtime import AgentRuntime
     tracker = AgentRuntime.get_activity_tracker()
 
     if "answer" not in answer:
         raise HTTPException(status_code=400, detail="Missing 'answer' field")
 
-    tracker.record_answer(question_id, answer["answer"])
+    user_answer = answer["answer"]
+    tracker.record_answer(question_id, user_answer)
+
+    # Find the agent waiting for this answer and trigger continuation
+    waiting_agent_id = None
+    for agent_id, agent_info in orchestrator.active_agents.items():
+        if agent_info.get("awaiting_question_id") == question_id:
+            waiting_agent_id = agent_id
+            break
+
+    if waiting_agent_id:
+        # Trigger agent continuation with the user's answer
+        new_agent_id, result = await orchestrator.continue_agent_with_answer(
+            waiting_agent_id,
+            user_answer
+        )
+        return {
+            "success": True,
+            "question_id": question_id,
+            "continuation_agent_id": new_agent_id,
+            "original_agent_id": waiting_agent_id
+        }
+
     return {"success": True, "question_id": question_id}
 
 @app.get("/api/activity/files")
