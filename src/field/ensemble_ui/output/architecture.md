@@ -1,388 +1,287 @@
-# Famous Mustards Achievements - Architecture Proposal
+# D&D Achievements Addition - Architecture Proposal
 
 ## Architecture Overview
 
-### High-Level System Design
-This is a **pure feature addition** to an existing achievement system. The architecture follows the **extension pattern** - minimal changes to existing code while adding new functionality that seamlessly integrates with established patterns.
+This is a **data extension architecture** using the **Additive Pattern** for low-risk feature enhancement. The existing achievements system provides a robust foundation with complete infrastructure for category-based achievements, tracking mechanisms, and display systems.
 
-**Architecture Pattern**: Data-driven configuration with enumerated categories
-- New achievement definitions are added to the existing `ACHIEVEMENTS` list
-- Category enumeration is extended with `FAMOUS_MUSTARDS`
-- Zero modifications to tracking logic, UI, or database schema
-- Leverages existing trigger condition patterns and evaluation engine
+**Architecture Pattern:** Data Extension / Configuration-Based Enhancement  
+**Rationale:** The requirements specify adding content to an existing, functional system without modifying core behavior. This approach minimizes risk while maximizing code reuse.
 
-### Design Philosophy
-**"Mustard never goes out of style"** - Just like the condiment shelf staple, these achievements should feel natural and enduring within the existing system, maintaining the humorous tone while adding thematic variety.
+## Tech Stack Analysis
 
----
+### Current Stack (Inferred from Requirements)
+- **Language:** Python 3.x
+- **Data Structure:** Dataclasses for type safety
+- **Configuration:** Enum-based categories and centralized achievement registry
+- **Architecture:** Event-driven achievement tracking system
 
-## Tech Stack
-
-### Language & Framework
-- **Python 3.8+** (matches existing codebase)
-- **SQLite** (existing achievement tracking database)
-- **Dataclasses & Enums** (existing architecture pattern)
-
-**Rationale**: The existing system is well-architected with Python dataclasses and enums. No compelling reason to introduce new technologies for a simple feature addition. The existing `Achievement` and `AchievementCategory` classes provide all needed functionality.
-
-**Alternatives Considered**:
-- JSON configuration files: Rejected - would break type safety and IDE support
-- Separate database table: Rejected - unnecessary complexity for simple category addition
-- Plugin system: Rejected - over-engineering for this scope
-
----
+### No New Technologies Required
+- **Rationale:** Requirements specify working within existing system constraints
+- **Benefits:** Zero deployment risk, immediate availability, consistent user experience
+- **Alternative Considered:** Separate microservice for D&D achievements - **Rejected** due to unnecessary complexity for data additions
 
 ## System Components
 
-### Component Breakdown
+### Modified Components
 
-#### 1. **Achievement Category Extension**
-**File**: `src/runtime/agents/achievements.py`
-**Responsibility**: Add new enum value to existing `AchievementCategory`
-**Change**: Single line addition: `FAMOUS_MUSTARDS = "famous_mustards"`
+**1. AchievementCategory (enum extension)**
+- **Responsibility:** Define achievement categorization
+- **Change:** Add `DUNGEONS_DRAGONS = "dungeons_dragons"` enum value
+- **Risk:** Minimal - enum extensions are inherently safe
+- **Testing:** Verify enum serialization and category filtering
 
-#### 2. **Achievement Definitions**
-**Responsibility**: 10 new `Achievement` objects with mustard themes
-**Integration**: Added to existing `ACHIEVEMENTS` list
-**Structure**: Each achievement follows existing pattern with mustard-specific:
-- IDs (snake_case, mustard-themed)
-- Names (creative mustard references)
-- Descriptions (mustard characteristics → agent behaviors)
-- Categories (all `FAMOUS_MUSTARDS`)
-- Appropriate rarity distribution and points
+**2. Achievement Registry (data addition)**
+- **Responsibility:** Central registry of all available achievements
+- **Change:** Add 10 new Achievement instances to `ACHIEVEMENTS` list
+- **Risk:** Low - purely additive change
+- **Testing:** Verify achievements load correctly and appear in gallery
 
-#### 3. **Existing System Integration Points**
-**Achievement Tracker**: No changes needed - automatically processes new achievements
-**Database Schema**: No changes needed - achievements are stored by string ID
-**UI Display**: No changes needed - category enum automatically appears
-**Trigger Engine**: No changes needed - uses existing condition patterns
+### Unchanged Components (Critical Dependencies)
 
-### Data Flow
+**1. Achievement Tracking System**
+- **Responsibility:** Monitor agent execution for trigger conditions
+- **Dependency:** Must detect all defined trigger conditions for D&D achievements
+- **Assumption:** Current system tracks sufficient execution metadata
 
-```
-Agent Execution → AchievementTracker.check_and_award() 
-    → Iterates through ALL achievements in ACHIEVEMENTS list
-    → Evaluates trigger_condition for each (including new mustard ones)
-    → Awards matching achievements
-    → Stores in SQLite with achievement_id reference
-```
+**2. Achievement Display System**
+- **Responsibility:** Render achievements in gallery and notifications
+- **Dependency:** Must support category-based filtering
+- **Assumption:** UI can handle new category without changes
 
-**Key Point**: New achievements automatically participate in the existing evaluation loop with zero logic changes.
-
----
+**3. Achievement Awarding System**
+- **Responsibility:** Grant achievements when conditions are met
+- **Dependency:** Must process trigger conditions for new achievements
+- **Assumption:** Existing trigger evaluation handles all required patterns
 
 ## File/Directory Structure
 
 ```
-src/runtime/agents/
-├── achievements.py                 # MODIFIED - Only file that changes
-│   ├── AchievementCategory enum   # ADD: FAMOUS_MUSTARDS value
-│   └── ACHIEVEMENTS list          # ADD: 10 new Achievement objects
-├── [all other files unchanged]
+achievements_system/
+├── achievements.py                 # MODIFIED: Add category + 10 achievements
+│   ├── AchievementCategory enum   # ADD: DUNGEONS_DRAGONS value
+│   ├── Achievement dataclass      # UNCHANGED: Structure remains same
+│   └── ACHIEVEMENTS list          # MODIFIED: Append 10 new achievements
+├── achievement_tracking.py        # UNCHANGED: Existing tracking logic
+├── achievement_display.py         # UNCHANGED: Category filtering works
+└── achievement_awarding.py        # UNCHANGED: Trigger evaluation works
 ```
 
-**Proposed Achievement Organization Within File**:
-```python
-# Existing achievements remain unchanged
-
-# ===== FAMOUS MUSTARDS ACHIEVEMENTS =====
-# (New section added to ACHIEVEMENTS list)
-Achievement(id="dijon_sophistication", ...),
-Achievement(id="yellow_classic", ...),
-Achievement(id="honey_sweetness", ...),
-# ... 7 more
-```
-
----
+**Rationale:** Single-file modification approach minimizes integration complexity and testing surface area.
 
 ## Data Model
 
-### Achievement Structure (Existing, Unchanged)
+### New Category Enum Value
+```python
+class AchievementCategory(Enum):
+    # ... existing categories ...
+    DUNGEONS_DRAGONS = "dungeons_dragons"  # NEW
+```
+
+### Achievement Data Structure (Existing)
 ```python
 @dataclass
 class Achievement:
-    id: str                    # e.g. "dijon_sophistication"
-    name: str                  # e.g. "Dijon Sophistication"
-    description: str           # Mustard trait → agent behavior
-    category: AchievementCategory  # FAMOUS_MUSTARDS
-    rarity: AchievementRarity     # COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
-    icon: str                     # Food/mustard emojis
-    points: int                   # 10-15 common, 75+ legendary
-    agent_classes: List[str]      # ["*"] for all, or specific classes
-    trigger_condition: Dict       # When to award
+    id: str                    # Snake_case identifier
+    name: str                  # Display name
+    description: str           # Humorous D&D-themed description
+    category: AchievementCategory  # DUNGEONS_DRAGONS for all new ones
+    rarity: AchievementRarity  # COMMON/UNCOMMON/RARE/EPIC/LEGENDARY
+    icon: str                  # D&D themed emoji (🎲⚔️🐉🏰🗡️🛡️📜🧙‍♂️)
+    points: int               # Based on rarity: 25/50/100/200/500
+    agent_classes: List[str]  # ["*"] for universal, specific classes for targeted
+    trigger_condition: Dict   # Existing trigger patterns
 ```
 
-### Proposed Achievements Schema
-| ID | Name | Rarity | Points | Theme |
-|---|---|---|---|---|
-| dijon_sophistication | Dijon Sophistication | UNCOMMON | 25 | Premium mustard → elegant solution |
-| yellow_classic | Yellow Classic | COMMON | 15 | Basic mustard → foundational work |
-| honey_sweetness | Honey Mustard Sweetness | UNCOMMON | 30 | Sweet mustard → user-friendly output |
-| spicy_brown_heat | Spicy Brown Heat | RARE | 45 | Spicy mustard → handling pressure |
-| english_tradition | English Mustard Tradition | RARE | 50 | Traditional strong mustard → reliability |
-| beer_mustard_craft | Beer Mustard Craftsman | EPIC | 75 | Craft mustard → artisanal code |
-| whole_grain_texture | Whole Grain Texture | UNCOMMON | 30 | Textured mustard → rich detail |
-| chinese_hot_fire | Chinese Hot Mustard Fire | LEGENDARY | 100 | Hottest mustard → extreme performance |
-| wasabi_fusion | Wasabi Fusion | RARE | 55 | Fusion mustard → cross-platform work |
-| stadium_classic | Stadium Mustard | COMMON | 20 | Ballpark mustard → team collaboration |
+### Proposed Achievement Definitions
 
-### Database Integration (Existing Schema, Unchanged)
-- `awarded_achievements` table stores achievements by `achievement_id` string
-- No schema changes needed - mustard achievement IDs work with existing structure
-- Achievement metadata lives in Python code, not database
+**Distribution by Rarity:**
+- Common (25 pts): 4 achievements - Basic D&D behaviors
+- Uncommon (50 pts): 3 achievements - Notable D&D patterns  
+- Rare (100 pts): 2 achievements - Advanced D&D concepts
+- Epic (200 pts): 1 achievement - Legendary D&D scenario
 
----
+**Trigger Condition Patterns (Using Existing System):**
+- Event-based: `{"event": "first_attempt_success"}` → Natural 20
+- Metric-based: `{"optimization_score": {"min": 95}}` → Min-Maxer
+- Failure-based: `{"consecutive_failures": {"min": 3}}` → Critical Fumble
+- Duration-based: `{"execution_time_ms": {"max": 1000}}` → Lightning Reflexes
 
-## Trigger Condition Design
+## API Design
 
-### Existing Trigger Patterns (Leveraged)
-```python
-# Event-based
-{"event": "elegant_solution"}
+**No API Changes Required**
 
-# Metric-based  
-{"successful_executions": {"min": 10}}
+Existing achievement APIs will automatically serve new achievements:
+- `GET /achievements` - Will include D&D category
+- `GET /achievements/categories/dungeons_dragons` - Will work via existing filtering
+- `GET /user/{id}/achievements` - Will include earned D&D achievements
 
-# Time-based
-{"duration_ms": {"min": 600000}}
-
-# Combination conditions
-{"event": "cross_stack_collaboration", "success": True}
-```
-
-### Proposed Mustard-Specific Conditions
-```python
-# Sophistication (Dijon) - elegant, efficient solutions
-{"iterations": {"max": 2}, "success": True}
-
-# Classic reliability (Yellow) - steady performance 
-{"consecutive_successes": {"min": 5}}
-
-# Sweet user experience (Honey Mustard)
-{"event": "user_friendly_output"}
-
-# Heat under pressure (Spicy Brown)
-{"event": "high_pressure_success"}
-```
-
----
-
-## Testing Strategy
-
-### Unit Testing Approach
-**File**: `tests/test_mustard_achievements.py` (new)
-**Focus**: Verify achievement definitions are valid
-```python
-def test_mustard_category_exists()
-def test_mustard_achievements_structure()
-def test_mustard_rarity_distribution() 
-def test_mustard_trigger_conditions()
-```
-
-### Integration Testing
-**Existing tests should pass unchanged** - validates backward compatibility
-**Add mustard-specific integration tests**:
-```python
-def test_mustard_achievements_awarded()
-def test_mustard_achievements_in_database()
-```
-
-### Manual Verification
-1. Run existing achievement system
-2. Trigger conditions that should award mustard achievements
-3. Verify achievements appear in UI with correct metadata
-4. Confirm database entries are created correctly
-
-### Quality Assurance Checklist
-- [ ] 10 achievements with unique IDs
-- [ ] All reference mustard varieties/characteristics  
-- [ ] Rarity distribution: 3 common, 4 uncommon, 2 rare, 1 epic/legendary
-- [ ] Points align with rarity levels
-- [ ] Creative names and descriptions maintain humor
-- [ ] Trigger conditions are realistic and varied
-- [ ] All achievements use `FAMOUS_MUSTARDS` category
-- [ ] Food/mustard emoji icons selected
-- [ ] No breaking changes to existing functionality
-
----
+**Rationale:** Well-designed existing API with generic category support eliminates need for D&D-specific endpoints.
 
 ## Deployment Strategy
 
-### Development Environment
-1. **Backup current achievements.py** (safety first)
-2. **Add FAMOUS_MUSTARDS** to `AchievementCategory` enum
-3. **Add 10 mustard achievements** to `ACHIEVEMENTS` list
-4. **Test locally** using existing test suite + new tests
+### Zero-Deployment-Risk Approach
+1. **File Update:** Single file modification (`achievements.py`)
+2. **Hot Reload:** Most Python systems support runtime reloading of configuration data
+3. **Rollback Strategy:** Simple git revert of single commit
+4. **Validation:** Verify achievements load without errors during startup
 
-### Code Review Checklist
-- [ ] Code follows existing patterns exactly
-- [ ] Achievement IDs are unique (no conflicts)
-- [ ] Trigger conditions use established patterns
-- [ ] Rarity distribution is appropriate
-- [ ] Points values are consistent with existing system
-- [ ] All mustard achievements use correct category
-- [ ] No modifications to core tracking logic
-- [ ] Backward compatibility maintained
+### Environment Considerations
+- **Development:** Test achievement earning in controlled scenarios
+- **Staging:** Validate category filtering and display
+- **Production:** Deploy during low-traffic window with monitoring
 
-### Production Deployment
-**Zero downtime deployment** - achievements are loaded from Python code at startup
-1. Deploy updated `achievements.py`
-2. Restart application (picks up new achievements)
-3. Verify new category appears in UI
-4. Monitor for achievement awards
+### CI/CD Integration
+- **Lint Check:** Verify Python syntax and enum values
+- **Unit Tests:** Achievement data structure validation
+- **Integration Tests:** Achievement earning and display workflows
 
-### Rollback Plan
-Simple file replacement - revert `achievements.py` to previous version if issues arise.
+## Testing Strategy
 
----
+### Unit Testing
+```python
+def test_dungeons_dragons_category_added():
+    assert AchievementCategory.DUNGEONS_DRAGONS == "dungeons_dragons"
+
+def test_all_dnd_achievements_valid():
+    dnd_achievements = [a for a in ACHIEVEMENTS if a.category == AchievementCategory.DUNGEONS_DRAGONS]
+    assert len(dnd_achievements) == 10
+    for achievement in dnd_achievements:
+        assert achievement.id is not None
+        assert achievement.trigger_condition is not None
+```
+
+### Integration Testing
+- **Achievement Loading:** Verify system starts with new achievements
+- **Category Filtering:** Test gallery shows D&D achievements under correct category
+- **Trigger Recognition:** Simulate agent behaviors that should earn achievements
+- **Display Rendering:** Verify achievement names, descriptions, and icons render correctly
+
+### Acceptance Testing
+- **Functional:** All 10 D&D achievements appear in gallery
+- **Content Quality:** Achievements reference authentic D&D concepts with humor
+- **Integration:** Existing achievements continue to work unchanged
+- **Performance:** No degradation in system performance
 
 ## Alternatives Considered
 
-### Alternative 1: Separate Configuration File
-**Approach**: JSON/YAML file for mustard achievements
-**Pros**: Could be modified without code changes
-**Cons**: 
-- Breaks type safety (no IDE support for Achievement fields)
-- Requires new loading logic
-- Creates second source of truth
-- Over-engineering for 10 static definitions
-**Verdict**: Rejected - existing pattern works well
+### 1. Separate D&D Achievement Service
+**Pros:** Clean separation, independent scaling
+**Cons:** Unnecessary complexity, duplicate infrastructure, API integration overhead
+**Decision:** **Rejected** - Over-engineering for data addition
 
-### Alternative 2: Database-Driven Achievements
-**Approach**: Store achievement definitions in database tables
-**Pros**: Dynamic achievement management
-**Cons**:
-- Major architectural change outside scope
-- Would require database migrations 
-- Much higher complexity
-- Performance overhead for static data
-**Verdict**: Rejected - scope creep
+### 2. Database-Driven Achievement System  
+**Pros:** Runtime configurability, no code deploys
+**Cons:** Major architectural change, migration complexity, system risk
+**Decision:** **Rejected** - Violates requirement to use existing system
 
-### Alternative 3: Plugin/Extension System
-**Approach**: Achievement modules as plugins
-**Pros**: Theoretical extensibility
-**Cons**:
-- Massive over-engineering for simple addition
-- Would require new plugin architecture
-- Adds complexity without clear benefit
-**Verdict**: Rejected - YAGNI principle
+### 3. Plugin Architecture for Achievement Categories
+**Pros:** Extensible framework for future categories
+**Cons:** Significant refactoring, introduces architectural complexity
+**Decision:** **Rejected** - Scope exceeds requirements
 
-### Alternative 4: Separate Mustard Category File
-**Approach**: Import mustard achievements from separate module
-**Pros**: Code organization
-**Cons**:
-- Breaks established pattern (all achievements in one file)
-- More complex imports
-- Doesn't provide meaningful benefit
-**Verdict**: Rejected - consistency with existing approach
+### 4. Configuration File Approach
+**Pros:** Non-code configuration, easy editing
+**Cons:** External dependency, file management overhead
+**Decision:** **Rejected** - Current pattern uses code-based configuration
 
----
+## Risks and Mitigations
 
-## Risk Analysis & Mitigations
+| Risk | Probability | Impact | Mitigation |
+|------|------------|--------|------------|
+| **D&D references too obscure** | Medium | Low | Use mainstream D&D concepts (classes, dice, dragons) |
+| **Trigger conditions not achievable** | Medium | Medium | Base on documented agent behaviors, test in development |
+| **Category enum breaks serialization** | Low | High | Test enum serialization/deserialization thoroughly |
+| **Achievement point inflation** | Low | Low | Follow existing rarity-to-points mapping strictly |
+| **Performance impact from 10 new achievements** | Very Low | Low | Achievements are loaded once at startup, minimal runtime cost |
+| **Existing achievement system assumptions** | Medium | High | Validate all assumptions during testing phase |
 
-### Technical Risks
+## Open Questions for User Review
 
-**Risk**: Achievement ID Collision
-**Impact**: Low - would cause runtime error
-**Probability**: Low - manual review catches this
-**Mitigation**: Code review checklist includes ID uniqueness verification
+### 1. Content Tone Balance
+**Question:** How closely should achievements mirror existing system's humor style vs. authentic D&D culture?
+**Options:** 
+- A) Prioritize consistency with existing achievements
+- B) Prioritize authentic D&D community humor
+- C) Balanced blend of both
+**Recommendation:** Option C - maintains system cohesion while adding D&D authenticity
 
-**Risk**: Trigger Condition Bugs  
-**Impact**: Medium - achievements wouldn't fire correctly
-**Probability**: Low - using established patterns
-**Mitigation**: Integration tests verify trigger conditions work
+### 2. Agent Class Targeting
+**Question:** Should some achievements be restricted to specific agent types?
+**Options:**
+- A) All achievements available to all agents (`["*"]`)
+- B) Some achievements restricted to relevant agents (e.g., "Dungeon Master" only for orchestrating agents)
+**Recommendation:** Option B - more meaningful achievement earning
 
-**Risk**: Performance Impact
-**Impact**: Low - 10 more achievements in existing evaluation loop
-**Probability**: Very Low - negligible performance difference
-**Mitigation**: Performance is already acceptable with 100+ existing achievements
+### 3. Rarity Distribution
+**Question:** Confirm achievement rarity distribution (4 Common, 3 Uncommon, 2 Rare, 1 Epic)?
+**Rationale:** Balances accessibility with prestigious high-tier achievements
+**Alternative:** More even distribution (2-3 per rarity level)
 
-### Content Risks
+## Implementation Roadmap
 
-**Risk**: Mustard Themes Don't Resonate
-**Impact**: Low - achievements still function, just less engaging
-**Probability**: Low - humor/gaming tone matches existing achievements
-**Mitigation**: Code review includes creative quality assessment
+### Phase 1: Foundation (Day 1)
+- Add `DUNGEONS_DRAGONS` to `AchievementCategory` enum
+- Verify enum integration doesn't break existing functionality
+- **Deliverable:** Category exists and displays in system
 
-**Risk**: Trigger Conditions Too Easy/Hard
-**Impact**: Low - can be adjusted in future iterations
-**Probability**: Medium - balancing difficulty is challenging
-**Mitigation**: Based trigger conditions on existing successful patterns
+### Phase 2: Achievement Creation (Day 1-2)
+- Define all 10 D&D achievements following established patterns
+- Implement trigger conditions using existing patterns
+- Balance rarity distribution and point values
+- **Deliverable:** 10 complete achievement definitions
 
-### Integration Risks
+### Phase 3: Integration (Day 2)
+- Add achievements to `ACHIEVEMENTS` registry
+- Verify system loads without errors
+- Test category filtering and display
+- **Deliverable:** D&D achievements appear in gallery
 
-**Risk**: Breaking Existing Functionality
-**Impact**: High - could break achievement system
-**Probability**: Very Low - only adding to data list, no logic changes
-**Mitigation**: Comprehensive testing of existing achievements still work
+### Phase 4: Validation (Day 2-3)
+- Test trigger conditions can be achieved through normal agent behavior
+- Verify content quality and D&D authenticity  
+- Confirm no impact on existing achievement functionality
+- **Deliverable:** Working D&D achievements that can be earned
 
----
+## Architecture Decision Records
+
+### ADR-1: Use Additive Pattern Over Service Extension
+**Decision:** Add achievements to existing system rather than create separate D&D service
+**Rationale:** Requirements specify integration with existing system, additive changes have minimal risk
+**Consequences:** Faster implementation, lower risk, maintains system cohesion
+
+### ADR-2: Code-Based Configuration Over External Files
+**Decision:** Define achievements in Python code rather than JSON/YAML files
+**Rationale:** Follows existing pattern, provides type safety, eliminates file management
+**Consequences:** Requires code deployment but maintains consistency
+
+### ADR-3: Generic Trigger Conditions Over D&D-Specific Logic
+**Decision:** Use existing trigger condition patterns rather than create D&D-specific detection
+**Rationale:** Leverages existing infrastructure, reduces complexity, ensures conditions are achievable
+**Consequences:** Trigger conditions may be less thematically specific but more reliable
 
 ## Success Metrics
 
-### Functional Success Criteria
-- [ ] 10 mustard-themed achievements added successfully
-- [ ] All achievements appear in UI with correct metadata
-- [ ] Achievements are awarded when trigger conditions are met
-- [ ] Database correctly stores mustard achievement awards
-- [ ] Existing achievements continue to work unchanged
+### Technical Success
+- ✅ All 10 achievements load successfully at system startup
+- ✅ D&D category appears in achievement gallery
+- ✅ Achievement trigger conditions can be met through agent behavior
+- ✅ No performance degradation in existing functionality
+- ✅ Zero breaking changes to existing achievements
 
-### Quality Success Criteria
-- [ ] Creative mustard-themed names and descriptions
-- [ ] Balanced rarity distribution (progression incentives)
-- [ ] Realistic and varied trigger conditions
-- [ ] Maintains humorous tone consistent with existing system
-- [ ] Clean code integration with zero architectural changes
+### Content Success  
+- ✅ D&D references are authentic and recognizable
+- ✅ Humor tone matches existing achievement system
+- ✅ Achievement difficulty progression is balanced
+- ✅ All achievements are achievable through normal agent workflows
 
-### Technical Success Criteria
-- [ ] Zero breaking changes to existing functionality
-- [ ] Code follows established patterns exactly
-- [ ] All tests pass (existing + new mustard tests)
-- [ ] Performance remains acceptable
-- [ ] Deployment is smooth with zero downtime
+### Integration Success
+- ✅ New achievements integrate seamlessly with existing UI
+- ✅ Category filtering works correctly
+- ✅ Achievement awarding system processes new trigger conditions
+- ✅ Existing users see no changes to their earned achievements
 
 ---
 
-## Open Questions for User Approval
-
-### 1. Rarity Distribution Preference
-**Proposed**: 3 common, 4 uncommon, 2 rare, 1 epic/legendary
-**Question**: Do you prefer more rare achievements for exclusivity, or more common ones for frequent rewards?
-
-### 2. Trigger Condition Complexity
-**Range**: Simple (task completion counts) to Complex (multi-condition logic)
-**Question**: Should mustard achievements focus on simple milestones or introduce clever behavioral triggers?
-
-### 3. Agent Class Restrictions
-**Current thinking**: Mix of `["*"]` (all agents) and specific classes
-**Question**: Should certain mustard achievements be exclusive to specific agent types (e.g., "Dijon Sophistication" only for architects)?
-
-### 4. Icon Strategy
-**Options**: Generic food emojis 🍯, mustard-specific combos 🌭🟡, or creative interpretations
-**Question**: Preference for straightforward food icons vs. creative emoji combinations?
-
-### 5. Point Value Philosophy
-**Current**: 10-15 common → 75+ legendary following existing scale
-**Question**: Should mustard achievements have higher point values to celebrate the new category launch?
-
----
-
-## Recommendation Summary
-
-I recommend **proceeding with the simple extension approach**:
-
-1. **Add `FAMOUS_MUSTARDS`** category to existing enum
-2. **Create 10 mustard achievements** using existing `Achievement` class pattern  
-3. **Add to `ACHIEVEMENTS` list** alongside existing achievements
-4. **Zero architectural changes** - leverages existing infrastructure perfectly
-
-This approach:
-- ✅ **Minimizes risk** - only adds data, no logic changes
-- ✅ **Fast to implement** - single file modification
-- ✅ **Highly maintainable** - follows established patterns
-- ✅ **Zero downtime deployment** - hot-swappable Python code
-- ✅ **Future-proof** - easily extended with more mustard achievements
-
-The existing achievement system architecture is excellent for this type of extension. The data-driven approach with trigger condition evaluation makes adding new themed achievements straightforward and risk-free.
-
-**Next Steps**: Upon approval, proceed to implementation phase where the Code Writer agent creates the specific mustard achievement definitions with creative names, descriptions, and balanced trigger conditions.
+**Architecture Confidence:** High - Low-risk additive pattern with proven implementation strategy  
+**Implementation Complexity:** Low - Single file modification with well-defined data structures  
+**Risk Level:** Minimal - Purely additive changes to stable, existing system

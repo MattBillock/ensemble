@@ -1,187 +1,77 @@
-# Frontend Tasks - Foundation Setup (Quick Start)
+# Frontend Tasks - Foundation Setup (FAMOUS_MUSTARDS Category)
 
-## Overview
-This milestone focuses on adding KATAMARI category to the AchievementCategory enum and preparing the frontend UI code foundation for new Katamari Damacy achievements. Based on analysis of the requirements and architecture, this is a pure feature addition with minimal frontend changes.
+## Milestone Overview
+Foundation Setup - Add FAMOUS_MUSTARDS category and prepare codebase for new mustard-themed achievements. This is a pure backend task with no UI components required.
 
-## Project Context
-- **Project**: Katamari Damacy Achievements (ID: 12a0e2a7)
-- **Milestone**: Foundation Setup (Quick Start) 
-- **Architecture**: Extension pattern - minimal changes to existing code
-- **Framework**: React with hooks (inferred from existing JSX components)
+## Analysis Summary
+Based on the architecture document, this milestone involves adding a single new category `FAMOUS_MUSTARDS` to the existing `AchievementCategory` enum and creating 10 new mustard-themed achievements. This is **not a frontend task** - it's purely backend code changes to a Python data structure.
 
-## Frontend Tasks Breakdown
+## Key Findings
+- **No frontend work required** for this milestone
+- All changes are in `/src/runtime/agents/achievements.py`
+- Existing UI components automatically display new achievements
+- No new components, pages, or services needed
+- Current achievement display system will handle mustard category automatically
 
-### Task 1: Add Katamari Category to Filter Dropdown
-**ID**: F1-01  
-**Component**: AchievementsDashboard.jsx  
-**Priority**: High  
-**Complexity**: Simple  
+## Frontend Impact Assessment
+- **Existing Achievement Display**: No changes needed - UI already supports dynamic categories
+- **Category Filtering**: May need update if category filters are hardcoded
+- **Icons**: New emoji icons will display automatically in existing components
+- **Styling**: No styling changes needed for new category
 
-**Description**: Add KATAMARI category to the filter dropdown in the AchievementsDashboard component.
+## Task Breakdown
 
-**Implementation Details**:
-- Locate the category filter dropdown in AchievementsDashboard.jsx
-- Add katamari option with appropriate icon (🌟)
-- Follow existing pattern for category filter options
-
+### Task 1: Verify Achievement Display Component Compatibility
+**Type**: Investigation/Verification
+**Description**: Confirm existing achievement display components can handle new `FAMOUS_MUSTARDS` category without modifications
 **Acceptance Criteria**:
-- Katamari appears in category filter dropdown
-- Filter functions correctly when katamari is selected
-- Icon displays properly alongside category name
-- Follows existing UI patterns and styling
+- Achievement display components support dynamic categories
+- New category appears in category filters (if any)
+- Mustard emoji icons render correctly in existing UI
+**Dependencies**: None
+**Complexity**: Simple
+**Estimated Effort**: 30 minutes
 
-**Dependencies**: None  
-**Estimated Time**: 30 minutes
-
----
-
-### Task 2: Update getCategoryBadge Function
-**ID**: F1-02  
-**Component**: AchievementsDashboard.jsx  
-**Priority**: High  
-**Complexity**: Simple  
-
-**Description**: Add katamari case to the getCategoryBadge function to handle the new KATAMARI category.
-
-**Implementation Details**:
-- Locate getCategoryBadge function in AchievementsDashboard.jsx
-- Add case for KATAMARI category
-- Use appropriate styling and icon (🌟) consistent with other categories
-- Ensure proper badge styling matches existing categories
-
+### Task 2: Update Category Filter Component (If Applicable)
+**Type**: Component Update
+**Description**: If category filters are hardcoded in frontend, add `FAMOUS_MUSTARDS` option
 **Acceptance Criteria**:
-- KATAMARI category displays correct badge
-- Badge styling is consistent with existing categories  
-- Icon appears correctly in badge
-- No visual regressions for existing categories
+- FAMOUS_MUSTARDS appears as filter option
+- Filter functionality works for mustard achievements
+- Maintains existing filter UI/UX patterns
+**Dependencies**: Task 1 completion
+**Complexity**: Simple
+**Estimated Effort**: 1 hour
+**Note**: May not be needed if filters are dynamically generated
 
-**Dependencies**: Task F1-01  
-**Estimated Time**: 20 minutes
-
----
-
-### Task 3: Verify Filter State Management
-**ID**: F1-03  
-**Component**: AchievementsDashboard.jsx  
-**Priority**: Medium  
-**Complexity**: Simple  
-
-**Description**: Ensure the filter state management correctly handles the new KATAMARI category.
-
-**Implementation Details**:
-- Review existing filter state logic
-- Verify KATAMARI category integrates with current filtering mechanism
-- Test filter clearing and category switching
-- Ensure no state conflicts with new category
-
+### Task 3: Test Achievement Display with Mustard Category
+**Type**: Integration Testing
+**Description**: Verify new mustard achievements display correctly in all UI contexts
 **Acceptance Criteria**:
-- Filter state correctly manages KATAMARI selection
-- Category switching works smoothly
-- Filter clearing resets to show all categories including katamari
-- No JavaScript errors in console
+- Mustard achievements appear in achievement lists
+- Category grouping works correctly
+- Icons, names, and descriptions display properly
+- Points and rarity show correctly
+**Dependencies**: Backend achievements added
+**Complexity**: Simple
+**Estimated Effort**: 45 minutes
 
-**Dependencies**: Task F1-02  
-**Estimated Time**: 20 minutes
+## Dependencies
+- **External**: Backend team must add FAMOUS_MUSTARDS achievements first
+- **Internal**: None - leverages existing achievement display infrastructure
 
----
+## Notes for Implementation
+- This milestone is primarily backend-focused
+- Frontend work is minimal verification and testing
+- Existing achievement UI architecture supports new categories automatically
+- No new components, services, or major changes required
 
-### Task 4: Add Katamari Fun Facts (Optional Enhancement)
-**ID**: F1-04  
-**Component**: AchievementsDashboard.jsx  
-**Priority**: Low  
-**Complexity**: Simple  
+## Frontend Resources Not Needed
+- ❌ New components (achievement display exists)
+- ❌ New pages/routes (achievements shown on existing pages) 
+- ❌ New services (achievement data comes from existing API)
+- ❌ New styling (mustard category uses existing achievement styles)
+- ❌ State management changes (achievement state already handled)
 
-**Description**: Add Katamari Damacy fun facts to the fun facts section for enhanced user engagement.
-
-**Implementation Details**:
-- Locate fun facts section in AchievementsDashboard component
-- Add Katamari-themed fun fact as specified in requirements
-- Ensure proper text formatting and emoji display
-- Follow existing fun facts pattern
-
-**Acceptance Criteria**:
-- Katamari fun fact displays correctly
-- Text formatting matches existing fun facts
-- Emojis render properly across browsers
-- Fact adds value without cluttering UI
-
-**Dependencies**: None (independent enhancement)  
-**Estimated Time**: 15 minutes
-
----
-
-### Task 5: Frontend Testing and Validation
-**ID**: F1-05  
-**Component**: AchievementsDashboard.jsx  
-**Priority**: High  
-**Complexity**: Medium  
-
-**Description**: Validate that all frontend changes work correctly and don't break existing functionality.
-
-**Implementation Details**:
-- Test category filtering with KATAMARI
-- Verify badge display for katamari achievements
-- Test UI responsiveness with new category
-- Validate no regressions in existing categories
-- Cross-browser compatibility check
-
-**Acceptance Criteria**:
-- All category filters work correctly including KATAMARI
-- Badge display is consistent and properly styled
-- No visual regressions in existing UI
-- Responsive design maintained
-- Works across major browsers
-
-**Dependencies**: Tasks F1-01, F1-02, F1-03  
-**Estimated Time**: 45 minutes
-
----
-
-## Technical Notes
-
-### Existing Frontend Architecture
-- **Framework**: React with JSX
-- **Component**: AchievementsDashboard.jsx (single component modification)
-- **State Management**: Local component state (no global state changes needed)
-- **Styling**: CSS classes (existing pattern to follow)
-
-### Integration Points
-- Category filter dropdown
-- getCategoryBadge function
-- Filter state management
-- Fun facts section (optional)
-
-### No Changes Required
-- API endpoints (using existing achievement APIs)
-- Database queries (handled by backend)
-- New components (all changes within existing AchievementsDashboard)
-- Routing (no new routes needed)
-- State management beyond local component state
-
-## Dependencies Map
-
-```
-F1-01 (Add Filter) → F1-02 (Update Badge) → F1-03 (Verify State) → F1-05 (Testing)
-                                              ↑
-F1-04 (Fun Facts) ─────────────────────────────┘
-```
-
-## Success Criteria Summary
-
-1. ✅ KATAMARI category appears in filter dropdown
-2. ✅ getCategoryBadge function handles KATAMARI category
-3. ✅ Filter state management works with new category
-4. ✅ No regressions in existing functionality  
-5. ✅ UI remains responsive and cross-browser compatible
-6. ✅ Optional: Katamari fun facts enhance user experience
-
-## Ready for Implementation
-
-All frontend tasks are well-defined and ready for TDD Coordinator to implement:
-- Clear component modifications identified
-- Minimal scope focused on single component
-- Follows existing patterns and conventions
-- No architectural changes required
-- Straightforward testing criteria
-
-The frontend foundation will be ready to display the new KATAMARI category achievements once the backend enum and achievement definitions are implemented.
+## Ready for Handoff
+Frontend tasks are minimal for this milestone. Most work is verification that existing components handle the new category correctly. The robust existing achievement system architecture means new categories integrate seamlessly.
