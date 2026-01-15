@@ -1,124 +1,187 @@
-# Frontend Tasks - AchievementToast Enhancement
+# Frontend Tasks - Foundation Setup (Quick Start)
 
-## Component Analysis: AchievementToast
+## Overview
+This milestone focuses on adding KATAMARI category to the AchievementCategory enum and preparing the frontend UI code foundation for new Katamari Damacy achievements. Based on analysis of the requirements and architecture, this is a pure feature addition with minimal frontend changes.
 
-### Objective
-Design and implement an enhanced toast component that prominently displays whimsical agent names with improved visual presentation and interactivity.
+## Project Context
+- **Project**: Katamari Damacy Achievements (ID: 12a0e2a7)
+- **Milestone**: Foundation Setup (Quick Start) 
+- **Architecture**: Extension pattern - minimal changes to existing code
+- **Framework**: React with hooks (inferred from existing JSX components)
 
-### Tasks Breakdown
+## Frontend Tasks Breakdown
 
-#### 1. Current Implementation Review
-- **Complexity**: Simple
-- **Description**: Analyze existing AchievementToast component structure and current rendering approach
-- **Acceptance Criteria**:
-  - Document current component props and state
-  - Identify styling and interaction limitations
-  - Understand current agent name display mechanism
+### Task 1: Add Katamari Category to Filter Dropdown
+**ID**: F1-01  
+**Component**: AchievementsDashboard.jsx  
+**Priority**: High  
+**Complexity**: Simple  
 
-#### 2. Design Enhanced Toast Visual Prototype
-- **Complexity**: Medium
-- **Description**: Create a visually engaging design for toast notifications
-- **Key Design Elements**:
-  - Prominent agent name display
-  - Whimsical typography
-  - Smooth entrance/exit animations
-- **Acceptance Criteria**:
-  - Mockup showing agent name prominence
-  - Color scheme that highlights agent names
-  - Animation concept for toast appearance/disappearance
+**Description**: Add KATAMARI category to the filter dropdown in the AchievementsDashboard component.
 
-#### 3. Implement Responsive Toast Layout
-- **Complexity**: Medium
-- **Description**: Develop a flexible toast component using modern CSS techniques
-- **Technical Requirements**:
-  - Use CSS Grid or Flexbox for layout
-  - Implement responsive design
-  - Support multiple screen sizes
-- **Acceptance Criteria**:
-  - Adaptive layout for different viewport sizes
-  - Clean, readable agent name rendering
-  - Smooth transitions between states
+**Implementation Details**:
+- Locate the category filter dropdown in AchievementsDashboard.jsx
+- Add katamari option with appropriate icon (🌟)
+- Follow existing pattern for category filter options
 
-#### 4. Agent Name Styling Enhancement
-- **Complexity**: Simple
-- **Description**: Add dynamic styling for agent names to increase visual interest
-- **Features**:
-  - Dynamic font sizing
-  - Color variation based on agent type/personality
-  - Potential hover/interaction states
-- **Acceptance Criteria**:
-  - Unique styling for different agent categories
-  - Readable and visually appealing text rendering
-  - Consistent typography across component
+**Acceptance Criteria**:
+- Katamari appears in category filter dropdown
+- Filter functions correctly when katamari is selected
+- Icon displays properly alongside category name
+- Follows existing UI patterns and styling
 
-#### 5. Interaction and Accessibility Improvements
-- **Complexity**: Medium
-- **Description**: Add interactive features and ensure WCAG compliance
-- **Technical Requirements**:
-  - Keyboard navigation support
-  - Screen reader compatibility
-  - Optional dismiss/expand interactions
-- **Acceptance Criteria**:
-  - Fully keyboard navigable
-  - ARIA attributes for screen readers
-  - Optional toast interaction modes
+**Dependencies**: None  
+**Estimated Time**: 30 minutes
 
-#### 6. Performance Optimization
-- **Complexity**: Simple
-- **Description**: Ensure toast component renders efficiently
-- **Technical Requirements**:
-  - Minimize re-renders
-  - Lazy load complex animations
-  - Efficient state management
-- **Acceptance Criteria**:
-  - Component passes React performance benchmarks
-  - Minimal performance overhead
-  - Smooth rendering under rapid state changes
+---
 
-#### 7. State Management Integration
-- **Complexity**: Medium
-- **Description**: Connect toast component with global state management
-- **Technical Requirements**:
-  - Use Context API or lightweight state management
-  - Support multiple simultaneous toasts
-  - Configurable display duration
-- **Acceptance Criteria**:
-  - Centralized toast queue management
-  - Configurable toast behavior
-  - Easy integration with existing system
+### Task 2: Update getCategoryBadge Function
+**ID**: F1-02  
+**Component**: AchievementsDashboard.jsx  
+**Priority**: High  
+**Complexity**: Simple  
 
-#### 8. Testing Strategy
-- **Complexity**: Medium
-- **Description**: Develop comprehensive test suite for AchievementToast
-- **Test Coverage**:
-  - Unit tests for component rendering
-  - Interaction test scenarios
-  - Accessibility compliance checks
-- **Acceptance Criteria**:
-  - 90%+ test coverage
-  - All critical user interactions tested
-  - Accessibility validation
+**Description**: Add katamari case to the getCategoryBadge function to handle the new KATAMARI category.
 
-### Dependencies
-1. Current component analysis (Task 1)
-2. Design prototype (Task 2)
-3. Responsive layout (Task 3)
-4. Styling enhancements (Task 4)
-5. Interaction improvements (Task 5)
-6. Performance optimization (Task 6)
-7. State management (Task 7)
-8. Comprehensive testing (Task 8)
+**Implementation Details**:
+- Locate getCategoryBadge function in AchievementsDashboard.jsx
+- Add case for KATAMARI category
+- Use appropriate styling and icon (🌟) consistent with other categories
+- Ensure proper badge styling matches existing categories
 
-### Estimated Timeline
-- Total Estimated Effort: 3-5 development days
-- Recommended Parallel Work: Tasks 3-5 can be developed concurrently
+**Acceptance Criteria**:
+- KATAMARI category displays correct badge
+- Badge styling is consistent with existing categories  
+- Icon appears correctly in badge
+- No visual regressions for existing categories
 
-### Potential Challenges
-- Balancing visual whimsy with performance
-- Ensuring consistent behavior across different agent types
-- Managing complex animations without performance degradation
+**Dependencies**: Task F1-01  
+**Estimated Time**: 20 minutes
 
-### Success Metrics
-- Improved user engagement with toast notifications
-- Enhanced visual appeal of agent interactions
-- Maintainable, testable component architecture
+---
+
+### Task 3: Verify Filter State Management
+**ID**: F1-03  
+**Component**: AchievementsDashboard.jsx  
+**Priority**: Medium  
+**Complexity**: Simple  
+
+**Description**: Ensure the filter state management correctly handles the new KATAMARI category.
+
+**Implementation Details**:
+- Review existing filter state logic
+- Verify KATAMARI category integrates with current filtering mechanism
+- Test filter clearing and category switching
+- Ensure no state conflicts with new category
+
+**Acceptance Criteria**:
+- Filter state correctly manages KATAMARI selection
+- Category switching works smoothly
+- Filter clearing resets to show all categories including katamari
+- No JavaScript errors in console
+
+**Dependencies**: Task F1-02  
+**Estimated Time**: 20 minutes
+
+---
+
+### Task 4: Add Katamari Fun Facts (Optional Enhancement)
+**ID**: F1-04  
+**Component**: AchievementsDashboard.jsx  
+**Priority**: Low  
+**Complexity**: Simple  
+
+**Description**: Add Katamari Damacy fun facts to the fun facts section for enhanced user engagement.
+
+**Implementation Details**:
+- Locate fun facts section in AchievementsDashboard component
+- Add Katamari-themed fun fact as specified in requirements
+- Ensure proper text formatting and emoji display
+- Follow existing fun facts pattern
+
+**Acceptance Criteria**:
+- Katamari fun fact displays correctly
+- Text formatting matches existing fun facts
+- Emojis render properly across browsers
+- Fact adds value without cluttering UI
+
+**Dependencies**: None (independent enhancement)  
+**Estimated Time**: 15 minutes
+
+---
+
+### Task 5: Frontend Testing and Validation
+**ID**: F1-05  
+**Component**: AchievementsDashboard.jsx  
+**Priority**: High  
+**Complexity**: Medium  
+
+**Description**: Validate that all frontend changes work correctly and don't break existing functionality.
+
+**Implementation Details**:
+- Test category filtering with KATAMARI
+- Verify badge display for katamari achievements
+- Test UI responsiveness with new category
+- Validate no regressions in existing categories
+- Cross-browser compatibility check
+
+**Acceptance Criteria**:
+- All category filters work correctly including KATAMARI
+- Badge display is consistent and properly styled
+- No visual regressions in existing UI
+- Responsive design maintained
+- Works across major browsers
+
+**Dependencies**: Tasks F1-01, F1-02, F1-03  
+**Estimated Time**: 45 minutes
+
+---
+
+## Technical Notes
+
+### Existing Frontend Architecture
+- **Framework**: React with JSX
+- **Component**: AchievementsDashboard.jsx (single component modification)
+- **State Management**: Local component state (no global state changes needed)
+- **Styling**: CSS classes (existing pattern to follow)
+
+### Integration Points
+- Category filter dropdown
+- getCategoryBadge function
+- Filter state management
+- Fun facts section (optional)
+
+### No Changes Required
+- API endpoints (using existing achievement APIs)
+- Database queries (handled by backend)
+- New components (all changes within existing AchievementsDashboard)
+- Routing (no new routes needed)
+- State management beyond local component state
+
+## Dependencies Map
+
+```
+F1-01 (Add Filter) → F1-02 (Update Badge) → F1-03 (Verify State) → F1-05 (Testing)
+                                              ↑
+F1-04 (Fun Facts) ─────────────────────────────┘
+```
+
+## Success Criteria Summary
+
+1. ✅ KATAMARI category appears in filter dropdown
+2. ✅ getCategoryBadge function handles KATAMARI category
+3. ✅ Filter state management works with new category
+4. ✅ No regressions in existing functionality  
+5. ✅ UI remains responsive and cross-browser compatible
+6. ✅ Optional: Katamari fun facts enhance user experience
+
+## Ready for Implementation
+
+All frontend tasks are well-defined and ready for TDD Coordinator to implement:
+- Clear component modifications identified
+- Minimal scope focused on single component
+- Follows existing patterns and conventions
+- No architectural changes required
+- Straightforward testing criteria
+
+The frontend foundation will be ready to display the new KATAMARI category achievements once the backend enum and achievement definitions are implemented.

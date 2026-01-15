@@ -1,206 +1,280 @@
-# Backend Tasks - Foundation Setup (Quick Start)
-
-**Project**: Famous Mustards Achievements  
-**Milestone**: M1 - Foundation Setup (Quick Start)  
-**Target**: Add FAMOUS_MUSTARDS category to AchievementCategory enum and prepare code foundation for new achievements
+# Backend Tasks - Foundation Setup (FAMOUS_MUSTARDS Category)
 
 ## Overview
+This milestone adds the FAMOUS_MUSTARDS achievement category and 10 mustard-themed achievements to the existing achievement system. This is a pure feature addition following the extension pattern with zero changes to core tracking logic.
 
-This milestone focuses on the foundational backend changes needed to support the Famous Mustards achievements system. The work involves extending the existing achievement system with a new category enum value and preparing the codebase for the mustard-themed achievements that will be implemented in future milestones.
+## Task Priority Groups
 
-**Architecture Pattern**: Data Extension Pattern (additive changes only)  
-**Risk Level**: Very Low (no breaking changes)  
-**Estimated Timeline**: 2-3 hours total
+### Priority 1: Foundation (Critical Path)
+These tasks must be completed first as they enable all other work.
 
-## Task Breakdown
+### Priority 2: Core Implementation 
+Main achievement definitions and category setup.
 
-### Task 1: Enum Category Addition
-**Priority**: Critical Path  
-**Complexity**: Simple  
-**Estimated Time**: 15 minutes
-
-**Description:**
-Add the FAMOUS_MUSTARDS enum value to the AchievementCategory enum in the achievements system.
-
-**Acceptance Criteria:**
-- [ ] `FAMOUS_MUSTARDS = "famous_mustards"` added to AchievementCategory enum
-- [ ] Enum value follows existing naming conventions (snake_case)
-- [ ] No syntax errors introduced
-- [ ] Enum can be imported and referenced correctly
-
-**Implementation Details:**
-- File: `/src/runtime/agents/achievements.py`
-- Location: Within `AchievementCategory(Enum)` class
-- Pattern: Follow existing enum value format exactly
-
-**Dependencies:** None (foundational task)
+### Priority 3: Validation & Testing
+Ensure quality and backward compatibility.
 
 ---
 
-### Task 2: Enum Integration Validation
-**Priority**: Critical Path  
-**Complexity**: Simple  
-**Estimated Time**: 30 minutes
+## Detailed Task Breakdown
 
-**Description:**
-Create test cases to validate that the new FAMOUS_MUSTARDS category integrates properly with the existing achievement system without breaking existing functionality.
+### **FOUNDATION TASKS**
 
-**Acceptance Criteria:**
-- [ ] Test that FAMOUS_MUSTARDS enum can be instantiated
-- [ ] Test that enum value matches expected string representation
-- [ ] Test that existing achievement categories still work unchanged
-- [ ] All existing tests continue to pass
-- [ ] No regressions in enum functionality
+#### **Task 1: Add FAMOUS_MUSTARDS Category Enum**
+- **Priority**: 1 (Foundation)
+- **Complexity**: Simple
+- **Description**: Extend the existing `AchievementCategory` enum with the new FAMOUS_MUSTARDS value
+- **Acceptance Criteria**:
+  - Add `FAMOUS_MUSTARDS = "famous_mustards"` to `AchievementCategory` enum in achievements.py
+  - Enum value follows existing naming pattern (CAPS_SNAKE_CASE)
+  - No breaking changes to existing enum values
+  - Code compiles without errors
+- **Dependencies**: None
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 5 minutes
 
-**Implementation Details:**
-- Write unit tests for enum integration
-- Verify existing achievement system recognizes new category
-- Test category string conversion and comparison
+#### **Task 2: Validate Achievement ID Uniqueness**
+- **Priority**: 1 (Foundation)
+- **Complexity**: Simple
+- **Description**: Verify all proposed mustard achievement IDs don't conflict with existing achievements
+- **Acceptance Criteria**:
+  - Check all 10 proposed mustard IDs against existing ACHIEVEMENTS list
+  - Document any conflicts found
+  - Provide alternative IDs if conflicts exist
+  - Create ID reservation list for implementation
+- **Dependencies**: None
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 15 minutes
 
-**Dependencies:** Task 1 (Enum Category Addition)
+### **CORE IMPLEMENTATION TASKS**
+
+#### **Task 3: Implement Common Rarity Mustard Achievements (3 achievements)**
+- **Priority**: 2 (Core)
+- **Complexity**: Medium
+- **Description**: Create 3 common rarity mustard achievements with appropriate trigger conditions
+- **Achievements to Implement**:
+  - `yellow_classic`: Yellow Classic (15 points) - Basic mustard → foundational work
+  - `stadium_classic`: Stadium Mustard (20 points) - Ballpark mustard → team collaboration
+  - One additional common achievement
+- **Acceptance Criteria**:
+  - All achievements use FAMOUS_MUSTARDS category
+  - Points range: 10-20 (common tier)
+  - Trigger conditions use existing patterns (consecutive_successes, task completion counts)
+  - Creative mustard-themed names and descriptions
+  - Appropriate food/mustard emoji icons
+  - All achievements target `["*"]` (all agent classes)
+- **Dependencies**: Task 1 (Category enum), Task 2 (ID validation)
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 45 minutes
+
+#### **Task 4: Implement Uncommon Rarity Mustard Achievements (4 achievements)**
+- **Priority**: 2 (Core)
+- **Complexity**: Medium
+- **Description**: Create 4 uncommon rarity mustard achievements with varied trigger conditions
+- **Achievements to Implement**:
+  - `dijon_sophistication`: Dijon Sophistication (25 points) - Premium mustard → elegant solution
+  - `honey_sweetness`: Honey Mustard Sweetness (30 points) - Sweet mustard → user-friendly output
+  - `whole_grain_texture`: Whole Grain Texture (30 points) - Textured mustard → rich detail
+  - One additional uncommon achievement
+- **Acceptance Criteria**:
+  - Points range: 25-35 (uncommon tier)
+  - Mix of event-based and metric-based trigger conditions
+  - Creative descriptions linking mustard characteristics to agent behaviors
+  - Balanced trigger difficulty (not too easy, not too hard)
+- **Dependencies**: Task 1, Task 2, Task 3 completion
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 60 minutes
+
+#### **Task 5: Implement Rare Rarity Mustard Achievements (2 achievements)**
+- **Priority**: 2 (Core)
+- **Complexity**: Medium
+- **Description**: Create 2 rare rarity mustard achievements with challenging trigger conditions
+- **Achievements to Implement**:
+  - `spicy_brown_heat`: Spicy Brown Heat (45 points) - Spicy mustard → handling pressure
+  - `english_tradition`: English Mustard Tradition (50 points) - Traditional strong mustard → reliability
+- **Acceptance Criteria**:
+  - Points range: 45-55 (rare tier)
+  - More challenging trigger conditions (high pressure scenarios, complex metrics)
+  - Maintain mustard theme while being aspirational
+  - Consider agent-specific triggers where appropriate
+- **Dependencies**: Task 1, Task 2, Tasks 3-4 completion
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 45 minutes
+
+#### **Task 6: Implement Epic/Legendary Mustard Achievement (1 achievement)**
+- **Priority**: 2 (Core)
+- **Complexity**: Complex
+- **Description**: Create 1 high-tier achievement representing the pinnacle of mustard excellence
+- **Achievement Options**:
+  - `chinese_hot_fire`: Chinese Hot Mustard Fire (100 points, LEGENDARY) - Extreme performance
+  - `beer_mustard_craft`: Beer Mustard Craftsman (75 points, EPIC) - Artisanal craftsmanship
+- **Acceptance Criteria**:
+  - Points: 75+ (epic) or 100+ (legendary)
+  - Extremely challenging trigger condition (rare events, exceptional performance)
+  - Represents mastery and exceptional achievement
+  - Compelling description that motivates agents to excel
+- **Dependencies**: Task 1, Task 2, Tasks 3-5 completion
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 30 minutes
+
+#### **Task 7: Integrate Achievements into ACHIEVEMENTS List**
+- **Priority**: 2 (Core)
+- **Complexity**: Simple
+- **Description**: Add all 10 mustard achievements to the existing ACHIEVEMENTS list with proper organization
+- **Acceptance Criteria**:
+  - All 10 achievements added to ACHIEVEMENTS list
+  - Organized in clear section with comment header "===== FAMOUS MUSTARDS ACHIEVEMENTS ====="
+  - Maintains existing list structure and formatting
+  - Proper comma placement and Python syntax
+  - No duplicate IDs in the list
+- **Dependencies**: Tasks 3-6 (all achievement implementations)
+- **Files**: `src/runtime/agents/achievements.py`
+- **Estimated Time**: 15 minutes
+
+### **VALIDATION & TESTING TASKS**
+
+#### **Task 8: Create Unit Tests for Mustard Achievements**
+- **Priority**: 3 (Validation)
+- **Complexity**: Medium
+- **Description**: Develop comprehensive unit tests for the new mustard achievements
+- **Test Coverage**:
+  - Verify FAMOUS_MUSTARDS category exists in enum
+  - Validate all 10 achievement objects have required fields
+  - Test rarity distribution matches specification (3/4/2/1)
+  - Verify trigger conditions use valid patterns
+  - Check point values align with rarity tiers
+  - Confirm all achievements use FAMOUS_MUSTARDS category
+- **Acceptance Criteria**:
+  - Create `tests/test_mustard_achievements.py`
+  - All tests pass
+  - 100% coverage of mustard achievement validation
+  - Tests run in CI pipeline
+- **Dependencies**: Task 7 (integration complete)
+- **Files**: `tests/test_mustard_achievements.py`
+- **Estimated Time**: 60 minutes
+
+#### **Task 9: Verify Backward Compatibility**
+- **Priority**: 3 (Validation)
+- **Complexity**: Medium
+- **Description**: Ensure existing achievement functionality remains unchanged
+- **Validation Steps**:
+  - Run existing test suite with new achievements
+  - Verify existing achievements still trigger correctly
+  - Test achievement tracking with mixed categories
+  - Validate database storage works with new achievement IDs
+  - Check UI displays new category without breaking
+- **Acceptance Criteria**:
+  - All existing tests pass without modification
+  - Existing achievements continue to be awarded
+  - No performance degradation in achievement evaluation
+  - Database operations work correctly
+- **Dependencies**: Tasks 7-8 completion
+- **Files**: Existing test files, achievements system
+- **Estimated Time**: 30 minutes
+
+#### **Task 10: Manual Integration Testing**
+- **Priority**: 3 (Validation)
+- **Complexity**: Simple
+- **Description**: Manually verify mustard achievements work end-to-end in development environment
+- **Test Scenarios**:
+  - Trigger at least 3 different mustard achievements manually
+  - Verify achievements appear in database
+  - Check achievement metadata displays correctly
+  - Confirm points are awarded properly
+  - Test category filtering if UI supports it
+- **Acceptance Criteria**:
+  - Successfully trigger and award mustard achievements
+  - Database entries created with correct achievement IDs
+  - Achievement metadata (name, description, icon) displays properly
+  - Points calculations are accurate
+  - No errors in application logs
+- **Dependencies**: Task 9 (backward compatibility verified)
+- **Files**: Full application stack
+- **Estimated Time**: 20 minutes
 
 ---
 
-### Task 3: Code Foundation Preparation
-**Priority**: High  
-**Complexity**: Simple  
-**Estimated Time**: 45 minutes
+## Implementation Notes
 
-**Description:**
-Prepare the codebase infrastructure to support mustard-themed achievements by reviewing existing achievement patterns and ensuring the system can handle the new category.
+### Code Organization
+```python
+# achievements.py structure after implementation:
 
-**Acceptance Criteria:**
-- [ ] Achievement class structure supports FAMOUS_MUSTARDS category
-- [ ] Existing achievement list structure can accommodate new mustard achievements
-- [ ] No conflicts with existing achievement IDs or patterns
-- [ ] Documentation updated to reflect new category availability
+# Existing achievements (unchanged)
+# ... current ACHIEVEMENTS list items ...
 
-**Implementation Details:**
-- Review existing Achievement class structure
-- Verify ACHIEVEMENTS list can accept new category
-- Check for any hardcoded category lists that need updating
-- Validate that UI components can handle new category (if applicable)
-
-**Dependencies:** Task 2 (Enum Integration Validation)
-
----
-
-### Task 4: Achievement System Compatibility Check
-**Priority**: Medium  
-**Complexity**: Simple  
-**Estimated Time**: 30 minutes
-
-**Description:**
-Ensure that all existing achievement system components (tracking, UI, APIs) can properly handle the new FAMOUS_MUSTARDS category without modifications.
-
-**Acceptance Criteria:**
-- [ ] Achievement tracking system recognizes FAMOUS_MUSTARDS category
-- [ ] Category can be filtered and displayed in UI components
-- [ ] API endpoints return new category correctly
-- [ ] No breaking changes to existing achievement functionality
-- [ ] Category appears in any category enumeration lists
-
-**Implementation Details:**
-- Test category with existing achievement tracking logic
-- Verify UI components can display the new category
-- Check API responses include new category in lists
-- Validate backwards compatibility
-
-**Dependencies:** Task 3 (Code Foundation Preparation)
-
----
-
-### Task 5: Documentation and Code Comments
-**Priority**: Low  
-**Complexity**: Simple  
-**Estimated Time**: 20 minutes
-
-**Description:**
-Add appropriate documentation and code comments for the new FAMOUS_MUSTARDS category to maintain code clarity and help future developers.
-
-**Acceptance Criteria:**
-- [ ] Code comments explain the mustard theme category
-- [ ] Documentation reflects new category availability
-- [ ] Examples show how to use FAMOUS_MUSTARDS category
-- [ ] Inline comments maintain consistency with existing code style
-
-**Implementation Details:**
-- Add descriptive comment above FAMOUS_MUSTARDS enum value
-- Update any developer documentation mentioning achievement categories
-- Ensure code style consistency with existing comments
-
-**Dependencies:** Task 4 (Achievement System Compatibility Check)
-
----
-
-## Task Dependencies
-
+# ===== FAMOUS MUSTARDS ACHIEVEMENTS =====
+Achievement(id="yellow_classic", name="Yellow Classic", ...),
+Achievement(id="dijon_sophistication", name="Dijon Sophistication", ...),
+# ... 8 more mustard achievements ...
 ```
-Task 1: Enum Category Addition
-    ↓
-Task 2: Enum Integration Validation
-    ↓
-Task 3: Code Foundation Preparation
-    ↓
-Task 4: Achievement System Compatibility Check
-    ↓
-Task 5: Documentation and Code Comments
+
+### Trigger Condition Examples
+```python
+# Common achievements - simple triggers
+{"consecutive_successes": {"min": 5}}
+{"event": "task_completion"}
+
+# Uncommon achievements - moderate complexity
+{"iterations": {"max": 2}, "success": True}
+{"event": "user_friendly_output"}
+
+# Rare achievements - challenging conditions
+{"event": "high_pressure_success"}
+{"duration_ms": {"min": 600000}, "success": True}
+
+# Epic/Legendary - exceptional performance
+{"event": "extreme_performance"} 
+{"successful_executions": {"min": 50}, "efficiency": {"min": 0.95}}
 ```
 
-## Critical Path Analysis
-
-**Critical Path Tasks:** 1 → 2 → 3 → 4  
-**Non-blocking Tasks:** 5 (can be done in parallel with Task 4)
-
-The critical path focuses on the core enum addition and validation, ensuring the foundation is solid before proceeding to future milestones where actual achievement content will be added.
-
-## Risk Assessment
-
-### Risk 1: Enum Integration Issues
-**Likelihood**: Very Low  
-**Impact**: Low  
-**Mitigation**: Thorough testing of enum functionality
-
-### Risk 2: Existing System Conflicts
-**Likelihood**: Very Low  
-**Impact**: Medium  
-**Mitigation**: Comprehensive compatibility testing
-
-### Risk 3: UI Component Compatibility
-**Likelihood**: Low  
-**Impact**: Low  
-**Mitigation**: Verify UI can handle new category gracefully
-
-## Testing Strategy
-
-### Unit Testing Focus
-- Enum instantiation and string conversion
-- Category comparison and equality operations
-- Integration with Achievement class structure
-
-### Integration Testing Focus  
-- Achievement system recognizes new category
-- UI components display category correctly
-- API responses include new category
-- No regressions in existing functionality
-
-### Validation Criteria
-- [ ] All existing tests pass unchanged
-- [ ] New category tests pass
-- [ ] No breaking changes detected
-- [ ] System ready for achievement content addition
-
-## Ready for Next Milestone
-
-Upon completion of these tasks, the system will be ready for:
-- **M2**: Achievement content creation (10 mustard-themed achievements)  
-- **M3**: UI enhancements for mustard category
-- **M4**: Integration testing and deployment
-
-The foundation will be solid, tested, and documented, enabling smooth implementation of the actual achievement content in subsequent milestones.
+### Points Distribution
+- **Common (3)**: 10-20 points each = 30-60 total
+- **Uncommon (4)**: 25-35 points each = 100-140 total  
+- **Rare (2)**: 45-55 points each = 90-110 total
+- **Epic/Legendary (1)**: 75-100 points = 75-100 total
+- **Total Available**: 295-410 points from mustard category
 
 ---
 
-**Total Estimated Time**: 2 hours 20 minutes  
-**Complexity Distribution**: 5 Simple tasks  
-**Dependencies**: Linear progression with minimal parallelization opportunity
+## Risk Mitigation
+
+### Technical Risks
+- **ID Conflicts**: Task 2 validates uniqueness before implementation
+- **Syntax Errors**: Incremental implementation with testing at each step
+- **Trigger Bugs**: Use proven trigger patterns from existing achievements
+
+### Quality Risks
+- **Boring Content**: Focus on creative mustard-to-behavior metaphors
+- **Unbalanced Difficulty**: Reference existing achievement trigger frequencies
+- **Theme Inconsistency**: Maintain mustard focus while varying specific references
+
+---
+
+## Definition of Done
+
+**Milestone Complete When**:
+- [x] FAMOUS_MUSTARDS category added to enum
+- [x] 10 mustard achievements implemented with proper rarity distribution
+- [x] All achievements integrated into ACHIEVEMENTS list
+- [x] Unit tests created and passing
+- [x] Backward compatibility verified (existing tests pass)
+- [x] Manual testing confirms achievements work end-to-end
+- [x] Code follows existing patterns and conventions
+- [x] No performance degradation
+- [x] Ready for deployment
+
+**Quality Gates**:
+- Code review approval
+- All tests passing (existing + new)
+- Manual verification of at least 3 achievement triggers
+- Documentation updated (this task breakdown serves as documentation)
+
+---
+
+## Total Effort Estimate
+**Development Time**: ~5.5 hours
+**Testing Time**: ~2 hours  
+**Total**: ~7.5 hours
+
+**Critical Path**: Tasks 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
