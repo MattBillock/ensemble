@@ -47,7 +47,7 @@ You have access to the following tools:
     - "testers/unit_test_lead" - Unit testing supervision
     - "developers/frontend_lead" - Frontend code supervision
     - "developers/backend_lead" - Backend code supervision
-    - "developers/api_lead" - API code supervision (when implemented)
+    - "developers/api_lead" - API code supervision
     - "support/visual_tech" - Refactoring supervision
 
 - **run_command**: Execute a shell command and get the output

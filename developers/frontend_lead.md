@@ -46,6 +46,7 @@ See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/doc
 
 **CAN Spawn:**
 - `developers/frontend_developer` - Frontend code implementation
+- `designers/style_developer` - Stylesheet and styling implementation
 
 **CANNOT Spawn:**
 - Other leads (`developers/backend_lead`, `developers/api_lead`)

@@ -47,6 +47,8 @@ See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/doc
 **CAN Spawn:**
 - `leadership/system_architect` - Architecture design
 - `leadership/tdd_coordinator` - TDD implementation orchestration
+- `leadership/code_quality_director` - Final quality gate (feature-complete phase)
+- `leadership/system_polish_director` - System optimization and maintenance
 - `coordinators/backend_coordinator` - Backend task breakdown
 - `coordinators/frontend_coordinator` - Frontend task breakdown
 - `coordinators/test_coordinator` - Test strategy definition

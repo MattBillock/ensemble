@@ -46,6 +46,7 @@ See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/doc
 
 **CAN Spawn:**
 - `developers/backend_developer` - Backend code implementation
+- `developers/database_manager` - Database schema and migration management
 
 **CANNOT Spawn:**
 - Other leads (`developers/frontend_lead`, `developers/api_lead`)
