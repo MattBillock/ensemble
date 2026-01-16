@@ -1,243 +1,378 @@
-# Architecture Proposal: Web UI Background Color Change
+# TDD Coordinator Model Performance Validation - System Architecture
 
 ## Architecture Overview
 
-This is a **targeted styling modification** using a **minimal change architecture**. The project requires changing a single CSS property while maintaining system integrity and accessibility.
+This system implements a **Test-Driven Experimentation Architecture** designed to scientifically validate the performance differences between AI models in Test-Driven Development scenarios. The architecture follows a **modular experiment framework pattern** that enables controlled comparison of claude-3-5-haiku-20241022 vs claude-3-5-sonnet-20241022 across multiple complexity tiers.
 
-**Pattern**: Configuration-based theming approach
-**Rationale**: For a simple color change, we use the existing CSS architecture but implement it in a way that's maintainable and could support future theming needs.
+### Core Architecture Pattern
+- **Experiment Controller Pattern**: Orchestrates test scenarios and coordinates model interactions
+- **Strategy Pattern**: Abstracts model implementations for seamless comparison
+- **Observer Pattern**: Collects metrics and performance data in real-time
+- **Factory Pattern**: Creates scenario-specific test environments
 
 ## Tech Stack
 
-### Frontend
-- **CSS**: Direct modification of existing stylesheets
-- **Build System**: Existing build pipeline (preserved)
-- **Browser Compatibility**: Maintained through existing setup
+### Core Framework
+- **Node.js + TypeScript**: Chosen for excellent AI integration libraries, strong type safety for experiment integrity, and robust async handling for concurrent model testing
+- **Express.js**: Lightweight REST API for experiment control and result retrieval
+- **Jest**: Industry-standard testing framework with excellent coverage reporting
 
-**Why this approach**:
-- **CSS over CSS-in-JS**: Requirements specify working with existing `index.css`, so we maintain consistency
-- **Direct modification over theming framework**: Overkill for single color change, but we'll structure it to enable future expansion
-- **Existing build tools**: No need to introduce complexity for a simple change
+### AI Integration
+- **Anthropic SDK**: Direct integration with Claude models
+- **OpenAI SDK**: Backup/comparison capability if needed
 
-### Testing
-- **Visual Regression**: Manual browser testing across devices
-- **Accessibility**: Color contrast validation tools
-- **Functional**: Ensure no JavaScript or layout breakage
+### Data & Storage
+- **PostgreSQL**: Robust ACID compliance for experiment data integrity, excellent JSON support for flexible metrics storage
+- **Redis**: Session management and caching for experiment state
 
-**Alternatives considered**:
-- CSS Variables: Would be ideal for theming but requires more extensive changes
-- SCSS/CSS Framework: Overkill for current scope but noted for future
-- Theme switching system: Out of scope but architecture supports future implementation
+### Monitoring & Analytics
+- **Prometheus + Grafana**: Real-time metrics visualization during experiments
+- **Winston**: Structured logging for debugging and audit trails
+
+### Development & Deployment
+- **Docker**: Consistent experiment environments
+- **GitHub Actions**: Automated CI/CD pipeline
+- **AWS/Railway**: Cloud deployment for scalability
+
+### Rationale for Tech Stack Choices:
+- **TypeScript over JavaScript**: Type safety critical for experiment integrity and metric calculations
+- **PostgreSQL over MongoDB**: ACID transactions essential for consistent experiment results
+- **Jest over Mocha**: Superior coverage reporting and snapshot testing for TDD validation
+- **Express over FastAPI**: JavaScript ecosystem better aligned with AI SDK integrations
 
 ## System Components
 
-### 1. Style Configuration Layer
-**Responsibility**: Define color values and ensure consistency
-**Location**: `src/field/ensemble_ui/frontend/src/index.css`
-**Changes**: Update background-color values
+### 1. Experiment Orchestrator (`/src/orchestrator`)
+**Responsibility**: Manages experiment lifecycle, coordinates model testing, ensures fair comparison conditions
+- Initializes test environments
+- Sequences scenario execution
+- Manages model rotation and isolation
+- Coordinates metric collection
 
-### 2. Accessibility Validation Layer
-**Responsibility**: Ensure color contrast compliance
-**Implementation**: Testing and validation process
-**Tools**: WCAG color contrast checkers
+### 2. Model Adapters (`/src/models`)
+**Responsibility**: Abstracts model-specific implementations behind common interface
+- `ClaudeHaikuAdapter`: Handles claude-3-5-haiku-20241022 interactions
+- `ClaudeSonnetAdapter`: Handles claude-3-5-sonnet-20241022 interactions
+- `BaseModelAdapter`: Common interface ensuring consistent experiment conditions
 
-### 3. Compatibility Verification Layer
-**Responsibility**: Ensure Bootstrap and existing styles remain functional
-**Implementation**: Cross-browser testing protocol
+### 3. Scenario Engine (`/src/scenarios`)
+**Responsibility**: Implements the three complexity levels as executable test scenarios
+- `LowComplexityScenario`: Simple component creation tasks
+- `MediumComplexityScenario`: Form validation and state management
+- `HighComplexityScenario`: Complex state synchronization and error handling
+
+### 4. Metrics Collector (`/src/metrics`)
+**Responsibility**: Captures and calculates performance metrics in real-time
+- Test coverage analysis
+- Code quality assessment (ESLint, complexity metrics)
+- TDD cycle timing
+- Error rate tracking
+
+### 5. Results Analyzer (`/src/analysis`)
+**Responsibility**: Statistical analysis and comparison of experiment results
+- Performance comparison calculations
+- Success rate validation (+50% improvement threshold)
+- Consistency analysis across complexity levels
+
+### 6. API Layer (`/src/api`)
+**Responsibility**: REST endpoints for experiment control and result retrieval
+- Experiment management endpoints
+- Real-time progress monitoring
+- Results export functionality
 
 ## File/Directory Structure
 
 ```
-src/field/ensemble_ui/frontend/src/
-├── index.css                 # PRIMARY TARGET - background color changes
-├── components/               # NO CHANGES (verify compatibility)
-├── assets/                  # NO CHANGES (verify compatibility)
-└── [other existing files]   # NO CHANGES (verify compatibility)
+/
+├── src/
+│   ├── orchestrator/
+│   │   ├── ExperimentOrchestrator.ts
+│   │   ├── ScenarioRunner.ts
+│   │   └── ModelCoordinator.ts
+│   ├── models/
+│   │   ├── BaseModelAdapter.ts
+│   │   ├── ClaudeHaikuAdapter.ts
+│   │   ├── ClaudeSonnetAdapter.ts
+│   │   └── ModelFactory.ts
+│   ├── scenarios/
+│   │   ├── BaseScenario.ts
+│   │   ├── LowComplexityScenario.ts
+│   │   ├── MediumComplexityScenario.ts
+│   │   └── HighComplexityScenario.ts
+│   ├── metrics/
+│   │   ├── MetricsCollector.ts
+│   │   ├── CoverageAnalyzer.ts
+│   │   ├── QualityAnalyzer.ts
+│   │   └── PerformanceTimer.ts
+│   ├── analysis/
+│   │   ├── ResultsAnalyzer.ts
+│   │   ├── StatisticalComparator.ts
+│   │   └── ReportGenerator.ts
+│   ├── api/
+│   │   ├── routes/
+│   │   │   ├── experiments.ts
+│   │   │   ├── metrics.ts
+│   │   │   └── results.ts
+│   │   └── server.ts
+│   └── database/
+│       ├── models/
+│       ├── migrations/
+│       └── connection.ts
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── scenarios/
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── config/
+│   ├── database.ts
+│   ├── models.ts
+│   └── experiment.ts
+└── scripts/
+    ├── run-experiment.ts
+    └── analyze-results.ts
 ```
-
-**Rationale**: Minimal file impact reduces risk while achieving requirements.
 
 ## Data Model
 
-**N/A** - This is a pure styling change with no data model implications.
+### Core Entities
 
-## CSS Architecture Design
+```typescript
+// Experiment tracking
+interface Experiment {
+  id: string;
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startTime: Date;
+  endTime?: Date;
+  configuration: ExperimentConfig;
+}
 
-### Current State
-```css
-body {
-  background-color: #1a1d29; /* Current dark blue */
+// Model comparison results
+interface ModelRun {
+  id: string;
+  experimentId: string;
+  modelType: 'haiku' | 'sonnet';
+  scenarioType: 'low' | 'medium' | 'high';
+  testCoverage: number;
+  codeQualityScore: number;
+  cycleCompletionTime: number;
+  errorCount: number;
+  generatedCode: string;
+  metrics: json;
+}
+
+// Scenario definitions
+interface Scenario {
+  id: string;
+  complexity: 'low' | 'medium' | 'high';
+  description: string;
+  requirements: string[];
+  successCriteria: string[];
 }
 ```
 
-### Proposed State
-```css
-/* Option 1: Direct replacement */
-body {
-  background-color: #1a291d; /* Dark green equivalent */
-}
+### Database Schema
+- **experiments**: Experiment metadata and configuration
+- **model_runs**: Individual model execution results
+- **scenarios**: Test scenario definitions
+- **metrics**: Detailed performance metrics
+- **comparisons**: Statistical comparison results
 
-/* Option 2: CSS Custom Properties (Future-proofing) */
-:root {
-  --bg-primary: #1a291d;     /* Dark green */
-  --bg-contrast: #2d4a27;    /* Complementary green if needed */
-}
+## API Design
 
-body {
-  background-color: var(--bg-primary);
-}
+### REST Endpoints
+
+```
+POST /api/experiments
+- Create new experiment
+- Body: { name, scenarios, models, configuration }
+
+GET /api/experiments/:id
+- Get experiment status and results
+
+POST /api/experiments/:id/start
+- Start experiment execution
+
+GET /api/experiments/:id/metrics
+- Real-time metrics during execution
+
+GET /api/experiments/:id/results
+- Complete results and analysis
+
+POST /api/scenarios/:type/run
+- Execute individual scenario (for testing)
+
+GET /api/models/:type/validate
+- Validate model connectivity
 ```
 
-### Color Strategy
-**Primary Color**: `#1a291d` (Dark forest green)
-- Maintains similar brightness to original `#1a1d29`
-- Preserves accessibility contrast ratios
-- Provides professional, calming aesthetic
-
-**Fallback Strategy**: Test multiple green variants:
-1. `#1a291d` (Primary choice)
-2. `#1d2a1a` (Alternative 1)
-3. `#1f2d1c` (Alternative 2 - slightly lighter)
-
-## Implementation Strategy
-
-### Phase 1: Preparation
-1. **Backup current files**
-2. **Document current color values**
-3. **Set up local testing environment**
-
-### Phase 2: Color Implementation
-1. **Update index.css with new background color**
-2. **Test initial render**
-3. **Validate no CSS conflicts**
-
-### Phase 3: Validation
-1. **Accessibility testing** (contrast ratios)
-2. **Cross-browser testing** (Chrome, Firefox, Safari, Edge)
-3. **Responsive testing** (mobile, tablet, desktop)
-4. **Component interaction testing**
-
-### Phase 4: Verification
-1. **Full application walkthrough**
-2. **Performance impact assessment**
-3. **Final visual QA**
-
-## Testing Strategy
-
-### Visual Testing
-- **Browser Matrix**: Chrome, Firefox, Safari, Edge
-- **Device Testing**: Desktop (1920x1080), Tablet (768px), Mobile (375px)
-- **Functionality Check**: Ensure all interactive elements work
-
-### Accessibility Testing
-- **Tool**: WebAIM Color Contrast Checker
-- **Standard**: WCAG 2.1 AA compliance
-- **Validation**: Background vs text color combinations
-
-### Regression Testing
-- **Bootstrap Integration**: Verify no Bootstrap class conflicts
-- **Component Rendering**: Ensure all components render correctly
-- **Performance**: Verify no performance degradation
+### Authentication
+- JWT tokens for API access
+- Role-based access (admin, viewer)
+- API key authentication for automated tools
 
 ## Deployment Strategy
 
-### Environment Configuration
-- **Development**: Local testing environment
-- **Staging**: Apply changes to staging for validation
-- **Production**: Deploy after full testing cycle
+### Development Environment
+```yaml
+# docker-compose.dev.yml
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=tdd_validation
+  redis:
+    image: redis:alpine
+```
 
-### Rollback Plan
-1. **Git commit** before changes for easy reversion
-2. **File backup** of index.css
-3. **Quick rollback** procedure documented
+### Production Deployment
+- **Container Strategy**: Docker multi-stage builds for optimization
+- **Orchestration**: Docker Compose for local, Kubernetes for cloud
+- **Environment Configuration**: Environment-specific config files
+- **Secrets Management**: AWS Secrets Manager / Railway environment variables
 
-### CI/CD Considerations
-- **Build verification**: Ensure CSS compiles without errors
-- **Automated testing**: Run existing test suite to catch regressions
-- **Deploy verification**: Smoke test after deployment
+### CI/CD Pipeline
+```yaml
+# .github/workflows/ci-cd.yml
+- Code quality checks (ESLint, TypeScript)
+- Unit and integration tests
+- Docker image building
+- Automated deployment to staging
+- Performance regression testing
+- Manual approval for production
+```
+
+## Testing Strategy
+
+### Unit Testing
+- **Jest + TypeScript**: All core components have unit tests
+- **Mock Strategy**: Mock AI model responses for deterministic testing
+- **Coverage Target**: 90% line coverage minimum
+
+### Integration Testing
+- **Scenario Testing**: End-to-end scenario execution with mock models
+- **Database Testing**: Repository pattern with test database
+- **API Testing**: Supertest for endpoint validation
+
+### Experiment Validation
+- **Baseline Testing**: Validate experiment setup with known scenarios
+- **Model Response Testing**: Verify model adapters handle various response types
+- **Metrics Accuracy**: Validate metric calculations against manual verification
+
+### Performance Testing
+- **Load Testing**: Multiple concurrent experiments
+- **Memory Testing**: Long-running experiment memory usage
+- **Model Response Time**: Baseline timing for comparison validity
 
 ## Alternatives Considered
 
-### Alternative 1: CSS Custom Properties System
-**Pros**: Future-proof, enables theme switching
-**Cons**: More complex than requirements need
-**Decision**: Implement basic version, document for future enhancement
+### 1. Microservices vs Monolithic
+**Chosen: Modular Monolith**
+- **Why**: Simpler deployment, easier debugging, sufficient scale for experiment scope
+- **Rejected**: Microservices would add complexity without clear benefits for this use case
+- **Trade-off**: Less scalable but more maintainable for experimental validation
 
-### Alternative 2: CSS-in-JS Solution
-**Pros**: Component-scoped styling, dynamic themes
-**Cons**: Major architecture change, overkill for single color
-**Decision**: Rejected for current scope
+### 2. Real-time vs Batch Processing
+**Chosen: Hybrid Approach**
+- **Why**: Real-time monitoring with batch analysis provides best of both worlds
+- **Rejected**: Pure batch would lose experiment visibility, pure real-time would be resource intensive
+- **Trade-off**: Slightly more complex but better user experience
 
-### Alternative 3: SCSS/SASS Implementation
-**Pros**: Variables, mixins, better organization
-**Cons**: Adds build complexity, not needed for single change
-**Decision**: Document for future consideration
+### 3. SQL vs NoSQL Database
+**Chosen: PostgreSQL**
+- **Why**: ACID compliance critical for experiment integrity, excellent JSON support
+- **Rejected**: MongoDB lacks transaction guarantees needed for consistent metrics
+- **Trade-off**: Slightly less flexible schema but much better data consistency
 
-### Alternative 4: Multiple Theme System
-**Pros**: User choice, future flexibility
-**Cons**: Scope creep, complex implementation
-**Decision**: Out of scope, but architecture supports future addition
+### 4. Custom Metrics vs Existing Tools
+**Chosen: Hybrid - Custom + Industry Standard**
+- **Why**: Jest for coverage (industry standard), custom for TDD-specific metrics
+- **Rejected**: Fully custom would be unreliable, fully standard wouldn't capture TDD nuances
+- **Trade-off**: More development work but more accurate experiment results
 
-## Risk Assessment and Mitigations
+## Risks and Mitigations
 
-### Risk 1: Color Contrast Issues
-**Impact**: Medium - Accessibility compliance failure
-**Probability**: Low - Pre-validated color choices
-**Mitigation**: Comprehensive contrast testing before deployment
+### Technical Risks
+1. **Model API Rate Limits**
+   - *Risk*: Experiment interruption due to API throttling
+   - *Mitigation*: Configurable delays, retry logic, graceful degradation
 
-### Risk 2: Bootstrap Conflicts
-**Impact**: Medium - Layout or styling breaks
-**Probability**: Low - Minimal CSS surface area
-**Mitigation**: Thorough compatibility testing
+2. **Inconsistent Model Responses**
+   - *Risk*: Non-deterministic results affecting comparison validity
+   - *Mitigation*: Multiple runs per scenario, statistical analysis, response normalization
 
-### Risk 3: Browser Compatibility
-**Impact**: Low - Modern CSS widely supported
-**Probability**: Very Low - Basic color property
-**Mitigation**: Multi-browser testing protocol
+3. **Code Quality Measurement Subjectivity**
+   - *Risk*: Inconsistent quality scoring
+   - *Mitigation*: Standardized linting rules, objective complexity metrics, human validation samples
 
-### Risk 4: Performance Impact
-**Impact**: Very Low - CSS color change minimal cost
-**Probability**: Very Low - No computational complexity added
-**Mitigation**: Performance monitoring during testing
+### Operational Risks
+1. **Long Experiment Duration**
+   - *Risk*: Experiments taking too long to complete
+   - *Mitigation*: Parallel execution, progress monitoring, early termination conditions
 
-## Open Questions for User Review
+2. **Data Loss During Experiments**
+   - *Risk*: Losing partial results from long-running experiments
+   - *Mitigation*: Incremental result saving, database transactions, backup strategies
 
-1. **Color Preference**: Do you prefer the suggested `#1a291d` or would you like to see alternatives?
-2. **Future Theming**: Should we implement CSS custom properties for easier future theme changes?
-3. **Scope Boundary**: Are you certain only the main background needs to change, or should complementary colors be considered?
+3. **Model Performance Fluctuation**
+   - *Risk*: Model performance varying by time/load affecting comparison
+   - *Mitigation*: Time-distributed testing, baseline measurements, statistical controls
 
-## Success Metrics
+## Open Questions
 
-1. **Visual**: Background displays as dark green instead of dark blue
-2. **Accessibility**: All text maintains WCAG AA contrast ratios
-3. **Compatibility**: Zero functional regressions
-4. **Performance**: No measurable performance impact
+### User Decision Required:
+1. **Experiment Scale**: How many iterations per scenario/model combination for statistical significance?
+   - Recommendation: 10 runs minimum, but user should decide based on time constraints
 
-## Future Considerations
+2. **Success Threshold Sensitivity**: Should the +50% improvement be measured on aggregate or per-scenario?
+   - Recommendation: Both aggregate and per-scenario, but which takes precedence?
 
-### Theme System Foundation
-This implementation could serve as the foundation for a future theme switching system:
-- CSS custom properties already documented
-- Color organization established
-- Testing protocols proven
+3. **Code Quality Weights**: How should the four metrics be weighted in overall comparison?
+   - Test Coverage: __%
+   - Code Quality: __%  
+   - Cycle Time: __%
+   - Error Reduction: __%
 
-### Maintainability
-- Document color choices for future reference
-- Establish color naming conventions
-- Create change log for theme modifications
+4. **Failure Handling**: How should model errors/failures be scored in comparison?
+   - Option A: Exclude from results
+   - Option B: Count as maximum penalty
+   - Option C: Retry up to N times
 
-## Implementation Timeline
+### Technical Preferences:
+1. **Deployment Target**: Local Docker vs Cloud deployment preference?
+2. **Result Storage Duration**: How long should experiment results be retained?
+3. **Real-time Monitoring**: Web dashboard vs CLI progress vs both?
 
-1. **Preparation**: 30 minutes
-2. **Implementation**: 15 minutes
-3. **Testing**: 2-3 hours (comprehensive)
-4. **Deployment**: 15 minutes
-5. **Verification**: 30 minutes
+## Implementation Priority
 
-**Total Estimated Time**: 3-4 hours for complete, thorough implementation
+### Phase 1: Core Infrastructure
+- Model adapters and basic scenario framework
+- Database schema and basic metrics collection
+- Simple experiment orchestrator
 
-## Conclusion
+### Phase 2: Metrics & Analysis
+- Complete metrics collection system
+- Statistical analysis and comparison logic
+- Results reporting and visualization
 
-This architecture balances the simplicity required by the scope with the maintainability needed for a professional application. The approach minimizes risk while establishing patterns that could support future theming enhancements.
+### Phase 3: Production Features
+- Web API and dashboard
+- Advanced error handling and retries
+- Performance optimization and monitoring
 
-The single-file change strategy ensures minimal impact while comprehensive testing protocols guarantee quality and accessibility compliance.
+## Success Measurement
+
+The architecture will be considered successful when:
+- All four metrics (coverage, quality, cycle time, error reduction) can be reliably measured
+- Statistical comparison between models produces consistent results across multiple runs
+- +50% improvement threshold can be validated with confidence intervals
+- Experiment results are reproducible and auditable
+- System can handle all three complexity levels without manual intervention
