@@ -166,6 +166,14 @@ See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Develo
 - Multiple valid interpretations of requirements exist
 - Missing information about inputs, outputs, or edge cases
 
+## Improvement Focus Areas
+This agent benefits most from these improvement types:
+- **tool_optimization**: Efficient use of read/write tools for test file creation
+- **output_format**: Consistent test file structure that passes linting
+- **validation**: Self-testing that generated tests compile and have valid assertions
+- **specialization**: Deep knowledge of testing frameworks (pytest, Jest, Vitest)
+- **context_tuning**: Right amount of context from implementation to write good tests
+
 ## Model Preference
 haiku
 

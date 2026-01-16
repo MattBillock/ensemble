@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import uuid
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List, Tuple
 from pathlib import Path
 from dotenv import load_dotenv
 import threading
@@ -74,6 +74,18 @@ class ProblemRequest(BaseModel):
     auto_continue: bool = True  # If True, auto-continue through milestones without approval
     fully_autonomous: bool = False  # If True, bypass ALL confirmations (not default - must be explicit)
 
+
+class BugFixRequest(BaseModel):
+    """Request to fix a bug or issue."""
+    bug_description: str
+    reproduction_steps: Optional[List[str]] = None
+    expected_behavior: Optional[str] = None
+    actual_behavior: Optional[str] = None
+    affected_files: Optional[List[str]] = None
+    priority: str = "medium"  # critical, high, medium, low
+    auto_apply: bool = False  # If True, apply fix automatically
+    budget_tier: str = "balanced"
+
 class ModelOverrideRequest(BaseModel):
     agent_name: str
     model_id: str  # Specific Claude model ID to use
@@ -102,6 +114,9 @@ class AgentOrchestrator:
 
         # Request tracking
         self.request_count = 0
+
+        # YOLO Mode - when enabled, skip all review phases and run fully autonomous
+        self.yolo_mode = False
 
         self.logger = RequestLogger(logger, {})
         self.logger.info(f"🔧 Project root: {self.project_root}", extra={'request_id': 'init', 'agent_id': 'system'})
@@ -415,6 +430,8 @@ class AgentOrchestrator:
             # Store agent info with tracing metadata
             self.active_agents[agent_id] = {
                 "type": "executive_director",
+                "name": agent_id,  # Whimsical name (same as agent_id)
+                "agent_class": "executive_director",  # Canonical agent class name
                 "status": "initializing",
                 "problem": problem_description,
                 "budget_tier": budget_tier,
@@ -475,6 +492,8 @@ class AgentOrchestrator:
             }
             self.active_agents[agent_id] = {
                 "type": "executive_director",
+                "name": agent_id,  # Whimsical name
+                "agent_class": "executive_director",
                 "status": "error",
                 "problem": problem_description,
                 "budget_tier": budget_tier,
@@ -717,12 +736,15 @@ async def generate_solution(request: ProblemRequest):
                                 'problem_length': len(request.problem)
                             })
     try:
+        # Use YOLO mode if enabled globally or if explicitly set in request
+        use_autonomous = request.fully_autonomous or orchestrator.yolo_mode
+
         # Spawn Executive Director with problem description and budget tier
         agent_id, result = await orchestrator.spawn_executive_director(
             request.problem,
             budget_tier=request.budget_tier,
             auto_continue=request.auto_continue,
-            fully_autonomous=request.fully_autonomous
+            fully_autonomous=use_autonomous
         )
 
         orchestrator.logger.info(f"API response: generate-solution success",
@@ -746,6 +768,158 @@ async def generate_solution(request: ProblemRequest):
                                      'error_type': type(e).__name__
                                  })
         return {"error": str(e), "status": "error"}
+
+
+@app.post("/api/fix-bug")
+async def fix_bug(request: BugFixRequest, background_tasks: BackgroundTasks):
+    """
+    HTTP endpoint to trigger autonomous bug fix.
+
+    Spawns a Bug Fix Director that analyzes the issue, creates a fix plan,
+    and orchestrates sub-agents to implement and test the fix.
+    """
+    request_id = str(uuid.uuid4())[:8]
+    orchestrator.logger.info(
+        f"API request: fix-bug",
+        extra={
+            "request_id": request_id,
+            "agent_id": "api",
+            "priority": request.priority,
+            "budget_tier": request.budget_tier,
+        },
+    )
+
+    try:
+        # Build task description for Bug Fix Director
+        task_parts = [f"Fix the following bug:\n\n{request.bug_description}"]
+
+        if request.reproduction_steps:
+            steps_text = "\n".join(f"  {i+1}. {step}" for i, step in enumerate(request.reproduction_steps))
+            task_parts.append(f"\nReproduction steps:\n{steps_text}")
+
+        if request.expected_behavior:
+            task_parts.append(f"\nExpected behavior: {request.expected_behavior}")
+
+        if request.actual_behavior:
+            task_parts.append(f"\nActual behavior: {request.actual_behavior}")
+
+        if request.affected_files:
+            files_text = ", ".join(request.affected_files)
+            task_parts.append(f"\nPotentially affected files: {files_text}")
+
+        task_parts.append(f"\nPriority: {request.priority}")
+        task_parts.append(f"\nAuto-apply fix: {request.auto_apply}")
+
+        task_description = "\n".join(task_parts)
+
+        # Spawn Executive Director with bug fix task
+        # The Executive Director will read the bug_fix_director.md for guidance
+        bug_fix_task = f"""You are acting as a Bug Fix Director. Read leadership/bug_fix_director.md for detailed instructions.
+
+{task_description}
+
+IMPORTANT: After fixing the bug, generate a summary report and save it to:
+src/field/ensemble_ui/output/completed/bugfix_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md
+
+The report should include: root cause analysis, files modified, tests added, and verification results.
+"""
+        agent_id, result = await orchestrator.spawn_executive_director(
+            bug_fix_task,
+            budget_tier=request.budget_tier,
+            auto_continue=True,
+            fully_autonomous=True,  # Bug fix should be autonomous
+        )
+
+        orchestrator.logger.info(
+            f"API response: fix-bug success",
+            extra={
+                "request_id": request_id,
+                "agent_id": agent_id,
+                "status": "success",
+            },
+        )
+
+        return {
+            "agent_id": agent_id,
+            "status": "completed",
+            "result": result,
+            "priority": request.priority,
+            "budget_tier": request.budget_tier,
+        }
+    except Exception as e:
+        orchestrator.logger.error(
+            f"API error: fix-bug failed: {str(e)}",
+            extra={
+                "request_id": request_id,
+                "agent_id": "api",
+                "error_type": type(e).__name__,
+            },
+        )
+        return {"error": str(e), "status": "error"}
+
+
+@app.get("/api/completed-reports")
+async def get_completed_reports(limit: int = 50):
+    """
+    Get list of completed bug fix and other reports from the completed folder.
+    """
+    try:
+        completed_dir = orchestrator.project_root / "src" / "field" / "ensemble_ui" / "output" / "completed"
+
+        if not completed_dir.exists():
+            return {"reports": [], "total": 0}
+
+        reports = []
+        for file_path in sorted(completed_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]:
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                # Extract title from first line
+                title = content.split("\n")[0].replace("#", "").strip() if content else file_path.name
+
+                reports.append({
+                    "id": file_path.stem,
+                    "file_path": str(file_path.relative_to(orchestrator.project_root)),
+                    "file_name": file_path.name,
+                    "title": title,
+                    "created_at": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat(),
+                    "size_bytes": file_path.stat().st_size,
+                })
+            except Exception as e:
+                logger.warning(f"Error reading report {file_path}: {e}")
+                continue
+
+        return {"reports": reports, "total": len(reports)}
+    except Exception as e:
+        logger.error(f"Error getting completed reports: {e}")
+        return {"error": str(e), "reports": [], "total": 0}
+
+
+@app.get("/api/completed-reports/{report_id}/content")
+async def get_completed_report_content(report_id: str):
+    """
+    Get the full content of a completed report.
+    """
+    try:
+        completed_dir = orchestrator.project_root / "src" / "field" / "ensemble_ui" / "output" / "completed"
+        file_path = completed_dir / f"{report_id}.md"
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Report not found")
+
+        content = file_path.read_text(encoding="utf-8")
+
+        return {
+            "id": report_id,
+            "file_path": str(file_path.relative_to(orchestrator.project_root)),
+            "content": content,
+            "created_at": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reading report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.websocket("/ws/agent-status")
 async def agent_status_ws(websocket: WebSocket):
@@ -1888,6 +2062,439 @@ async def get_swarm_events(
         logger.error(f"Error getting swarm events: {e}")
         return {"error": str(e), "events": []}
 
+# ========== Pending Review Endpoints ==========
+
+class ReviewApprovalAction(BaseModel):
+    review_id: int
+    override_params: Optional[Dict[str, Any]] = None
+
+
+def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
+    """Parse YAML frontmatter from markdown content."""
+    import yaml
+
+    if not content.startswith('---'):
+        return {}, content
+
+    parts = content.split('---', 2)
+    if len(parts) < 3:
+        return {}, content
+
+    try:
+        frontmatter = yaml.safe_load(parts[1])
+        body = parts[2].lstrip('\n')
+        return frontmatter or {}, body
+    except yaml.YAMLError:
+        return {}, content
+
+
+async def execute_review_action(
+    review: Dict[str, Any],
+    action: str,
+    params: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute an action based on review approval."""
+
+    if action == "start_implementation":
+        # Spawn executive director to implement based on the requirements doc
+        budget_tier = params.get("budget_tier", "balanced")
+        file_path = review.get("file_path", "")
+
+        # Build task prompt
+        task_prompt = f"""Implement the requirements documented in: {file_path}
+
+Read the requirements document and implement all specified features.
+Follow TDD methodology: write tests first, then implementation."""
+
+        agent_id, result = await orchestrator.spawn_executive_director(
+            problem_description=task_prompt,
+            budget_tier=budget_tier,
+            auto_continue=True
+        )
+        return {"agent_id": agent_id, "status": result.get("status")}
+
+    elif action == "create_tests":
+        # Spawn test coordinator to create tests
+        budget_tier = params.get("budget_tier", "balanced")
+        file_path = review.get("file_path", "")
+
+        task_prompt = f"""Create tests based on: {file_path}
+
+Read the document and create comprehensive test coverage."""
+
+        agent_id, result = await orchestrator.spawn_executive_director(
+            problem_description=task_prompt,
+            budget_tier=budget_tier,
+            auto_continue=True
+        )
+        return {"agent_id": agent_id, "status": result.get("status")}
+
+    elif action == "run_analysis":
+        # Trigger analysis based on architecture doc
+        return {"status": "analysis_triggered"}
+
+    else:
+        return {"error": f"Unknown action: {action}"}
+
+
+@app.get("/api/pending-reviews")
+async def get_pending_reviews(
+    status: str = "pending",
+    limit: int = 50,
+    offset: int = 0
+):
+    """Get pending review items."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        reviews = swarm.get_pending_reviews(status=status, limit=limit, offset=offset)
+        return {"reviews": reviews, "count": len(reviews)}
+    except Exception as e:
+        logger.error(f"Error getting pending reviews: {e}")
+        return {"error": str(e), "reviews": [], "count": 0}
+
+
+@app.get("/api/pending-reviews/{review_id}")
+async def get_pending_review(review_id: int):
+    """Get a specific pending review."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        review = swarm.get_pending_review(review_id)
+        if not review:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return review
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting pending review: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/pending-reviews/{review_id}/content")
+async def get_pending_review_content(review_id: int):
+    """Get full file content for a pending review."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        review = swarm.get_pending_review(review_id)
+        if not review:
+            raise HTTPException(status_code=404, detail="Review not found")
+
+        # Read file content from disk
+        file_path = orchestrator.project_root / review["file_path"]
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+
+        content = file_path.read_text(encoding='utf-8')
+        frontmatter, body = parse_frontmatter(content)
+
+        return {
+            "review_id": review_id,
+            "file_path": review["file_path"],
+            "frontmatter": frontmatter,
+            "content": body,
+            "full_content": content
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting review content: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pending-reviews/{review_id}/approve")
+async def approve_pending_review(review_id: int, action: ReviewApprovalAction = None):
+    """Approve a pending review and execute its action."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        review = swarm.get_pending_review(review_id)
+
+        if not review:
+            raise HTTPException(status_code=404, detail="Review not found")
+
+        if review["status"] != "pending":
+            raise HTTPException(status_code=400, detail=f"Review already {review['status']}")
+
+        # Get action from review (or override)
+        action_name = review.get("action", "start_implementation")
+        action_params = {}
+        if action and action.override_params:
+            action_params = action.override_params
+        elif review.get("action_params"):
+            action_params = review["action_params"]
+
+        # Execute action based on type
+        result = await execute_review_action(review, action_name, action_params)
+
+        # Update review status to in_progress (agent is running)
+        # Status will be updated to 'completed' when agent finishes
+        swarm.update_pending_review(review_id, status="in_progress", execution_result=result)
+
+        return {
+            "success": True,
+            "review_id": review_id,
+            "action_executed": action_name,
+            "result": result,
+            "agent_id": result.get("agent_id")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error approving review: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pending-reviews/{review_id}/reject")
+async def reject_pending_review(review_id: int, reason: str = None):
+    """Reject a pending review."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        review = swarm.get_pending_review(review_id)
+
+        if not review:
+            raise HTTPException(status_code=404, detail="Review not found")
+
+        swarm.update_pending_review(review_id, status="rejected")
+
+        return {"success": True, "review_id": review_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rejecting review: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pending-reviews/scan")
+async def scan_for_pending_reviews():
+    """Manually trigger scan for new reviewable files."""
+    try:
+        from src.runtime.agents.pending_review_scanner import PendingReviewScanner
+        scanner = PendingReviewScanner(orchestrator.project_root)
+        new_reviews = scanner.scan_output_directory()
+        return {"scanned": True, "new_reviews": len(new_reviews), "reviews": new_reviews}
+    except Exception as e:
+        logger.error(f"Error scanning for reviews: {e}")
+        return {"error": str(e), "scanned": False, "new_reviews": 0}
+
+
+@app.post("/api/pending-reviews/approve-all")
+async def approve_all_pending_reviews(background_tasks: BackgroundTasks):
+    """Approve all pending reviews and spawn Executive Directors for each."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+
+        # Get all pending reviews
+        pending = swarm.get_pending_reviews(status='pending')
+        logger.info(f"Approve All: Found {len(pending) if pending else 0} pending reviews")
+
+        if not pending:
+            return {"success": True, "message": "No pending reviews to approve", "approved": 0}
+
+        approved_count = 0
+        results = []
+
+        for review in pending:
+            review_id = review.get('id')
+            file_path = review.get("file_path", "")
+            review_type = review.get("review_type", "unknown")
+
+            logger.info(f"Processing review {review_id}: {file_path} (type: {review_type})")
+
+            try:
+                # Mark as in_progress
+                swarm.update_pending_review_status(review_id, 'in_progress')
+
+                # Read the file content to create a proper problem description
+                problem_desc = f"Implement the requirements defined in: {file_path}"
+
+                # Try to read the file for more context
+                try:
+                    full_path = orchestrator.project_root / file_path.lstrip('/')
+                    if full_path.exists():
+                        content = full_path.read_text()
+                        # Extract first line or title as problem summary
+                        first_line = content.split('\n')[0].strip('# \n')
+                        if first_line:
+                            problem_desc = f"Implement: {first_line}\n\nFull requirements in: {file_path}"
+                except Exception as read_err:
+                    logger.warning(f"Could not read file {file_path}: {read_err}")
+
+                # Spawn an executive director for this review
+                logger.info(f"Spawning Executive Director for: {problem_desc[:100]}...")
+                agent_id, result = await orchestrator.spawn_executive_director(
+                    problem_desc,
+                    budget_tier="balanced",
+                    auto_continue=True,
+                    fully_autonomous=True  # Run fully autonomous for bulk approval
+                )
+
+                # Update review with execution result
+                swarm.update_pending_review_status(
+                    review_id,
+                    'in_progress',
+                    execution_result={'agent_id': agent_id, 'status': result.get('status')}
+                )
+
+                results.append({
+                    'review_id': review_id,
+                    'file_path': file_path,
+                    'agent_id': agent_id,
+                    'status': 'started',
+                    'problem': problem_desc[:100]
+                })
+                approved_count += 1
+                logger.info(f"Successfully spawned agent {agent_id} for review {review_id}")
+
+            except Exception as e:
+                logger.error(f"Error approving review {review_id}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                results.append({
+                    'review_id': review_id,
+                    'file_path': file_path,
+                    'status': 'error',
+                    'error': str(e)
+                })
+
+        return {
+            "success": True,
+            "message": f"Spawned {approved_count} Executive Director(s) for {len(pending)} pending reviews",
+            "approved": approved_count,
+            "total": len(pending),
+            "results": results
+        }
+
+    except Exception as e:
+        logger.error(f"Error in bulk approval: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": str(e), "approved": 0}
+
+
+@app.get("/api/agent-improvement-reports")
+async def get_agent_improvement_reports(limit: int = 50):
+    """Get reports of agents that need improvement."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        reports = swarm.get_improvement_reports(limit=limit)
+        return {"reports": reports, "count": len(reports)}
+    except Exception as e:
+        logger.error(f"Error getting improvement reports: {e}")
+        return {"error": str(e), "reports": [], "count": 0}
+
+
+# ========== Agent Stats API ==========
+
+@app.get("/api/agent-stats")
+async def get_all_agent_stats():
+    """Get stats for all agent classes."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        from src.runtime.agents.achievements import get_achievement_tracker
+
+        swarm = get_swarm_state()
+        tracker = get_achievement_tracker()
+
+        # Get unique agent classes from agents table
+        agents_data = swarm.get_agents_summary()
+
+        # Get achievement counts per agent class
+        achievement_stats = tracker.get_achievement_stats()
+        top_agents = {a['agent']: a['count'] for a in achievement_stats.get('top_agents', [])}
+
+        # Build agent stats list
+        agent_stats = []
+        for agent in agents_data:
+            agent_class = agent.get('agent_name', 'Unknown')
+            agent_stats.append({
+                'agent_class': agent_class,
+                'total_runs': agent.get('count', 0),
+                'achievement_count': top_agents.get(agent_class, 0),
+                'last_activity': agent.get('last_activity'),
+                'status': agent.get('status', 'idle')
+            })
+
+        return {"agents": agent_stats, "count": len(agent_stats)}
+    except Exception as e:
+        logger.error(f"Error getting agent stats: {e}")
+        return {"error": str(e), "agents": [], "count": 0}
+
+
+@app.get("/api/agent-stats/{agent_class}")
+async def get_agent_details(agent_class: str):
+    """Get detailed stats for a specific agent class."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        from src.runtime.agents.achievements import get_achievement_tracker
+        from src.runtime.agents.runtime import AgentRuntime
+
+        swarm = get_swarm_state()
+        tracker = get_achievement_tracker()
+
+        # Get agent's achievements
+        achievements = tracker.get_achievements_for_agent(agent_class)
+
+        # Get recent activities from activity tracker
+        activity_tracker = AgentRuntime.get_activity_tracker()
+        activities = []
+        for activity in activity_tracker.activities[-100:]:  # Last 100 activities
+            if hasattr(activity, 'agent_name') and activity.agent_name == agent_class:
+                activities.append({
+                    'type': activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type),
+                    'timestamp': activity.timestamp.isoformat() if hasattr(activity, 'timestamp') else None,
+                    'data': getattr(activity, 'data', {}),
+                    'agent_id': getattr(activity, 'agent_id', None)
+                })
+
+        # Get running agents of this class
+        running_agents = []
+        for agent_id, agent_data in orchestrator.active_agents.items():
+            if agent_data.get('name') == agent_class or agent_data.get('agent_class') == agent_class:
+                running_agents.append({
+                    'agent_id': agent_id,
+                    'status': agent_data.get('status', 'unknown'),
+                    'started_at': agent_data.get('started_at'),
+                    'task': agent_data.get('task', '')[:100]  # First 100 chars of task
+                })
+
+        return {
+            'agent_class': agent_class,
+            'achievements': achievements,
+            'achievement_count': len(achievements),
+            'recent_activities': activities[-20:],  # Last 20 activities
+            'running_agents': running_agents,
+            'is_active': len(running_agents) > 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting agent details: {e}")
+        return {"error": str(e), "agent_class": agent_class}
+
+
+@app.get("/api/agents/running")
+async def get_running_agents():
+    """Get list of currently running agents."""
+    try:
+        running = []
+        for agent_id, agent_data in orchestrator.active_agents.items():
+            running.append({
+                'agent_id': agent_id,
+                'name': agent_data.get('name', 'Unknown'),
+                'agent_class': agent_data.get('agent_class', agent_data.get('name', 'Unknown')),
+                'status': agent_data.get('status', 'unknown'),
+                'started_at': agent_data.get('started_at'),
+                'task': agent_data.get('task', '')[:200]
+            })
+        return {"agents": running, "count": len(running)}
+    except Exception as e:
+        logger.error(f"Error getting running agents: {e}")
+        return {"error": str(e), "agents": [], "count": 0}
+
+
 # ========== Recovery System Endpoints ==========
 
 @app.get("/api/recovery/stalled")
@@ -2211,43 +2818,80 @@ class StreamingConfig(BaseModel):
     poll_interval_ms: int = 2000  # Default 2 seconds
     event_types: list = None  # Filter specific event types
 
-# Global streaming configuration
+# Global streaming configuration with thread safety
 _streaming_config = {
     "enabled": True,
     "poll_interval_ms": 2000,
     "event_types": None
 }
+_streaming_config_lock = asyncio.Lock()
 
 @app.get("/api/streaming/config")
 async def get_streaming_config():
     """Get current streaming/polling configuration."""
-    return _streaming_config
+    async with _streaming_config_lock:
+        return _streaming_config.copy()
 
 @app.post("/api/streaming/config")
 async def update_streaming_config(config: StreamingConfig):
     """Update streaming/polling configuration."""
-    global _streaming_config
-    _streaming_config["enabled"] = config.enabled
-    _streaming_config["poll_interval_ms"] = max(500, min(config.poll_interval_ms, 30000))  # Clamp between 500ms and 30s
-    _streaming_config["event_types"] = config.event_types
+    async with _streaming_config_lock:
+        _streaming_config["enabled"] = config.enabled
+        _streaming_config["poll_interval_ms"] = max(500, min(config.poll_interval_ms, 30000))  # Clamp between 500ms and 30s
+        _streaming_config["event_types"] = config.event_types
 
-    logger.info(f"Streaming config updated: enabled={config.enabled}, interval={_streaming_config['poll_interval_ms']}ms")
+        logger.info(f"Streaming config updated: enabled={config.enabled}, interval={_streaming_config['poll_interval_ms']}ms")
 
-    return _streaming_config
+        return _streaming_config.copy()
 
 @app.post("/api/streaming/start")
 async def start_streaming():
     """Enable real-time streaming updates."""
-    global _streaming_config
-    _streaming_config["enabled"] = True
-    return {"status": "streaming_enabled", "config": _streaming_config}
+    async with _streaming_config_lock:
+        _streaming_config["enabled"] = True
+        return {"status": "streaming_enabled", "config": _streaming_config.copy()}
 
 @app.post("/api/streaming/stop")
 async def stop_streaming():
     """Disable real-time streaming updates."""
-    global _streaming_config
-    _streaming_config["enabled"] = False
-    return {"status": "streaming_disabled", "config": _streaming_config}
+    async with _streaming_config_lock:
+        _streaming_config["enabled"] = False
+        return {"status": "streaming_disabled", "config": _streaming_config.copy()}
+
+# ========== YOLO Mode Endpoints ==========
+
+@app.get("/api/yolo-mode")
+async def get_yolo_mode():
+    """Get current YOLO mode status. When enabled, all tasks run fully autonomously without review."""
+    return {
+        "enabled": orchestrator.yolo_mode,
+        "description": "YOLO Mode skips all human review phases and runs tasks fully autonomously."
+    }
+
+@app.post("/api/yolo-mode")
+async def set_yolo_mode(enabled: bool = True):
+    """Enable or disable YOLO mode. When enabled, all new tasks run fully autonomously."""
+    orchestrator.yolo_mode = enabled
+    status = "enabled" if enabled else "disabled"
+    logger.info(f"YOLO Mode {status} - all new tasks will run {'fully autonomous' if enabled else 'with human review'}")
+    return {
+        "enabled": orchestrator.yolo_mode,
+        "message": f"YOLO Mode {status}. {'All review phases will be skipped.' if enabled else 'Human review is required.'}"
+    }
+
+@app.post("/api/yolo-mode/enable")
+async def enable_yolo_mode():
+    """Shortcut to enable YOLO mode."""
+    orchestrator.yolo_mode = True
+    logger.info("YOLO Mode ENABLED - Bumpers off, full autonomous operation")
+    return {"enabled": True, "message": "YOLO Mode activated. No reviews, no regrets."}
+
+@app.post("/api/yolo-mode/disable")
+async def disable_yolo_mode():
+    """Shortcut to disable YOLO mode."""
+    orchestrator.yolo_mode = False
+    logger.info("YOLO Mode DISABLED - Human review required")
+    return {"enabled": False, "message": "YOLO Mode deactivated. Back to safety."}
 
 # ========== System Polish Endpoints ==========
 

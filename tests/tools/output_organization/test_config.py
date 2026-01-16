@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 # Import the module under test
-from runtime.agents.tools.output_organization import config
+from src.runtime.output_organization import config
 
 
 class TestModuleStructure:

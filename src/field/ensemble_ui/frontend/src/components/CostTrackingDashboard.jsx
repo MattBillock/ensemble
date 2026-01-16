@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Spinner, Form, Badge, ProgressBar } from 'react-bootstrap';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8001';
+import { getCostSummary, getModelMetrics, getAgentMetrics } from '../services/api';
 
 function CostTrackingDashboard() {
   const [loading, setLoading] = useState(true);
@@ -17,28 +16,15 @@ function CostTrackingDashboard() {
   const fetchCostData = async () => {
     setLoading(true);
     try {
-      const [costRes, modelRes, agentRes] = await Promise.all([
-        fetch(`${API_BASE}/api/costs/summary?days=${timeRange}`),
-        fetch(`${API_BASE}/api/metrics/models?days=${timeRange}`),
-        fetch(`${API_BASE}/api/metrics/agents?days=${timeRange}`)
+      const [costData, modelData, agentData] = await Promise.all([
+        getCostSummary(timeRange),
+        getModelMetrics(timeRange),
+        getAgentMetrics(timeRange)
       ]);
 
-      // Validate responses before parsing
-      if (costRes.ok) {
-        setCostSummary(await costRes.json());
-      } else {
-        setCostSummary(null);
-      }
-      if (modelRes.ok) {
-        setModelMetrics(await modelRes.json());
-      } else {
-        setModelMetrics({ models: [] });
-      }
-      if (agentRes.ok) {
-        setAgentMetrics(await agentRes.json());
-      } else {
-        setAgentMetrics({ agents: [] });
-      }
+      setCostSummary(costData);
+      setModelMetrics(modelData);
+      setAgentMetrics(agentData);
     } catch (error) {
       console.error('Failed to fetch cost data:', error);
       // Set safe defaults on error
@@ -77,7 +63,7 @@ function CostTrackingDashboard() {
     return (
       <Container className="mt-5 text-center">
         <Spinner animation="border" variant="success" />
-        <p className="mt-3">Loading cost data...</p>
+        <p className="mt-3 text-light">Loading cost data...</p>
       </Container>
     );
   }

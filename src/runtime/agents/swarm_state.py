@@ -219,6 +219,54 @@ class SwarmStateManager:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_unprocessed ON events(processed, timestamp)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_deliverables_session ON deliverables(session_id)")
 
+            # Pending reviews table - files awaiting human review
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS pending_reviews (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    request_id TEXT,
+                    agent_id TEXT,
+                    agent_name TEXT,
+                    file_path TEXT NOT NULL,
+                    file_type TEXT NOT NULL,
+                    detection_method TEXT NOT NULL,
+                    review_type TEXT,
+                    action TEXT,
+                    action_params TEXT,
+                    content_preview TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    reviewed_at TIMESTAMP,
+                    reviewed_by TEXT,
+                    execution_result TEXT,
+                    FOREIGN KEY (session_id) REFERENCES swarm_sessions(session_id),
+                    FOREIGN KEY (agent_id) REFERENCES agents(agent_id)
+                )
+            """)
+
+            # Agent improvement reports - track agents that need improvement
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS agent_improvement_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agent_id TEXT NOT NULL,
+                    agent_name TEXT NOT NULL,
+                    session_id TEXT,
+                    request_id TEXT,
+                    issue_type TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    detection_method TEXT NOT NULL,
+                    severity TEXT DEFAULT 'warning',
+                    recommendation TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    acknowledged INTEGER DEFAULT 0,
+                    FOREIGN KEY (agent_id) REFERENCES agents(agent_id)
+                )
+            """)
+
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_pending_reviews_status ON pending_reviews(status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_pending_reviews_file_path ON pending_reviews(file_path)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_improvement_reports_agent ON agent_improvement_reports(agent_id)")
+
             conn.commit()
             logger.info("Database schema initialized")
 
@@ -994,6 +1042,196 @@ class SwarmStateManager:
             conn.execute("VACUUM")
 
             logger.info(f"Cleaned up data older than {days} days")
+
+    # ===================
+    # Pending Reviews
+    # ===================
+
+    def add_pending_review(
+        self,
+        file_path: str,
+        file_type: str,
+        detection_method: str,
+        review_type: str = None,
+        action: str = None,
+        action_params: Dict = None,
+        content_preview: str = None,
+        session_id: str = None,
+        request_id: str = None,
+        agent_id: str = None,
+        agent_name: str = None
+    ) -> int:
+        """Add a file to the pending review queue."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO pending_reviews
+                (file_path, file_type, detection_method, review_type, action,
+                 action_params, content_preview, session_id, request_id, agent_id, agent_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                file_path, file_type, detection_method, review_type, action,
+                json.dumps(action_params) if action_params else None, content_preview,
+                session_id, request_id, agent_id, agent_name
+            ))
+            conn.commit()
+            return cursor.lastrowid
+
+    def is_file_tracked_for_review(self, file_path: str) -> bool:
+        """Check if a file is already in the review queue."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM pending_reviews WHERE file_path = ?",
+                (file_path,)
+            ).fetchone()
+            return row is not None
+
+    def get_pending_reviews(
+        self,
+        status: str = "pending",
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Dict[str, Any]]:
+        """Get pending reviews with optional filtering."""
+        with self._get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM pending_reviews
+                WHERE status = ?
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+            """, (status, limit, offset)).fetchall()
+
+            results = []
+            for row in rows:
+                result = dict(row)
+                if result.get('action_params'):
+                    try:
+                        result['action_params'] = json.loads(result['action_params'])
+                    except json.JSONDecodeError:
+                        result['action_params'] = {}
+                results.append(result)
+            return results
+
+    def get_pending_review(self, review_id: int) -> Optional[Dict[str, Any]]:
+        """Get a single pending review by ID."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM pending_reviews WHERE id = ?",
+                (review_id,)
+            ).fetchone()
+
+            if row:
+                result = dict(row)
+                if result.get('action_params'):
+                    try:
+                        result['action_params'] = json.loads(result['action_params'])
+                    except json.JSONDecodeError:
+                        result['action_params'] = {}
+                return result
+            return None
+
+    def update_pending_review(
+        self,
+        review_id: int,
+        status: str = None,
+        execution_result: Dict = None
+    ):
+        """Update a pending review status."""
+        updates = []
+        params = []
+
+        if status:
+            updates.append("status = ?")
+            params.append(status)
+            if status in ("approved", "rejected"):
+                updates.append("reviewed_at = CURRENT_TIMESTAMP")
+                updates.append("reviewed_by = 'user'")
+
+        if execution_result is not None:
+            updates.append("execution_result = ?")
+            params.append(json.dumps(execution_result))
+
+        if not updates:
+            return
+
+        params.append(review_id)
+
+        with self._get_connection() as conn:
+            conn.execute(f"""
+                UPDATE pending_reviews
+                SET {', '.join(updates)}
+                WHERE id = ?
+            """, params)
+            conn.commit()
+
+    # ===================
+    # Agent Improvement Reports
+    # ===================
+
+    def add_improvement_report(
+        self,
+        agent_id: str,
+        agent_name: str,
+        issue_type: str,
+        file_path: str,
+        detection_method: str,
+        severity: str = "warning",
+        recommendation: str = None,
+        session_id: str = None,
+        request_id: str = None
+    ) -> int:
+        """Add an agent improvement report."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO agent_improvement_reports
+                (agent_id, agent_name, session_id, request_id, issue_type,
+                 file_path, detection_method, severity, recommendation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                agent_id, agent_name, session_id, request_id, issue_type,
+                file_path, detection_method, severity, recommendation
+            ))
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_improvement_reports(
+        self,
+        agent_id: str = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """Get agent improvement reports."""
+        with self._get_connection() as conn:
+            query = "SELECT * FROM agent_improvement_reports WHERE 1=1"
+            params = []
+
+            if agent_id:
+                query += " AND agent_id = ?"
+                params.append(agent_id)
+
+            query += " ORDER BY created_at DESC LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(query, params).fetchall()
+            return [dict(row) for row in rows]
+
+    # ===================
+    # Agent Stats
+    # ===================
+
+    def get_agents_summary(self) -> List[Dict[str, Any]]:
+        """Get summary of all agent classes with activity counts."""
+        with self._get_connection() as conn:
+            # Get counts grouped by agent_name from agents table
+            rows = conn.execute("""
+                SELECT
+                    agent_name,
+                    COUNT(*) as count,
+                    MAX(created_at) as last_activity,
+                    status
+                FROM agents
+                GROUP BY agent_name
+                ORDER BY count DESC
+            """).fetchall()
+            return [dict(row) for row in rows]
 
 
 # Singleton accessor

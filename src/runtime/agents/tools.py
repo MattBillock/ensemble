@@ -70,9 +70,18 @@ class WriteFileTool:
     # Backup directory
     BACKUP_DIR = Path.home() / ".ensemble" / "backups"
 
-    def __init__(self, agent_definition: Optional["AgentDefinition"] = None):
-        """Initialize with optional agent definition for permission checking."""
+    def __init__(
+        self,
+        agent_definition: Optional["AgentDefinition"] = None,
+        agent_id: Optional[str] = None,
+        agent_name: Optional[str] = None,
+        request_id: Optional[str] = None
+    ):
+        """Initialize with optional agent definition and tracking context."""
         self.agent_definition = agent_definition
+        self.agent_id = agent_id
+        self.agent_name = agent_name or (agent_definition.name if agent_definition else "unknown")
+        self.request_id = request_id
         # Ensure backup directory exists
         self.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -208,6 +217,39 @@ class WriteFileTool:
 
             logger.info(f"Successfully wrote file: {file_path}" +
                        (f" [OVERWRITE, backup: {backup_path}]" if backup_path else " [NEW FILE]"))
+
+            # Record file generation to activity tracker
+            if self.agent_id and self.request_id:
+                try:
+                    from .runtime import AgentRuntime
+                    activity_tracker = AgentRuntime.get_activity_tracker()
+
+                    # Determine file type from extension
+                    file_ext = file_path.suffix.lower()
+                    file_type_map = {
+                        ".md": "markdown", ".py": "python", ".js": "javascript",
+                        ".jsx": "jsx", ".tsx": "tsx", ".ts": "typescript",
+                        ".json": "json", ".yaml": "yaml", ".yml": "yaml",
+                        ".txt": "text", ".html": "html", ".css": "css",
+                        ".scss": "scss", ".sql": "sql"
+                    }
+                    file_type = file_type_map.get(file_ext, "unknown")
+
+                    # Create preview (first 500 chars)
+                    preview = content[:500] if len(content) > 500 else content
+
+                    activity_tracker.record_file_generated(
+                        agent_id=self.agent_id,
+                        agent_name=self.agent_name,
+                        request_id=self.request_id,
+                        file_path=str(file_path),
+                        file_size=len(content),
+                        file_type=file_type,
+                        preview=preview
+                    )
+                    logger.debug(f"Recorded file generation: {file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to record file generation to activity tracker: {e}")
 
             return {
                 "success": True,
@@ -987,7 +1029,12 @@ class ToolRegistry:
         from .git_tools import GitBranchTool, GitMergeTool, GitStatusTool
 
         registry = cls()
-        registry.register(WriteFileTool(agent_definition))
+        registry.register(WriteFileTool(
+            agent_definition=agent_definition,
+            agent_id=agent_id,
+            agent_name=agent_definition.name if agent_definition else None,
+            request_id=request_id
+        ))
         registry.register(ReadFileTool())
         registry.register(RunCommandTool())
         registry.register(GitCommitTool(

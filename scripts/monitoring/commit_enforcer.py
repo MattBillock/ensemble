@@ -68,7 +68,8 @@ def get_uncommitted_changes() -> Dict[str, any]:
             'has_changes': False
         }
 
-    lines = stdout.strip().split('\n') if stdout.strip() else []
+    # Use rstrip to preserve leading spaces which are significant in git status output
+    lines = stdout.rstrip().split('\n') if stdout.rstrip() else []
 
     # Parse status
     modified_files = []
@@ -193,12 +194,12 @@ def print_status(changes: Dict, warnings: List[str]):
         return
 
     print(f"{Colors.BOLD}Uncommitted Changes:{Colors.END}")
-    print(f"  Total files: {changes['total_files']}")
-    print(f"  Lines changed: ~{changes['lines_changed']}")
-    print(f"  Modified: {len(changes['modified'])}")
-    print(f"  Added: {len(changes['added'])}")
-    print(f"  Deleted: {len(changes['deleted'])}")
-    print(f"  Untracked: {len(changes['untracked'])}")
+    print(f"  Total files: {changes.get('total_files', 0)}")
+    print(f"  Lines changed: ~{changes.get('lines_changed', 0)}")
+    print(f"  Modified: {len(changes.get('modified', []))}")
+    print(f"  Added: {len(changes.get('added', []))}")
+    print(f"  Deleted: {len(changes.get('deleted', []))}")
+    print(f"  Untracked: {len(changes.get('untracked', []))}")
 
     time_since = get_time_since_last_commit()
     if time_since is not None:

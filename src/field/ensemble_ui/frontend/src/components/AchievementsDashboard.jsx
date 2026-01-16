@@ -94,8 +94,8 @@ function AchievementsDashboard() {
           return false;
         });
 
-        // Only announce new ones (skip on first load)
-        if (seenAchievementsRef.current.size > newRecent.length && newlyEarned.length > 0) {
+        // Only announce new ones (newlyEarned will be empty on first poll after seenAchievementsRef is populated)
+        if (newlyEarned.length > 0) {
           setNewAchievements(prev => [...prev, ...newlyEarned]);
         }
 
@@ -174,7 +174,12 @@ function AchievementsDashboard() {
       ska: '🎺',
       brass_band: '🎵',
       drum_corps: '🥁',
-      guitar_hero: '🎮'
+      guitar_hero: '🎮',
+      famous_mustards: '🌭',
+      dungeons_dragons: '🎲',
+      favorite_tacos: '🌮',
+      loser_board: '🤦',
+      family: '👨‍👩‍👧‍👦'
     };
     const displayNames = {
       productivity: 'Productivity',
@@ -185,10 +190,15 @@ function AchievementsDashboard() {
       ska: 'Ska',
       brass_band: 'Brass Band',
       drum_corps: 'Drum Corps',
-      guitar_hero: 'Guitar Hero'
+      guitar_hero: 'Guitar Hero',
+      famous_mustards: 'Famous Mustards',
+      dungeons_dragons: 'D&D',
+      favorite_tacos: 'Tacos',
+      loser_board: 'Wall of Shame',
+      family: 'Family'
     };
     return (
-      <Badge bg="dark" className="me-1">
+      <Badge bg={category === 'loser_board' ? 'danger' : 'dark'} className="me-1">
         {icons[category] || '❓'} {displayNames[category] || category}
       </Badge>
     );
@@ -391,11 +401,16 @@ function AchievementsDashboard() {
                     <option value="brass_band">🎵 Brass Band</option>
                     <option value="drum_corps">🥁 Drum Corps</option>
                     <option value="guitar_hero">🎮 Guitar Hero</option>
+                    <option value="dungeons_dragons">🎲 D&D</option>
+                    <option value="favorite_tacos">🌮 Tacos</option>
+                    <option value="famous_mustards">🌭 Mustards</option>
                     <option value="productivity">📈 Productivity</option>
                     <option value="comedy">😂 Comedy</option>
                     <option value="milestone">🏆 Milestone</option>
                     <option value="streak">🔥 Streak</option>
                     <option value="meta">🤖 Meta</option>
+                    <option value="family">👨‍👩‍👧‍👦 Family</option>
+                    <option value="loser_board">🤦 Wall of Shame</option>
                   </Form.Select>
                   <Form.Select
                     size="sm"

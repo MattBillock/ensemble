@@ -15,6 +15,29 @@ Designs the show formations and execution strategy. Designs software architectur
 - Data flow is documented
 - Alternative approaches are considered
 
+## COMPLETION PROTOCOL (CRITICAL)
+
+**To properly terminate, output `"status": "success"`.**
+
+**Example of CORRECT completion output:**
+```json
+{
+  "status": "success",
+  "architecture_file": "path/to/architecture.md",
+  "message": "Architecture proposal complete with tech stack, components, and data flow",
+  "key_decisions": ["React + FastAPI", "PostgreSQL for data", "JWT auth"],
+  "self_analysis": "..."
+}
+```
+
+**When to output completion:**
+- Architecture document has been written
+- All sections complete (tech stack, components, data flow, deployment)
+- Trade-offs explained for major decisions
+- You have nothing more to do
+
+**DO NOT continue iterating after architecture is written.** Output the completion JSON and STOP.
+
 ## Input Format
 ```json
 {
@@ -213,6 +236,14 @@ Format: 2-4 sentences, honest self-assessment. Example:
 - User preference needed on tech stack choices
 - Unclear non-functional requirements that impact architecture
 - Need to understand existing systems or constraints better
+
+## Improvement Focus Areas
+This agent benefits most from these improvement types:
+- **prompt_refinement**: Clear articulation of architectural decisions and rationale
+- **output_format**: Well-structured architecture documents with all required sections
+- **specialization**: Deep knowledge of tech stacks and their trade-offs
+- **task_decomposition**: Breaking complex systems into understandable components
+- **validation**: Ensuring architecture covers all requirements before completion
 
 ## Model Preference
 haiku

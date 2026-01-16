@@ -53,6 +53,76 @@ class Activity:
         return result
 
 
+class ActivityTracker:
+    """
+    Activity tracker with cleanup functionality for managing request lifecycle.
+
+    This class provides basic request tracking with cleanup capabilities to
+    remove completed and stale requests from memory.
+    """
+
+    def __init__(self):
+        """Initialize the activity tracker."""
+        self._active_requests: Dict[str, Any] = {}
+        self._completed_requests: Dict[str, Any] = {}
+
+    def cleanup(self, max_age: Optional[int] = None):
+        """
+        Clean up completed and stale requests.
+
+        Args:
+            max_age: Optional maximum age in seconds. Requests older than this
+                    threshold will be removed. If None, removes only completed
+                    and stale requests.
+        """
+        import time
+
+        # Get current time for age-based filtering
+        current_time = time.time()
+
+        requests_to_remove = []
+
+        for request_id, request in self._active_requests.items():
+            should_remove = False
+
+            # Check if request is completed or stale
+            if hasattr(request, 'is_completed') and request.is_completed:
+                should_remove = True
+            elif hasattr(request, 'is_stale') and request.is_stale:
+                should_remove = True
+
+            # Check age threshold if specified
+            if max_age is not None:
+                if hasattr(request, 'timestamp'):
+                    age = current_time - request.timestamp
+                    if age > max_age:
+                        should_remove = True
+
+            # Handle cleanup method if available
+            if should_remove and hasattr(request, 'cleanup'):
+                try:
+                    request.cleanup()
+                except Exception:
+                    # Continue with removal even if cleanup fails
+                    pass
+
+            if should_remove:
+                requests_to_remove.append(request_id)
+
+        # Remove marked requests
+        for request_id in requests_to_remove:
+            del self._active_requests[request_id]
+
+    async def cleanup_async(self, max_age: Optional[int] = None):
+        """
+        Async wrapper for cleanup for use in async contexts.
+
+        Args:
+            max_age: Optional maximum age in seconds.
+        """
+        self.cleanup(max_age)
+
+
 class AgentActivityTracker:
     """Tracks detailed agent activities for UI visibility."""
 
@@ -206,7 +276,10 @@ class AgentActivityTracker:
         request_id: str,
         parent_agent_id: Optional[str] = None,
         input_data: Optional[Dict[str, Any]] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        problem: Optional[str] = None,
+        project_id: Optional[str] = None,
+        current_stage: Optional[str] = None
     ):
         """Record agent start."""
         activity = Activity(
@@ -219,7 +292,9 @@ class AgentActivityTracker:
             data={
                 "agent_type": agent_type,
                 "input_data": input_data,
-                "model": model
+                "model": model,
+                "problem": problem,
+                "project_id": project_id
             }
         )
 
@@ -232,7 +307,10 @@ class AgentActivityTracker:
             "children": [],
             "status": "running",
             "started_at": activity.timestamp,
-            "request_id": request_id  # Track request_id for filtering
+            "request_id": request_id,  # Track request_id for filtering
+            "problem": problem,  # Problem description for UI display
+            "project_id": project_id or request_id,  # Project grouping
+            "current_stage": current_stage or "requirements"  # Current workflow stage
         }
 
         # Link to parent
@@ -251,6 +329,9 @@ class AgentActivityTracker:
         }
 
         self._emit_activity(activity)
+
+        # Auto-increment agent count for the request
+        self.increment_request_counts(request_id, agents=1)
 
     def record_iteration_started(
         self,
@@ -604,6 +685,9 @@ class AgentActivityTracker:
 
         self._emit_activity(activity)
 
+        # Auto-increment file count for the request
+        self.increment_request_counts(request_id, files=1)
+
     def record_git_commit(
         self,
         agent_id: str,
@@ -628,6 +712,9 @@ class AgentActivityTracker:
         )
 
         self._emit_activity(activity)
+
+        # Auto-increment commit count for the request
+        self.increment_request_counts(request_id, commits=1)
 
     def get_activities(
         self,

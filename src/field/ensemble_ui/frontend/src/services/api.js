@@ -1043,3 +1043,282 @@ export const getGuardrailsForAgent = async (agentType) => {
     throw error;
   }
 };
+
+// ========== Pending Review API ==========
+
+export const getPendingReviews = async (status = 'pending', limit = 50) => {
+  try {
+    const params = new URLSearchParams({ status, limit: limit.toString() });
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch pending reviews');
+    return await response.json();
+  } catch (error) {
+    console.error('Get pending reviews error:', error);
+    throw error;
+  }
+};
+
+export const getPendingReviewContent = async (reviewId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/${reviewId}/content`);
+    if (!response.ok) throw new Error('Failed to fetch review content');
+    return await response.json();
+  } catch (error) {
+    console.error('Get review content error:', error);
+    throw error;
+  }
+};
+
+export const approvePendingReview = async (reviewId, overrideParams = null) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/${reviewId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ review_id: reviewId, override_params: overrideParams }),
+    });
+    if (!response.ok) throw new Error('Failed to approve review');
+    return await response.json();
+  } catch (error) {
+    console.error('Approve review error:', error);
+    throw error;
+  }
+};
+
+export const rejectPendingReview = async (reviewId, reason = '') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/${reviewId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!response.ok) throw new Error('Failed to reject review');
+    return await response.json();
+  } catch (error) {
+    console.error('Reject review error:', error);
+    throw error;
+  }
+};
+
+export const approveAllPendingReviews = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/approve-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to approve all reviews');
+    return await response.json();
+  } catch (error) {
+    console.error('Approve all reviews error:', error);
+    throw error;
+  }
+};
+
+export const scanForPendingReviews = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/scan`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to scan for reviews');
+    return await response.json();
+  } catch (error) {
+    console.error('Scan for reviews error:', error);
+    throw error;
+  }
+};
+
+export const getAgentImprovementReports = async (limit = 50) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-improvement-reports?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch improvement reports');
+    return await response.json();
+  } catch (error) {
+    console.error('Get improvement reports error:', error);
+    throw error;
+  }
+};
+
+// ========== Agent Stats API ==========
+
+export const getAgentStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-stats`);
+    if (!response.ok) throw new Error('Failed to fetch agent stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent stats error:', error);
+    throw error;
+  }
+};
+
+export const getAgentDetails = async (agentClass) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-stats/${encodeURIComponent(agentClass)}`);
+    if (!response.ok) throw new Error('Failed to fetch agent details');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent details error:', error);
+    throw error;
+  }
+};
+
+export const getRunningAgents = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agents/running`);
+    if (!response.ok) throw new Error('Failed to fetch running agents');
+    return await response.json();
+  } catch (error) {
+    console.error('Get running agents error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Submit a bug fix request
+ * @param {Object} bugData - Bug fix request data
+ * @param {string} bugData.bug_description - Description of the bug
+ * @param {string[]} [bugData.reproduction_steps] - Steps to reproduce
+ * @param {string} [bugData.expected_behavior] - Expected behavior
+ * @param {string} [bugData.actual_behavior] - Actual behavior
+ * @param {string[]} [bugData.affected_files] - Files that might be affected
+ * @param {string} [bugData.priority] - Priority level (critical, high, medium, low)
+ * @param {boolean} [bugData.auto_apply] - Whether to auto-apply the fix
+ * @param {string} [bugData.budget_tier] - Budget tier for the fix
+ */
+export const submitBugFix = async (bugData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/fix-bug`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bugData)
+    });
+    if (!response.ok) throw new Error('Failed to submit bug fix request');
+    return await response.json();
+  } catch (error) {
+    console.error('Submit bug fix error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get list of completed reports (bug fixes, etc.)
+ * @param {number} [limit=50] - Maximum number of reports to return
+ */
+export const getCompletedReports = async (limit = 50) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/completed-reports?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch completed reports');
+    return await response.json();
+  } catch (error) {
+    console.error('Get completed reports error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the content of a specific completed report
+ * @param {string} reportId - ID of the report (filename without extension)
+ */
+export const getCompletedReportContent = async (reportId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/completed-reports/${encodeURIComponent(reportId)}/content`);
+    if (!response.ok) throw new Error('Failed to fetch report content');
+    return await response.json();
+  } catch (error) {
+    console.error('Get completed report content error:', error);
+    throw error;
+  }
+};
+
+// ==================== Metrics API ====================
+
+/**
+ * Get model performance metrics
+ * @param {number} [days=30] - Number of days to include
+ */
+export const getModelMetrics = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/metrics/models?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch model metrics');
+    return await response.json();
+  } catch (error) {
+    console.error('Get model metrics error:', error);
+    return { models: [] };
+  }
+};
+
+/**
+ * Get agent performance metrics
+ * @param {number} [days=30] - Number of days to include
+ */
+export const getAgentMetrics = async (days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/metrics/agents?days=${days}`);
+    if (!response.ok) throw new Error('Failed to fetch agent metrics');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent metrics error:', error);
+    return { agents: [] };
+  }
+};
+
+// ==================== YOLO Mode API ====================
+
+/**
+ * Get current YOLO mode status
+ * When enabled, all tasks run fully autonomous without human review
+ */
+export const getYoloMode = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/yolo-mode`);
+    if (!response.ok) throw new Error('Failed to fetch YOLO mode status');
+    return await response.json();
+  } catch (error) {
+    console.error('Get YOLO mode error:', error);
+    return { enabled: false };
+  }
+};
+
+/**
+ * Set YOLO mode status
+ * @param {boolean} enabled - Whether to enable YOLO mode
+ */
+export const setYoloMode = async (enabled) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/yolo-mode?enabled=${enabled}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to set YOLO mode');
+    return await response.json();
+  } catch (error) {
+    console.error('Set YOLO mode error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Enable YOLO mode (shortcut)
+ */
+export const enableYoloMode = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/yolo-mode/enable`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to enable YOLO mode');
+    return await response.json();
+  } catch (error) {
+    console.error('Enable YOLO mode error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Disable YOLO mode (shortcut)
+ */
+export const disableYoloMode = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/yolo-mode/disable`, { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to disable YOLO mode');
+    return await response.json();
+  } catch (error) {
+    console.error('Disable YOLO mode error:', error);
+    throw error;
+  }
+};

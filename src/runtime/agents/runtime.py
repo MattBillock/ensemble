@@ -15,9 +15,14 @@ from .state import StateManager
 from .model_selector import ModelSelector
 from .metrics import AgentMetricsTracker
 from .activity_tracker import AgentActivityTracker
-from .resilience import CircuitBreaker, retry_with_exponential_backoff, CircuitBreakerOpenError
+from .resilience import (
+    CircuitBreaker,
+    retry_with_exponential_backoff,
+    CircuitBreakerOpenError,
+    get_global_rate_limiter,
+)
 from .validation import ResponseValidator
-from .naming.name_generator import generate_agent_name
+from .naming.name_generator import generate_agent_name, generate_family_name
 from .self_improvement import get_improvement_loop
 from .achievements import get_achievement_tracker
 
@@ -33,6 +38,77 @@ logging.basicConfig(
     format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}'
 )
 logger = logging.getLogger(__name__)
+
+
+class TokenUsage:
+    """
+    Tracks token usage for API calls.
+
+    This class provides methods to track and accumulate token usage across
+    multiple API calls, including prompt tokens and completion tokens.
+    """
+
+    def __init__(self, prompt_tokens: int = 0, completion_tokens: int = 0):
+        """
+        Initialize token usage tracking.
+
+        Args:
+            prompt_tokens: Initial prompt token count (default 0)
+            completion_tokens: Initial completion token count (default 0)
+
+        Raises:
+            ValueError: If token values are negative
+        """
+        if prompt_tokens < 0 or completion_tokens < 0:
+            raise ValueError("Token values cannot be negative")
+
+        self._prompt_tokens = prompt_tokens
+        self._completion_tokens = completion_tokens
+
+    @property
+    def prompt_tokens(self) -> int:
+        """Get the prompt token count."""
+        return self._prompt_tokens
+
+    @property
+    def completion_tokens(self) -> int:
+        """Get the completion token count."""
+        return self._completion_tokens
+
+    @property
+    def total_tokens(self) -> int:
+        """Get the total token count (prompt + completion)."""
+        return self._prompt_tokens + self._completion_tokens
+
+    def add_tokens(self, prompt_tokens: int = 0, completion_tokens: int = 0) -> None:
+        """
+        Add tokens to the current counts.
+
+        Args:
+            prompt_tokens: Number of prompt tokens to add
+            completion_tokens: Number of completion tokens to add
+
+        Raises:
+            ValueError: If token values are negative
+        """
+        if prompt_tokens < 0 or completion_tokens < 0:
+            raise ValueError("Token values cannot be negative")
+
+        self._prompt_tokens += prompt_tokens
+        self._completion_tokens += completion_tokens
+
+    def to_dict(self) -> Dict[str, int]:
+        """
+        Convert token usage to a dictionary.
+
+        Returns:
+            Dictionary with prompt_tokens, completion_tokens, and total_tokens
+        """
+        return {
+            "prompt_tokens": self._prompt_tokens,
+            "completion_tokens": self._completion_tokens,
+            "total_tokens": self.total_tokens,
+        }
 
 
 class AgentRuntime:
@@ -100,7 +176,8 @@ class AgentRuntime:
         session_id: Optional[str] = None,
         use_dynamic_model_selection: bool = True,
         auto_continue: bool = True,
-        fully_autonomous: bool = False
+        fully_autonomous: bool = False,
+        family_name: Optional[str] = None
     ):
         """
         Initialize agent runtime.
@@ -118,6 +195,7 @@ class AgentRuntime:
             use_dynamic_model_selection: Whether to use dynamic model router with fuzzing
             auto_continue: If True, automatically continue through milestones without approval
             fully_autonomous: If True, bypass ALL user confirmations and proceed with best judgment
+            family_name: Optional family name for agent group cohesion
         """
         self.definition = definition
         self.api_key = api_key
@@ -138,11 +216,25 @@ class AgentRuntime:
             logger.info(f"Using tuned max_iterations for {definition.name}: {effective_max} (original: {definition.max_iterations})")
             definition.max_iterations = effective_max
 
-        # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
+        # Generate family name for root agents (those without a parent)
+        # Child agents inherit their parent's family name
+        if family_name:
+            self.family_name = family_name
+        elif parent_agent_id is None:
+            # Root agent - generate a new family name
+            self.family_name = generate_family_name()
+            logger.info(f"Generated new family name for root agent: {self.family_name}")
+        else:
+            # Child agent without explicit family name - use a placeholder
+            # (In practice, parent should pass family_name to children)
+            self.family_name = None
+
+        # Generate whimsical, memorable agent ID (e.g., "Lumawick Sparrow-Director-4729")
         self.agent_id = agent_id or generate_agent_name(
             agent_type=definition.name,
             parent_id=parent_agent_id,
-            use_whimsical=True
+            use_whimsical=True,
+            family_name=self.family_name
         )
         self.request_id = request_id or "unknown"
         self.session_id = session_id
@@ -301,6 +393,10 @@ class AgentRuntime:
 
         # Record agent start in activity tracker
         activity_tracker = self.get_activity_tracker()
+        # Extract problem description from input_data if available
+        problem_desc = None
+        if input_data:
+            problem_desc = input_data.get("user_vision") or input_data.get("problem_description") or input_data.get("problem")
         activity_tracker.record_agent_started(
             agent_id=self.agent_id,
             agent_name=self.definition.name,
@@ -308,7 +404,10 @@ class AgentRuntime:
             request_id=self.request_id,
             parent_agent_id=self.parent_agent_id,
             input_data=input_data,
-            model=model
+            model=model,
+            problem=problem_desc,
+            project_id=self.request_id,  # Use request_id as project_id
+            current_stage="requirements"  # Initial stage
         )
 
         # Initialize or resume state
@@ -363,6 +462,20 @@ class AgentRuntime:
                 # Call Anthropic API with retry logic and circuit breaker
                 circuit_breaker = self.get_circuit_breaker()
 
+                # Apply rate limiting before API call
+                rate_limiter = get_global_rate_limiter()
+
+                # Estimate input tokens (rough approximation: ~4 chars per token)
+                estimated_input_tokens = len(str(api_kwargs.get("messages", []))) // 4
+
+                wait_time = rate_limiter.wait_time_needed(estimated_input_tokens)
+                if wait_time > 0:
+                    logger.info(
+                        f"Rate limit throttle: waiting {wait_time:.2f}s before API call "
+                        f"(agent: {self.definition.name}, iteration: {self.iteration_count})"
+                    )
+                    time.sleep(wait_time)
+
                 def _make_api_call():
                     """Wrapper for API call to use with retry logic."""
                     return circuit_breaker.call(
@@ -396,6 +509,12 @@ class AgentRuntime:
                                f"+{response.usage.input_tokens} input, "
                                f"+{response.usage.output_tokens} output tokens "
                                f"(total: {self.total_input_tokens + self.total_output_tokens})")
+
+                    # Record usage in global rate limiter for accurate tracking
+                    rate_limiter.record_usage(
+                        input_tokens=response.usage.input_tokens,
+                        output_tokens=response.usage.output_tokens
+                    )
 
                 # Record iteration in state
                 if self.state_manager:

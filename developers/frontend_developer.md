@@ -237,6 +237,14 @@ See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Develo
 ## Supervised By
 Frontend Developer Tech
 
+## Improvement Focus Areas
+This agent benefits most from these improvement types:
+- **tool_optimization**: Efficient file reading (tests first) and writing (minimal edits)
+- **output_format**: Clean React component structure that passes tests
+- **specialization**: Deep React/JSX knowledge and modern patterns
+- **context_tuning**: Just enough context to understand what tests expect
+- **validation**: Verify code compiles and matches test expectations before completion
+
 ## Model Preference
 haiku
 

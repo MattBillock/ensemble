@@ -114,16 +114,13 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
 
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <strong style={{ fontSize: '13px' }}>{node.agent_name}</strong>
+              <strong style={{ fontSize: '13px' }}>{node.agent_id}</strong>
               <Badge bg={getStatusBadge(node.status)} style={{ fontSize: '10px' }}>
                 {node.status}
               </Badge>
-              <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                {node.agent_type}
-              </span>
             </div>
-            <div style={{ fontSize: '10px', color: '#6b7280' }}>
-              {node.agent_id}
+            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+              {node.agent_name} • {node.agent_type}
             </div>
           </div>
 

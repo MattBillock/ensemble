@@ -67,7 +67,7 @@ class StallDetector:
         threshold_minutes: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Detect agents that appear to be stalled."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         stalled = []
         swarm_state = get_swarm_state()
@@ -95,7 +95,7 @@ class StallDetector:
         stalled_agents: List[Dict[str, Any]]
     ) -> int:
         """Queue stalled agents for recovery."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         swarm_state = get_swarm_state()
         queued_count = 0
@@ -233,7 +233,7 @@ class RecoveryOrchestrator:
 
     def _on_stalls_detected(self, stalled_agents: List[Dict[str, Any]]):
         """Handle detected stalled agents."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
         swarm_state = get_swarm_state()
 
         for agent in stalled_agents:
@@ -348,7 +348,7 @@ class RecoveryOrchestrator:
 
     def _process_recovery_queue(self):
         """Process the recovery queue continuously."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         while self._running:
             try:
@@ -387,7 +387,7 @@ class RecoveryOrchestrator:
 
     def _execute_recovery(self, task: Dict[str, Any]):
         """Execute a recovery task."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         agent_id = task['agent_id']
         recovery_id = task['id']
@@ -472,7 +472,7 @@ class RecoveryOrchestrator:
         """Retry a stalled agent."""
         from .definition import AgentDefinition
         from .runtime import AgentRuntime
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         if not self.api_key:
             logger.error("Cannot retry agent: no API key configured")
@@ -569,7 +569,7 @@ class RecoveryOrchestrator:
         This analyzes the failure and updates the agent definition
         to prevent similar failures in the future.
         """
-        from .guardrail_system import get_guardrail_system
+        # get_guardrail_system is defined at end of this module
 
         agent_type = task.get('agent_type', '')
         failure_reason = task.get('recovery_reason', 'unknown')
@@ -618,7 +618,7 @@ class RecoveryOrchestrator:
         agent_type: str
     ) -> bool:
         """Update an agent definition file with new guardrails."""
-        from .guardrail_system import get_guardrail_system
+        # get_guardrail_system is defined at end of this module
 
         try:
             guardrail_system = get_guardrail_system()
@@ -670,7 +670,7 @@ class RecoveryOrchestrator:
 
         Adds guardrails, clarifies requirements, and improves structure.
         """
-        from .guardrail_system import get_guardrail_system
+        # get_guardrail_system is defined at end of this module
 
         agent_type = task.get('agent_type', '')
         input_data = task.get('input_data', {})
@@ -740,7 +740,7 @@ class RecoveryOrchestrator:
         reason: str = "Manual recovery requested"
     ):
         """Manually queue an agent for recovery."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         swarm_state = get_swarm_state()
         swarm_state.queue_for_recovery(
@@ -755,7 +755,7 @@ class RecoveryOrchestrator:
 
     def get_recovery_status(self) -> Dict[str, Any]:
         """Get current recovery system status."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         swarm_state = get_swarm_state()
         queue = swarm_state.get_recovery_queue(limit=100)
@@ -789,7 +789,7 @@ class RecoveryOrchestrator:
         strategy: RecoveryStrategy = RecoveryStrategy.RETRY
     ) -> Dict[str, Any]:
         """Manually trigger recovery for a specific agent."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         swarm_state = get_swarm_state()
 
@@ -816,7 +816,7 @@ class RecoveryOrchestrator:
 
     def get_recovery_history(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Get history of recovery operations."""
-        from .swarm_state import get_swarm_state
+        # Use module-level get_swarm_state() defined at end of this file
 
         swarm_state = get_swarm_state()
 
@@ -844,3 +844,200 @@ def get_recovery_orchestrator(api_key: Optional[str] = None) -> RecoveryOrchestr
     elif api_key and not _recovery_orchestrator.api_key:
         _recovery_orchestrator.api_key = api_key
     return _recovery_orchestrator
+
+
+def get_swarm_state():
+    """
+    Get the swarm state manager.
+
+    This function re-exports get_swarm_state from swarm_state module
+    for convenient access and test mocking.
+    """
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state as _get_swarm_state
+    except ImportError:
+        # Handle case where module is imported directly without package context
+        from swarm_state import get_swarm_state as _get_swarm_state
+    return _get_swarm_state()
+
+
+class GuardrailSystem:
+    """
+    System for applying guardrails to prompts and agent behavior.
+
+    Guardrails help constrain agent behavior to prevent scope creep,
+    improve focus, and enhance recovery success rates.
+    """
+
+    def __init__(self):
+        """Initialize the guardrail system."""
+        self.active_guardrails: Dict[str, Dict[str, Any]] = {}
+        self._guardrail_counter = 0
+
+    def apply_guardrails_to_prompt(
+        self,
+        prompt: str,
+        agent_type: str,
+        failure_reason: Optional[str] = None
+    ) -> tuple:
+        """
+        Apply guardrails to a prompt based on agent type and failure context.
+
+        Args:
+            prompt: The original prompt to enhance
+            agent_type: The type of agent (e.g., "developers/code_writer")
+            failure_reason: Optional reason for previous failure (for targeted fixes)
+
+        Returns:
+            Tuple of (enhanced_prompt, list_of_guardrail_ids)
+        """
+        guardrail_ids = []
+        enhanced_prompt = prompt
+
+        # Add scope constraints
+        self._guardrail_counter += 1
+        guard_id = f"guard_{self._guardrail_counter:03d}"
+        guardrail_ids.append(guard_id)
+
+        constraints = ["\n\n**CRITICAL CONSTRAINTS:**"]
+
+        # Add failure-specific constraints
+        if failure_reason == "scope_creep":
+            constraints.append("- Stay focused on the specific task requested")
+            constraints.append("- Do not add features or functionality not explicitly requested")
+        elif failure_reason == "incomplete":
+            constraints.append("- Ensure all requested functionality is implemented")
+            constraints.append("- Verify output meets all requirements before completing")
+        elif failure_reason == "max_iterations_reached":
+            constraints.append("- Work efficiently and avoid unnecessary iterations")
+            constraints.append("- Complete the task in fewer steps if possible")
+        elif failure_reason == "stuck_at_start":
+            constraints.append("- Begin with the most straightforward approach")
+            constraints.append("- If blocked, explain the blocker clearly")
+
+        # General constraints
+        constraints.append("- Follow the single responsibility principle")
+        constraints.append("- Keep code simple and maintainable")
+
+        enhanced_prompt = prompt + "\n".join(constraints)
+
+        # Store the guardrail for tracking
+        self.active_guardrails[guard_id] = {
+            "agent_type": agent_type,
+            "failure_reason": failure_reason,
+            "applied_at": datetime.now().isoformat()
+        }
+
+        return (enhanced_prompt, guardrail_ids)
+
+    def get_guardrails_for_agent_type(self, agent_type: str) -> List[str]:
+        """Get recommended guardrails for a specific agent type."""
+        guardrails = []
+
+        if "developer" in agent_type.lower():
+            guardrails.extend([
+                "Code must be minimal and focused",
+                "Follow existing code style and patterns",
+                "Add tests only if explicitly requested"
+            ])
+        elif "lead" in agent_type.lower():
+            guardrails.extend([
+                "Delegate to appropriate developers",
+                "Do not write code directly",
+                "Verify tests pass before completion"
+            ])
+        elif "coordinator" in agent_type.lower():
+            guardrails.extend([
+                "Coordinate between teams effectively",
+                "Ensure clear handoffs between agents",
+                "Track progress and report blockers"
+            ])
+
+        return guardrails
+
+    def learn_from_failure(
+        self,
+        agent_type: str,
+        failure_reason: str,
+        input_data: Dict[str, Any],
+        original_definition: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Learn from a failure to improve future guardrails.
+
+        Args:
+            agent_type: The type of agent that failed
+            failure_reason: The reason for the failure
+            input_data: The input that caused the failure
+            original_definition: The original agent definition (if available)
+
+        Returns:
+            Dictionary containing learned improvements
+        """
+        improvements = {
+            "agent_type": agent_type,
+            "failure_reason": failure_reason,
+            "learned_at": datetime.now().isoformat(),
+            "recommendations": []
+        }
+
+        # Add specific recommendations based on failure type
+        if failure_reason == "scope_creep":
+            improvements["recommendations"].extend([
+                "Add explicit scope boundaries",
+                "Include 'DO NOT' examples in instructions",
+                "Add scope-checking checkpoints"
+            ])
+        elif failure_reason == "incomplete":
+            improvements["recommendations"].extend([
+                "Add completion checklist",
+                "Require explicit verification step",
+                "Add timeout warnings"
+            ])
+        elif failure_reason == "max_iterations_reached":
+            improvements["recommendations"].extend([
+                "Simplify task decomposition",
+                "Add early exit conditions",
+                "Consider model escalation"
+            ])
+        elif failure_reason == "stuck_at_start":
+            improvements["recommendations"].extend([
+                "Provide clearer starting guidance",
+                "Add example inputs/outputs",
+                "Simplify initial instructions"
+            ])
+
+        return improvements
+
+    def format_guardrails_for_agent_definition(self, agent_type: str) -> str:
+        """
+        Format guardrails as a section for agent definition files.
+
+        Args:
+            agent_type: The type of agent
+
+        Returns:
+            Formatted guardrails section for markdown
+        """
+        guardrails = self.get_guardrails_for_agent_type(agent_type)
+
+        if not guardrails:
+            return ""
+
+        lines = ["\n## Guardrails\n"]
+        for guardrail in guardrails:
+            lines.append(f"- {guardrail}")
+
+        return "\n".join(lines)
+
+
+# Global guardrail system
+_guardrail_system: Optional[GuardrailSystem] = None
+
+
+def get_guardrail_system() -> GuardrailSystem:
+    """Get or create the global guardrail system."""
+    global _guardrail_system
+    if _guardrail_system is None:
+        _guardrail_system = GuardrailSystem()
+    return _guardrail_system

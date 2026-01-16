@@ -135,6 +135,30 @@ Real-time UI updates via `/ws/agent-status` endpoint with auto-reconnect.
 - `balanced` - Sonnet (default)
 - `full_firepower` - Opus (complex tasks)
 
+### Rate Limiting
+Multi-dimensional rate limiter respects Anthropic API limits:
+- 2,000 requests/minute
+- 800,000 input tokens/minute
+- 4,000,000 output tokens/minute
+
+Implemented in `src/runtime/agents/resilience.py` as `MultiDimensionalRateLimiter`.
+Automatically integrated into all agent API calls.
+
+### Bug Fix Director
+Autonomous bug fixing system via `POST /api/fix-bug`:
+- Analyzes bug reports automatically
+- Spawns appropriate sub-agents
+- Generates summary reports in `output/completed/`
+- Minimal user interaction required
+
+Agent definition: `leadership/bug_fix_director.md`
+
+### UI Features
+- **Pending Review Dashboard** - Review agent-generated documents before implementation
+- **Agent Stats** - View agent activity, achievements, and performance
+- **Achievement System** - Gamified agent tracking with rarity tiers
+- **Cost Tracking** - Monitor API usage and costs
+
 ## Common Tasks
 
 ### Run Tests
@@ -174,3 +198,7 @@ npm run lint
 - Architecture: `src/field/ensemble_ui/architecture.md`
 - Quick Start: `QUICKSTART.md`
 - UI Implementation: `src/field/ensemble_ui/IMPLEMENTATION_SUMMARY.md`
+- Agent Template: `leadership/AGENT_TEMPLATE.md`
+- Bug Fix Director: `leadership/bug_fix_director.md`
+- Artifact Status: `src/field/ensemble_ui/output/ARTIFACT_STATUS.md`
+- Rate Limiter: `src/runtime/agents/resilience.py` (MultiDimensionalRateLimiter class)

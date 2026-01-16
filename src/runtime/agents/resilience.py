@@ -2,7 +2,9 @@
 
 import time
 import logging
-from typing import Callable, Any, Optional, Type
+import threading
+from collections import deque
+from typing import Callable, Any, Optional, Type, Dict
 from datetime import datetime, timedelta
 from enum import Enum
 
@@ -230,6 +232,209 @@ class RateLimiter:
             time.sleep(sleep_time)
 
         self.last_call_time = time.time()
+
+
+class MultiDimensionalRateLimiter:
+    """
+    Multi-dimensional rate limiter for Anthropic API limits.
+
+    Tracks requests, input tokens, and output tokens per minute using
+    sliding window counters. Thread-safe for concurrent agent usage.
+
+    Default limits based on Anthropic API:
+    - 2,000 requests/minute
+    - 800,000 input tokens/minute (Sonnet/Opus)
+    - 4,000,000 output tokens/minute
+    """
+
+    def __init__(
+        self,
+        max_requests_per_minute: int = 2000,
+        max_input_tokens_per_minute: int = 800_000,
+        max_output_tokens_per_minute: int = 4_000_000,
+        window_seconds: int = 60,
+    ):
+        """
+        Initialize multi-dimensional rate limiter.
+
+        Args:
+            max_requests_per_minute: Maximum API requests per minute
+            max_input_tokens_per_minute: Maximum input tokens per minute
+            max_output_tokens_per_minute: Maximum output tokens per minute
+            window_seconds: Sliding window size in seconds (default 60)
+        """
+        self.limits = {
+            "requests": max_requests_per_minute,
+            "input_tokens": max_input_tokens_per_minute,
+            "output_tokens": max_output_tokens_per_minute,
+        }
+        self.window_seconds = window_seconds
+        # Each deque stores tuples of (timestamp, count)
+        self.usage_windows: Dict[str, deque] = {
+            "requests": deque(),
+            "input_tokens": deque(),
+            "output_tokens": deque(),
+        }
+        self._lock = threading.Lock()
+
+    def _cleanup_old_entries(self, metric: str) -> None:
+        """Remove entries older than the window period."""
+        cutoff = time.time() - self.window_seconds
+        while self.usage_windows[metric] and self.usage_windows[metric][0][0] < cutoff:
+            self.usage_windows[metric].popleft()
+
+    def get_current_usage(self, metric: str) -> int:
+        """
+        Get current usage for a metric in the sliding window.
+
+        Args:
+            metric: One of 'requests', 'input_tokens', 'output_tokens'
+
+        Returns:
+            Current usage count within the window
+        """
+        self._cleanup_old_entries(metric)
+        return sum(entry[1] for entry in self.usage_windows[metric])
+
+    def get_all_usage(self) -> Dict[str, int]:
+        """
+        Get current usage for all metrics.
+
+        Returns:
+            Dictionary with current usage for each metric
+        """
+        with self._lock:
+            return {
+                metric: self.get_current_usage(metric) for metric in self.limits.keys()
+            }
+
+    def get_remaining_capacity(self) -> Dict[str, int]:
+        """
+        Get remaining capacity for all metrics.
+
+        Returns:
+            Dictionary with remaining capacity for each metric
+        """
+        with self._lock:
+            return {
+                metric: max(0, self.limits[metric] - self.get_current_usage(metric))
+                for metric in self.limits.keys()
+            }
+
+    def wait_time_needed(self, estimated_input_tokens: int = 0) -> float:
+        """
+        Calculate wait time needed before making a request.
+
+        Args:
+            estimated_input_tokens: Estimated input tokens for the upcoming request
+
+        Returns:
+            Seconds to wait before proceeding (0 if no wait needed)
+        """
+        with self._lock:
+            wait_times = []
+            now = time.time()
+
+            # Check requests limit
+            self._cleanup_old_entries("requests")
+            req_usage = sum(entry[1] for entry in self.usage_windows["requests"])
+            if req_usage >= self.limits["requests"]:
+                if self.usage_windows["requests"]:
+                    oldest = self.usage_windows["requests"][0][0]
+                    wait_times.append(self.window_seconds - (now - oldest))
+
+            # Check input token limit
+            self._cleanup_old_entries("input_tokens")
+            input_usage = sum(entry[1] for entry in self.usage_windows["input_tokens"])
+            if input_usage + estimated_input_tokens >= self.limits["input_tokens"]:
+                if self.usage_windows["input_tokens"]:
+                    oldest = self.usage_windows["input_tokens"][0][0]
+                    wait_times.append(self.window_seconds - (now - oldest))
+
+            # Check output token limit (preemptive check based on recent output rate)
+            self._cleanup_old_entries("output_tokens")
+            output_usage = sum(entry[1] for entry in self.usage_windows["output_tokens"])
+            if output_usage >= self.limits["output_tokens"] * 0.95:  # 95% threshold
+                if self.usage_windows["output_tokens"]:
+                    oldest = self.usage_windows["output_tokens"][0][0]
+                    wait_times.append(self.window_seconds - (now - oldest))
+
+            return max(0.0, max(wait_times)) if wait_times else 0.0
+
+    def record_usage(self, input_tokens: int, output_tokens: int) -> None:
+        """
+        Record API call usage after completion.
+
+        Args:
+            input_tokens: Number of input tokens used
+            output_tokens: Number of output tokens generated
+        """
+        with self._lock:
+            now = time.time()
+            self.usage_windows["requests"].append((now, 1))
+            self.usage_windows["input_tokens"].append((now, input_tokens))
+            self.usage_windows["output_tokens"].append((now, output_tokens))
+
+            logger.debug(
+                f"Rate limiter recorded: input={input_tokens}, output={output_tokens}, "
+                f"totals: requests={self.get_current_usage('requests')}, "
+                f"input={self.get_current_usage('input_tokens')}, "
+                f"output={self.get_current_usage('output_tokens')}"
+            )
+
+    def would_exceed_limit(self, estimated_input_tokens: int = 0) -> bool:
+        """
+        Check if making a request would exceed rate limits.
+
+        Args:
+            estimated_input_tokens: Estimated input tokens for the request
+
+        Returns:
+            True if request would exceed limits
+        """
+        with self._lock:
+            # Check requests
+            self._cleanup_old_entries("requests")
+            if sum(e[1] for e in self.usage_windows["requests"]) >= self.limits["requests"]:
+                return True
+
+            # Check input tokens
+            self._cleanup_old_entries("input_tokens")
+            input_total = sum(e[1] for e in self.usage_windows["input_tokens"])
+            if input_total + estimated_input_tokens >= self.limits["input_tokens"]:
+                return True
+
+            return False
+
+    def reset(self) -> None:
+        """Reset all rate limit counters."""
+        with self._lock:
+            for metric in self.usage_windows:
+                self.usage_windows[metric].clear()
+            logger.info("Rate limiter counters reset")
+
+
+# Global rate limiter instance for shared use across agents
+_global_rate_limiter: Optional["MultiDimensionalRateLimiter"] = None
+
+
+def get_global_rate_limiter() -> MultiDimensionalRateLimiter:
+    """
+    Get or create the global rate limiter instance.
+
+    Returns:
+        Shared MultiDimensionalRateLimiter instance
+    """
+    global _global_rate_limiter
+    if _global_rate_limiter is None:
+        _global_rate_limiter = MultiDimensionalRateLimiter()
+        logger.info(
+            f"Global rate limiter initialized: "
+            f"{_global_rate_limiter.limits['requests']} req/min, "
+            f"{_global_rate_limiter.limits['input_tokens']} input tokens/min, "
+            f"{_global_rate_limiter.limits['output_tokens']} output tokens/min"
+        )
+    return _global_rate_limiter
 
 
 class TimeoutManager:

@@ -1,1 +1,167 @@
-# Frontend Tasks - Project View Dashboard\n\n## Overview\nBreakdown of React component development tasks for the Project View Dashboard feature.\n\n## Task Dependencies\nTasks are organized in dependency order - components without dependencies should be built first.\n\n---\n\n## Core UI Components (No Dependencies)\n\n### Task 1: Badge Component Enhancement\n**Description**: Enhance existing Badge component to support status variants for project phases\n**Complexity**: Simple\n**Acceptance Criteria**:\n- Badge supports SDLC phase variants (requirements, architecture, planning, implementation, testing, complete)\n- Badge supports project status variants (active, paused, completed, failed, error)\n- Proper color coding for each status type\n- Consistent with existing dark theme\n\n**Dependencies**: None\n**Files**: `Badge.jsx` (enhancement)\n\n---\n\n### Task 2: Progress Bar Component\n**Description**: Create reusable ProgressBar component for milestone progress visualization\n**Complexity**: Simple\n**Acceptance Criteria**:\n- Visual progress bar with percentage completion\n- Shows completed/total as text overlay\n- Dark theme compatible colors\n- Supports different sizes (small, medium, large)\n- Optional animated fill transition\n\n**Dependencies**: None\n**Files**: `components/ProgressBar.jsx`\n\n---\n\n### Task 3: SDLC Indicator Component\n**Description**: Create visual indicator for Software Development Lifecycle phases\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Horizontal stepper showing 6 phases: Requirements → Architecture → Planning → Implementation → Testing → Complete\n- Highlights current phase\n- Shows completed phases as checked\n- Responsive design for mobile\n- Hover tooltips for phase descriptions\n\n**Dependencies**: Badge component\n**Files**: `components/SDLCIndicator.jsx`\n\n---\n\n### Task 4: Project Status Card Component\n**Description**: Card component displaying project header information and status\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Shows project name, description, and timestamps\n- Displays current status with Badge component\n- Shows current SDLC phase with indicator\n- Loading state support\n- Error state display\n\n**Dependencies**: Badge, SDLCIndicator\n**Files**: `components/ProjectStatusCard.jsx`\n\n---\n\n### Task 5: Milestone Progress Component\n**Description**: Component displaying milestone tracking information\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Shows milestone counts (completed/total)\n- Visual progress bar for completion percentage\n- List of individual milestones with status badges\n- Expandable/collapsible milestone list\n- Empty state when no milestones exist\n\n**Dependencies**: ProgressBar, Badge\n**Files**: `components/MilestoneProgress.jsx`\n\n---\n\n### Task 6: Next Steps Panel Component\n**Description**: Panel showing actionable next steps and tasks\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Lists next actionable steps with descriptions\n- Shows task assignments and status\n- Prioritizes unblocked tasks\n- Shows task dependencies if applicable\n- Empty state when no next steps available\n\n**Dependencies**: Badge\n**Files**: `components/NextStepsPanel.jsx`\n\n---\n\n### Task 7: Project List Component\n**Description**: Sidebar component listing all projects with selection capability\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Displays project names with status indicators\n- Shows last updated timestamp\n- Supports project selection (single select)\n- Search/filter functionality\n- Loading and error states\n- Responsive collapsible on mobile\n\n**Dependencies**: Badge\n**Files**: `components/ProjectList.jsx`\n\n---\n\n## Main Page Components\n\n### Task 8: Project Details Panel Component\n**Description**: Main content area showing detailed project information\n**Complexity**: Complex\n**Acceptance Criteria**:\n- Integrates ProjectStatusCard, SDLCIndicator, MilestoneProgress, and NextStepsPanel\n- Handles data loading from API\n- Error handling for missing/incomplete project data\n- \"Continue to Next Step\" button with loading states\n- Responsive layout for mobile devices\n\n**Dependencies**: ProjectStatusCard, MilestoneProgress, NextStepsPanel\n**Files**: `components/ProjectDetailsPanel.jsx`\n\n---\n\n### Task 9: Project View Main Component\n**Description**: Main page component orchestrating the entire Project View\n**Complexity**: Complex\n**Acceptance Criteria**:\n- Two-panel layout: ProjectList (left) + ProjectDetailsPanel (right)\n- Manages project selection state\n- Handles routing and URL parameters for deep linking\n- Mobile responsive with drawer/modal project list\n- Loading states during initial data fetch\n- Error boundaries for component failures\n\n**Dependencies**: ProjectList, ProjectDetailsPanel\n**Files**: `pages/ProjectView.jsx`\n\n---\n\n## API Integration and Services\n\n### Task 10: Project API Service\n**Description**: API service layer for project-related endpoints\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Implements project list fetching (`GET /api/projects/summary`)\n- Implements project details fetching (`GET /api/projects/{id}/details`)\n- Implements project continuation (`POST /api/projects/{id}/continue`)\n- Error handling with appropriate user messages\n- Request caching for performance\n- TypeScript interfaces for project data\n\n**Dependencies**: None\n**Files**: `services/projectService.js`\n\n---\n\n### Task 11: Project Data Hooks\n**Description**: React hooks for project data management\n**Complexity**: Medium\n**Acceptance Criteria**:\n- `useProjects()` hook for project list\n- `useProjectDetails(projectId)` hook for specific project\n- `useContinueProject()` hook for project continuation\n- Loading, error, and success states\n- Automatic refetching on mutations\n- Optimistic updates for better UX\n\n**Dependencies**: projectService\n**Files**: `hooks/useProjects.js`\n\n---\n\n## Integration and Routing\n\n### Task 12: Navigation Integration\n**Description**: Add Project View to main application navigation\n**Complexity**: Simple\n**Acceptance Criteria**:\n- Add \"Projects\" tab to main navigation\n- Route configuration for `/projects` and `/projects/:id`\n- Active tab highlighting\n- Breadcrumb support for project details\n- Back navigation handling\n\n**Dependencies**: ProjectView component\n**Files**: `App.jsx`, `routes.js`\n\n---\n\n## Testing Components\n\n### Task 13: Unit Tests for Core Components\n**Description**: Jest unit tests for reusable components\n**Complexity**: Medium\n**Acceptance Criteria**:\n- Tests for Badge, ProgressBar, SDLCIndicator components\n- Props validation and rendering tests\n- Accessibility tests (screen reader compatibility)\n- Snapshot testing for visual regression\n- 90%+ code coverage for components\n\n**Dependencies**: Core components (Tasks 1-3)\n**Files**: `__tests__/components/`\n\n---\n\n### Task 14: Integration Tests for Main Components\n**Description**: Integration tests for main page components and API integration\n**Complexity**: Complex\n**Acceptance Criteria**:\n- Tests for ProjectView end-to-end functionality\n- Mock API responses and error scenarios\n- User interaction testing (project selection, continue button)\n- Mobile responsive behavior testing\n- Loading state and error boundary testing\n\n**Dependencies**: ProjectView, API services (Tasks 8-11)\n**Files**: `__tests__/integration/`\n\n---\n\n## Summary\n\n**Total Tasks**: 14\n**Dependencies**: \n- Tasks 1-3, 7, 10: No dependencies (can start immediately)\n- Tasks 4-6: Depend on Badge and other core components\n- Tasks 8-9: Depend on sub-components\n- Tasks 11: Depends on API service\n- Task 12: Depends on main ProjectView\n- Tasks 13-14: Depend on respective implementation tasks\n\n**Recommended Implementation Order**:\n1. Core components (Tasks 1-3, 10)\n2. Mid-level components (Tasks 4-7, 11)\n3. Main components (Tasks 8-9)\n4. Integration (Task 12)\n5. Testing (Tasks 13-14)\n\n**Complexity Distribution**:\n- Simple: 3 tasks\n- Medium: 8 tasks\n- Complex: 3 tasks\n\n**Frontend Technology Stack**:\n- React with hooks\n- React Router for navigation\n- Fetch API for HTTP requests\n- CSS Modules or Tailwind for styling\n- Jest + React Testing Library for testing\n- Dark theme consistency with existing UI"
+# Frontend Tasks - Background Color Update
+
+## Project Overview
+Change web UI background from dark blue to dark green while maintaining accessibility and functionality.
+
+## Architecture Summary
+- **Pattern**: Configuration-based theming with minimal changes
+- **Primary Target**: `/src/field/ensemble_ui/frontend/src/index.css`
+- **Strategy**: Direct CSS modification with comprehensive testing
+- **Color Change**: `#1a1d29` (dark blue) → `#1a291d` (dark green)
+
+## Task Breakdown
+
+### Task 1: Environment Preparation
+**Name**: Setup and Backup
+**Description**: Prepare development environment and create backup of current styling
+**Acceptance Criteria**:
+- Development environment is set up and functional
+- Current `index.css` file is backed up
+- Git working directory is clean with current state committed
+- Local testing environment is verified working
+**Dependencies**: None
+**Complexity**: Simple
+
+### Task 2: Color Value Analysis
+**Name**: Color Contrast and Accessibility Validation
+**Description**: Validate proposed dark green color meets accessibility standards
+**Acceptance Criteria**:
+- Proposed color `#1a291d` tested for WCAG 2.1 AA compliance
+- Color contrast ratios documented for text combinations
+- Alternative colors identified if primary fails accessibility tests
+- Color choice documented with rationale
+**Dependencies**: Task 1
+**Complexity**: Simple
+
+### Task 3: CSS Background Update
+**Name**: Update Background Color in index.css
+**Description**: Modify the main background color from dark blue to dark green
+**Acceptance Criteria**:
+- Background color changed from `#1a1d29` to `#1a291d` in body selector
+- No other CSS properties modified unless required for contrast
+- CSS syntax remains valid and error-free
+- File saved and ready for testing
+**Dependencies**: Task 2
+**Complexity**: Simple
+
+### Task 4: Bootstrap Compatibility Testing
+**Name**: Verify Bootstrap Integration
+**Description**: Ensure Bootstrap classes and components work correctly with new background
+**Acceptance Criteria**:
+- All Bootstrap components render correctly
+- No CSS conflicts or overrides broken
+- Bootstrap utility classes function as expected
+- No visual artifacts or styling issues detected
+**Dependencies**: Task 3
+**Complexity**: Medium
+
+### Task 5: Cross-Browser Testing
+**Name**: Multi-Browser Compatibility Validation
+**Description**: Test new background color across different browsers and devices
+**Acceptance Criteria**:
+- Background displays correctly in Chrome, Firefox, Safari, Edge
+- Color renders consistently across browsers
+- No browser-specific rendering issues
+- Mobile and desktop views both validated
+**Dependencies**: Task 3
+**Complexity**: Medium
+
+### Task 6: Accessibility Compliance Testing
+**Name**: Real-World Accessibility Validation
+**Description**: Test actual accessibility with screen readers and contrast tools
+**Acceptance Criteria**:
+- WCAG color contrast checker passes for all text/background combinations
+- Screen reader functionality unaffected
+- No accessibility regressions introduced
+- Documentation of accessibility test results
+**Dependencies**: Task 3, Task 4
+**Complexity**: Medium
+
+### Task 7: Functional Regression Testing
+**Name**: Complete Application Walkthrough
+**Description**: Verify all application functionality works with new background color
+**Acceptance Criteria**:
+- All pages/components render and function correctly
+- Interactive elements (buttons, forms, modals) work as expected
+- No performance degradation observed
+- User experience remains unchanged except for color
+**Dependencies**: Task 5, Task 6
+**Complexity**: Medium
+
+### Task 8: Performance Impact Assessment
+**Name**: Performance and Load Testing
+**Description**: Ensure color change has no negative performance impact
+**Acceptance Criteria**:
+- Page load times remain consistent
+- CSS parsing performance unaffected
+- Memory usage shows no regression
+- Build process completes without issues
+**Dependencies**: Task 7
+**Complexity**: Simple
+
+### Task 9: Documentation and Deployment
+**Name**: Final Documentation and Rollout
+**Description**: Document changes and prepare for deployment
+**Acceptance Criteria**:
+- Change log updated with color modification details
+- Testing results documented
+- Deployment instructions prepared
+- Rollback procedure documented
+**Dependencies**: Task 8
+**Complexity**: Simple
+
+## Task Dependencies Flow
+```
+Task 1 (Setup) 
+    ↓
+Task 2 (Color Analysis)
+    ↓
+Task 3 (CSS Update)
+    ↓
+Task 4 (Bootstrap Testing) → Task 5 (Browser Testing)
+    ↓                           ↓
+Task 6 (Accessibility) ←--------+
+    ↓
+Task 7 (Functional Testing)
+    ↓
+Task 8 (Performance Testing)
+    ↓
+Task 9 (Documentation)
+```
+
+## Implementation Notes
+
+### Key Files
+- **Primary**: `src/field/ensemble_ui/frontend/src/index.css`
+- **Testing**: All existing frontend components and pages
+
+### Color Specifications
+- **Current**: `#1a1d29` (dark blue)
+- **Target**: `#1a291d` (dark green)
+- **Fallbacks**: `#1d2a1a`, `#1f2d1c` (if accessibility issues)
+
+### Testing Priorities
+1. **Accessibility**: WCAG 2.1 AA compliance is non-negotiable
+2. **Functionality**: Zero regression in existing features
+3. **Compatibility**: Consistent rendering across browsers
+4. **Performance**: No measurable impact on load times
+
+### Risk Mitigation
+- **Backup Strategy**: Git commits before each major change
+- **Rollback Plan**: Immediate revert capability documented
+- **Progressive Testing**: Each task validates before proceeding
+- **Multiple Browsers**: Cross-platform testing throughout
+
+## Estimated Timeline
+- **Setup and Analysis**: 1 hour (Tasks 1-2)
+- **Implementation**: 30 minutes (Task 3)
+- **Testing**: 2-3 hours (Tasks 4-8)
+- **Documentation**: 30 minutes (Task 9)
+- **Total**: 4-5 hours for complete implementation
+
+## Success Metrics
+1. Background color visibly changed to dark green
+2. All accessibility standards maintained
+3. Zero functional regressions
+4. Consistent cross-browser rendering
+5. No performance degradation

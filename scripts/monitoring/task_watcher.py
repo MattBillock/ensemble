@@ -83,6 +83,34 @@ def load_project_tracking(project_id: str) -> Optional[Dict]:
     return None
 
 
+def load_project_data(project_id: str, projects_dir: Optional[str] = None) -> Optional[Dict]:
+    """
+    Load project data from a JSON file in the projects directory.
+
+    Args:
+        project_id: The ID of the project to load
+        projects_dir: Optional custom directory for projects. If None, uses ~/.ensemble/projects/
+
+    Returns:
+        Dictionary containing project data, or None if file doesn't exist or is invalid JSON
+    """
+    if projects_dir is None:
+        base_dir = Path.home() / ".ensemble" / "projects"
+    else:
+        base_dir = Path(projects_dir)
+
+    project_file = base_dir / project_id / "project.json"
+
+    if not project_file.exists():
+        return None
+
+    try:
+        with open(project_file) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
 def get_all_projects() -> List[Dict]:
     """Get all project tracking files."""
     projects_dir = Path.home() / ".ensemble" / "projects"

@@ -14,6 +14,10 @@ Breaks frontend milestones into specific component, page, and service tasks. Ana
 - Task breakdown file created
 - Ready to hand off to TDD Coordinator for implementation
 
+## COMPLETION PROTOCOL (CRITICAL)
+**To terminate, output `"status": "success"` when task breakdown is complete.**
+**DO NOT continue iterating after task breakdown is written.** Output completion JSON and STOP.
+
 ## Input Format
 ```json
 {

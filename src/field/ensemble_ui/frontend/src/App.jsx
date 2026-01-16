@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Container, Row, Col, Card, Form, Button, Badge, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
 import {
   generateSolution,
@@ -8,22 +8,40 @@ import {
   getAllAgentStates,
   getPendingQuestions,
   answerQuestion,
-  getGeneratedFiles
+  getGeneratedFiles,
+  getYoloMode,
+  setYoloMode
 } from './services/api';
+
+// Core components loaded immediately (used in main view)
 import ActivityFeed from './components/ActivityFeed';
 import AgentHierarchyTree from './components/AgentHierarchyTree';
 import StatusSummaryBar from './components/StatusSummaryBar';
 import PendingQuestions from './components/PendingQuestions';
 import GeneratedFiles from './components/GeneratedFiles';
-import MetricsDashboard from './components/MetricsDashboard';
-import HorizontalTimelineView from './components/HorizontalTimelineView';
-import SelfImprovementDashboard from './components/SelfImprovementDashboard';
-import AchievementsDashboard from './components/AchievementsDashboard';
-import CostTrackingDashboard from './components/CostTrackingDashboard';
-import RecoveryDashboard from './components/RecoveryDashboard';
+import FactsPane from './components/FactsPane';
+
+// Lazy-loaded components for code splitting (reduces initial bundle size)
+const MetricsDashboard = lazy(() => import('./components/MetricsDashboard'));
+const HorizontalTimelineView = lazy(() => import('./components/HorizontalTimelineView'));
+const SelfImprovementDashboard = lazy(() => import('./components/SelfImprovementDashboard'));
+const AchievementsDashboard = lazy(() => import('./components/AchievementsDashboard'));
+const CostTrackingDashboard = lazy(() => import('./components/CostTrackingDashboard'));
+const RecoveryDashboard = lazy(() => import('./components/RecoveryDashboard'));
+const PendingReviewDashboard = lazy(() => import('./components/PendingReviewDashboard'));
+const AgentStats = lazy(() => import('./components/AgentStats'));
+const ProjectsDashboard = lazy(() => import('./components/ProjectsDashboard'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <Container className="mt-5 text-center">
+    <Spinner animation="border" variant="primary" />
+    <p className="mt-3 text-light">Loading dashboard...</p>
+  </Container>
+);
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', or 'recovery'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', 'recovery', 'review', 'agents', or 'projects'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +58,9 @@ function App() {
   // Polling configuration
   const [pollInterval, setPollInterval] = useState(1000); // 1 second default
   const [isPaused, setIsPaused] = useState(false);
+
+  // YOLO Mode (fully autonomous, no reviews)
+  const [yoloMode, setYoloModeState] = useState(false);
 
   // Filter state
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -77,6 +98,30 @@ function App() {
       setAppStatus(statusRes);
     } catch (err) {
       console.error('Failed to fetch activity data:', err);
+    }
+  };
+
+  // Fetch initial YOLO mode status
+  useEffect(() => {
+    const fetchYoloStatus = async () => {
+      try {
+        const result = await getYoloMode();
+        setYoloModeState(result.enabled || false);
+      } catch (err) {
+        console.error('Failed to fetch YOLO mode status:', err);
+      }
+    };
+    fetchYoloStatus();
+  }, []);
+
+  // Toggle YOLO mode
+  const handleYoloToggle = async () => {
+    try {
+      const newState = !yoloMode;
+      const result = await setYoloMode(newState);
+      setYoloModeState(result.enabled);
+    } catch (err) {
+      console.error('Failed to toggle YOLO mode:', err);
     }
   };
 
@@ -215,6 +260,24 @@ function App() {
                     >
                       🔧 Recovery
                     </Button>
+                    <Button
+                      variant={currentView === 'review' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('review')}
+                    >
+                      📋 Pending Review
+                    </Button>
+                    <Button
+                      variant={currentView === 'agents' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('agents')}
+                    >
+                      🤖 Agent Stats
+                    </Button>
+                    <Button
+                      variant={currentView === 'projects' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('projects')}
+                    >
+                      📁 Projects
+                    </Button>
                   </ButtonGroup>
 
                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>Update Interval:</span>
@@ -245,6 +308,18 @@ function App() {
                   >
                     {isPaused ? '▶ Resume' : '⏸ Pause'}
                   </Button>
+                  <Button
+                    variant={yoloMode ? 'danger' : 'outline-danger'}
+                    size="sm"
+                    onClick={handleYoloToggle}
+                    style={{
+                      fontWeight: yoloMode ? 'bold' : 'normal',
+                      animation: yoloMode ? 'pulse 1s infinite' : 'none'
+                    }}
+                    title="YOLO Mode: Skip all reviews and run fully autonomous"
+                  >
+                    {yoloMode ? '🔥 YOLO ON' : '💀 YOLO'}
+                  </Button>
                 </div>
               </div>
             </Col>
@@ -254,19 +329,43 @@ function App() {
 
       {/* Conditional rendering based on current view */}
       {currentView === 'metrics' ? (
-        <MetricsDashboard />
+        <Suspense fallback={<LoadingFallback />}>
+          <MetricsDashboard />
+        </Suspense>
       ) : currentView === 'timeline' ? (
-        <div style={{ height: 'calc(100vh - 80px)' }}>
-          <HorizontalTimelineView />
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <div style={{ height: 'calc(100vh - 80px)' }}>
+            <HorizontalTimelineView />
+          </div>
+        </Suspense>
       ) : currentView === 'improve' ? (
-        <SelfImprovementDashboard />
+        <Suspense fallback={<LoadingFallback />}>
+          <SelfImprovementDashboard />
+        </Suspense>
       ) : currentView === 'achievements' ? (
-        <AchievementsDashboard />
+        <Suspense fallback={<LoadingFallback />}>
+          <AchievementsDashboard />
+        </Suspense>
       ) : currentView === 'costs' ? (
-        <CostTrackingDashboard />
+        <Suspense fallback={<LoadingFallback />}>
+          <CostTrackingDashboard />
+        </Suspense>
       ) : currentView === 'recovery' ? (
-        <RecoveryDashboard />
+        <Suspense fallback={<LoadingFallback />}>
+          <RecoveryDashboard />
+        </Suspense>
+      ) : currentView === 'review' ? (
+        <Suspense fallback={<LoadingFallback />}>
+          <PendingReviewDashboard />
+        </Suspense>
+      ) : currentView === 'agents' ? (
+        <Suspense fallback={<LoadingFallback />}>
+          <AgentStats />
+        </Suspense>
+      ) : currentView === 'projects' ? (
+        <Suspense fallback={<LoadingFallback />}>
+          <ProjectsDashboard />
+        </Suspense>
       ) : (
         <>
         <Container fluid style={{ padding: '16px' }}>
@@ -563,7 +662,19 @@ function App() {
           </Col>
         </Row>
         </Container>
+
+        {/* Fun Facts Pane */}
+        <Container fluid style={{ padding: '16px', paddingTop: 0 }}>
+          <FactsPane variant="light" className="mt-3" />
+        </Container>
         </>
+      )}
+
+      {/* Fun Facts Footer for all other views */}
+      {currentView !== 'main' && currentView !== 'achievements' && (
+        <Container fluid style={{ padding: '16px', paddingTop: 0 }}>
+          <FactsPane variant="light" className="mt-3" />
+        </Container>
       )}
     </div>
   );

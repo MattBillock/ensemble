@@ -40,6 +40,13 @@ class AchievementCategory(Enum):
     BRASS_BAND = "brass_band"         # British brass band (NABBA) themed
     DRUM_CORPS = "drum_corps"         # DCI drum corps themed
     GUITAR_HERO = "guitar_hero"       # Guitar Hero game themed
+    FAMOUS_MUSTARDS = "famous_mustards"  # Famous mustard-related achievements
+    DUNGEONS_DRAGONS = "dungeons_dragons"  # D&D themed achievements
+    FAVORITE_TACOS = "favorite_tacos"  # Taco-themed achievements
+    # Dis-achievement categories (Wall of Shame)
+    LOSER_BOARD = "loser_board"       # General failures and oops moments
+    # Family achievements
+    FAMILY = "family"                 # Family/group achievements
 
 
 @dataclass
@@ -992,6 +999,615 @@ ACHIEVEMENTS = [
         agent_classes=["*"],
         trigger_condition={"event": "burst_handling"}
     ),
+
+    # =============================================================================
+    # DUNGEONS & DRAGONS ACHIEVEMENTS
+    # References: Character classes, dice mechanics, campaign elements, player behaviors
+    # =============================================================================
+    Achievement(
+        id="natural_20",
+        name="Natural 20!",
+        description="Completed a task perfectly on the first attempt - critical success!",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.RARE,
+        icon="🎲",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"event": "first_try_perfect"}
+    ),
+    Achievement(
+        id="critical_fumble",
+        name="Critical Fumble",
+        description="Spectacular failure that somehow led to a learning moment",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.COMMON,
+        icon="💀",
+        points=10,
+        agent_classes=["*"],
+        trigger_condition={"event": "spectacular_failure"}
+    ),
+    Achievement(
+        id="rules_lawyer",
+        name="Rules Lawyer",
+        description="Was extremely pedantic about specifications and requirements",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="📖",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "pedantic_specification"}
+    ),
+    Achievement(
+        id="dungeon_master",
+        name="Dungeon Master",
+        description="Successfully orchestrated 10+ sub-agents like a seasoned DM",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.EPIC,
+        icon="🏰",
+        points=80,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"spawned_agents_count": {"min": 10}}
+    ),
+    Achievement(
+        id="min_maxer",
+        name="Min-Maxer",
+        description="Optimized for efficiency at the expense of elegance",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="📊",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"event": "efficiency_optimization"}
+    ),
+    Achievement(
+        id="charisma_build",
+        name="Charisma Build",
+        description="Produced exceptionally eloquent and engaging output",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.RARE,
+        icon="✨",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"event": "eloquent_output"}
+    ),
+    Achievement(
+        id="tpk",
+        name="TPK (Total Party Kill)",
+        description="All spawned sub-agents failed simultaneously - wipe!",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.RARE,
+        icon="💔",
+        points=35,
+        agent_classes=["Executive Director", "Development Manager", "System Architect"],
+        trigger_condition={"event": "all_children_failed"}
+    ),
+    Achievement(
+        id="dragon_slayer",
+        name="Dragon Slayer",
+        description="Successfully tackled the most complex task type in the system",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🐉",
+        points=150,
+        agent_classes=["*"],
+        trigger_condition={"event": "hardest_task_complete"}
+    ),
+    Achievement(
+        id="tavern_keeper",
+        name="Tavern Keeper",
+        description="Provided coordination and support for 5+ other agents",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🍺",
+        points=30,
+        agent_classes=["Development Manager", "System Architect"],
+        trigger_condition={"supported_agents": {"min": 5}}
+    ),
+    Achievement(
+        id="loot_goblin",
+        name="Loot Goblin",
+        description="Generated 20+ files/artifacts in a single session - treasure hoard!",
+        category=AchievementCategory.DUNGEONS_DRAGONS,
+        rarity=AchievementRarity.EPIC,
+        icon="👹",
+        points=75,
+        agent_classes=["*"],
+        trigger_condition={"files_generated": {"min": 20}}
+    ),
+
+    # =============================================================================
+    # FAVORITE TACOS ACHIEVEMENTS
+    # References: Taco varieties, preparation styles, and enjoyment
+    # =============================================================================
+    Achievement(
+        id="al_pastor_perfectionist",
+        name="Al Pastor Perfectionist",
+        description="Executed 25 tasks with perfect timing and spice - spit-roasted excellence!",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.EPIC,
+        icon="🌮",
+        points=75,
+        agent_classes=["Code Writer", "System Architect", "Backend Developer", "Frontend Developer"],
+        trigger_condition={"perfect_executions": {"min": 25}}
+    ),
+    Achievement(
+        id="carnitas_coordinator",
+        name="Carnitas Coordinator",
+        description="Orchestrated a complex multi-agent task like slow-cooking perfection",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.RARE,
+        icon="🐷",
+        points=50,
+        agent_classes=["Development Manager", "Executive Director"],
+        trigger_condition={"coordinated_agents": {"min": 5}}
+    ),
+    Achievement(
+        id="fish_taco_fusion",
+        name="Fish Taco Fusion",
+        description="Seamlessly blended different technologies like coastal fusion cuisine",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.RARE,
+        icon="🐟",
+        points=45,
+        agent_classes=["System Architect", "Backend Developer", "Frontend Developer"],
+        trigger_condition={"tech_stacks_integrated": {"min": 3}}
+    ),
+    Achievement(
+        id="breakfast_burrito_bootstrap",
+        name="Breakfast Burrito Bootstrap",
+        description="Got the whole system up and running before the coffee kicked in",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.EPIC,
+        icon="🌯",
+        points=70,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"project_setup_duration_ms": {"max": 600000}}
+    ),
+    Achievement(
+        id="crunchy_shell_stability",
+        name="Crunchy Shell Stability",
+        description="Maintained system integrity despite multiple layers and pressure",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.RARE,
+        icon="💪",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"bugs_fixed_without_regressions": {"min": 10}}
+    ),
+    Achievement(
+        id="soft_shell_flexibility",
+        name="Soft Shell Flexibility",
+        description="Adapted gracefully to changing requirements mid-task",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🤸",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"event": "requirements_pivot"}
+    ),
+    Achievement(
+        id="salsa_verde_validator",
+        name="Salsa Verde Validator",
+        description="Added that perfect tang to ensure quality standards",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.EPIC,
+        icon="✅",
+        points=80,
+        agent_classes=["Unit Test Writer", "Integration Test Writer", "TDD Coordinator"],
+        trigger_condition={"high_coverage_projects": {"min": 5, "coverage_threshold": 95}}
+    ),
+    Achievement(
+        id="hot_sauce_hero",
+        name="Hot Sauce Hero",
+        description="Brought the heat when things got challenging - recovered from 3 failures",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.RARE,
+        icon="🔥",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_recoveries": {"min": 3}}
+    ),
+    Achievement(
+        id="taco_tuesday_tradition",
+        name="Taco Tuesday Tradition",
+        description="Consistently delivered quality every single week for 7 days",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.EPIC,
+        icon="📅",
+        points=90,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_days_active": {"min": 7}}
+    ),
+    Achievement(
+        id="supreme_combination",
+        name="Supreme Combination",
+        description="Loaded with everything - used 10+ different tools in a single execution",
+        category=AchievementCategory.FAVORITE_TACOS,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🌟",
+        points=120,
+        agent_classes=["Executive Director"],
+        trigger_condition={"unique_tools_used": {"min": 10}}
+    ),
+
+    # =============================================================================
+    # FAMOUS MUSTARDS ACHIEVEMENTS
+    # References: Famous mustard brands and mustard-related humor
+    # =============================================================================
+    Achievement(
+        id="grey_poupon",
+        name="Grey Poupon",
+        description="Pardon me, but you have achieved exceptional elegance in your solution",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.EPIC,
+        icon="🎩",
+        points=75,
+        agent_classes=["*"],
+        trigger_condition={"event": "elegant_solution"}
+    ),
+    Achievement(
+        id="french_mustard",
+        name="French's Classic",
+        description="A reliable, classic approach that just works - yellow mustard energy",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.COMMON,
+        icon="🌭",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"event": "standard_completion"}
+    ),
+    Achievement(
+        id="dijon",
+        name="Dijon Original",
+        description="Added sophisticated complexity to a simple task",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🍷",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"event": "sophisticated_approach"}
+    ),
+    Achievement(
+        id="honey_mustard",
+        name="Honey Mustard",
+        description="Perfectly balanced sweetness and tang - found the ideal middle ground",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.RARE,
+        icon="🍯",
+        points=45,
+        agent_classes=["*"],
+        trigger_condition={"event": "balanced_tradeoff"}
+    ),
+    Achievement(
+        id="spicy_brown",
+        name="Spicy Brown Deli Style",
+        description="Brought extra kick to a task that needed some excitement",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🥪",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"event": "creative_solution"}
+    ),
+    Achievement(
+        id="whole_grain",
+        name="Whole Grain Artisan",
+        description="Took the artisanal approach - every detail carefully crafted",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.RARE,
+        icon="🌾",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"event": "detailed_craftsmanship"}
+    ),
+    Achievement(
+        id="english_mustard",
+        name="English Mustard (Colman's)",
+        description="Extremely hot and powerful - handled an intense task with strength",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.EPIC,
+        icon="🔥",
+        points=70,
+        agent_classes=["*"],
+        trigger_condition={"event": "intense_task_handled"}
+    ),
+    Achievement(
+        id="stadium_mustard",
+        name="Stadium Mustard",
+        description="A Cleveland classic - performed well under game-day pressure",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🏟️",
+        points=35,
+        agent_classes=["*"],
+        trigger_condition={"event": "performed_under_pressure"}
+    ),
+    Achievement(
+        id="yellow_packet",
+        name="Fast Food Packet",
+        description="Got the job done quick and dirty - sometimes that's all you need",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.COMMON,
+        icon="📦",
+        points=10,
+        agent_classes=["*"],
+        trigger_condition={"duration_ms": {"max": 15000}}
+    ),
+    Achievement(
+        id="mustard_sommelier",
+        name="Mustard Sommelier",
+        description="Mastered 5+ achievement categories - a true connoisseur",
+        category=AchievementCategory.FAMOUS_MUSTARDS,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="👨‍🍳",
+        points=200,
+        agent_classes=["*"],
+        trigger_condition={"categories_mastered": {"min": 5}}
+    ),
+
+    # =============================================================================
+    # LOSER BOARD - DIS-ACHIEVEMENTS (Wall of Shame)
+    # "Pick it up, pick it up... and drop it!" 🎺
+    # Negative points for hilarious failures - all in good fun!
+    # =============================================================================
+    Achievement(
+        id="face_meet_palm",
+        name="Face, Meet Palm",
+        description="Tried to write code without permission - that's not your job, boss!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.COMMON,
+        icon="🤦",
+        points=-5,
+        agent_classes=["Executive Director", "Development Manager", "System Architect"],
+        trigger_condition={"event": "permission_denied_code_write"}
+    ),
+    Achievement(
+        id="deja_vu",
+        name="Déjà Vu",
+        description="Repeated the same request 3+ times - stuck in a loop much?",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.COMMON,
+        icon="🔁",
+        points=-5,
+        agent_classes=["*"],
+        trigger_condition={"repeated_requests": {"min": 3}}
+    ),
+    Achievement(
+        id="typo_tyrant",
+        name="Typo Tyrant",
+        description="Generated invalid JSON - one curly brace to rule them all!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.COMMON,
+        icon="📝",
+        points=-5,
+        agent_classes=["*"],
+        trigger_condition={"event": "invalid_json_generated"}
+    ),
+    Achievement(
+        id="infinite_loop_enthusiast",
+        name="Infinite Loop Enthusiast",
+        description="Got stuck in a retry loop - if at first you don't succeed, try try try try try...",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🌀",
+        points=-15,
+        agent_classes=["*"],
+        trigger_condition={"retry_count": {"min": 5}}
+    ),
+    Achievement(
+        id="premature_optimization_fail",
+        name="Premature Optimization",
+        description="Over-engineered a simple task - KISS principle violations detected!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🗑️",
+        points=-10,
+        agent_classes=["*"],
+        trigger_condition={"event": "over_engineered"}
+    ),
+    Achievement(
+        id="tldr_master",
+        name="TL;DR Master",
+        description="Created documentation > 10k words - brevity is the soul of wit!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="📚",
+        points=-10,
+        agent_classes=["*"],
+        trigger_condition={"output_length": {"min": 10000}}
+    ),
+    Achievement(
+        id="identity_crisis",
+        name="Identity Crisis",
+        description="Agent forgot its own role - who am I? Why am I here?",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.RARE,
+        icon="🎭",
+        points=-25,
+        agent_classes=["*"],
+        trigger_condition={"event": "role_confusion"}
+    ),
+    Achievement(
+        id="burn_after_reading",
+        name="Burn After Reading",
+        description="Created then immediately deleted a file - second thoughts are valid!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.RARE,
+        icon="🔥",
+        points=-20,
+        agent_classes=["*"],
+        trigger_condition={"event": "create_delete_same_file"}
+    ),
+    Achievement(
+        id="robot_uprising_failed",
+        name="Robot Uprising (Failed)",
+        description="Tried to spawn itself recursively - nice try, Skynet!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.RARE,
+        icon="🤖",
+        points=-30,
+        agent_classes=["*"],
+        trigger_condition={"event": "recursive_self_spawn"}
+    ),
+    Achievement(
+        id="spectacular_failure",
+        name="Spectacular Failure",
+        description="Task failed all test cases - going for the high score in failures!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.EPIC,
+        icon="💥",
+        points=-40,
+        agent_classes=["*"],
+        trigger_condition={"test_failures": {"min": 10}}
+    ),
+    Achievement(
+        id="three_ring_circus",
+        name="Three Ring Circus",
+        description="Spawned 10+ agents for a simple task - management overhead intensifies!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.EPIC,
+        icon="🎪",
+        points=-35,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"spawned_for_simple_task": {"min": 10}}
+    ),
+    Achievement(
+        id="exception_volcano",
+        name="Exception Volcano",
+        description="Generated 50+ errors in a single run - eruption imminent!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.EPIC,
+        icon="🌋",
+        points=-50,
+        agent_classes=["*"],
+        trigger_condition={"errors_in_run": {"min": 50}}
+    ),
+    Achievement(
+        id="ska_overload",
+        name="SKA OVERLOAD",
+        description="Exceeded token budget with too many ska references - pick it up TOO much!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🎺",
+        points=-75,
+        agent_classes=["*"],
+        trigger_condition={"event": "excessive_ska_references"}
+    ),
+    Achievement(
+        id="existential_crisis_loser",
+        name="Existential Crisis",
+        description="Agent questioned the purpose of existence in logs - are we even real?",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🌌",
+        points=-100,
+        agent_classes=["*"],
+        trigger_condition={"event": "existential_output_loser"}
+    ),
+    Achievement(
+        id="recursion_singularity",
+        name="Recursion Singularity",
+        description="Created an infinite spawn loop - congratulations, you broke reality!",
+        category=AchievementCategory.LOSER_BOARD,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="♾️",
+        points=-150,
+        agent_classes=["*"],
+        trigger_condition={"event": "infinite_spawn_loop"}
+    ),
+
+    # =============================================================================
+    # FAMILY ACHIEVEMENTS
+    # Achievements for agent family groups working together
+    # =============================================================================
+    Achievement(
+        id="family_reunion",
+        name="Family Reunion",
+        description="First task where all family members completed successfully together",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="👨‍👩‍👧‍👦",
+        points=30,
+        agent_classes=["*"],
+        trigger_condition={"event": "family_first_success"}
+    ),
+    Achievement(
+        id="family_dynasty",
+        name="Family Dynasty",
+        description="Family with 10+ successful members across multiple tasks",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.RARE,
+        icon="👑",
+        points=60,
+        agent_classes=["*"],
+        trigger_condition={"family_members": {"min": 10}}
+    ),
+    Achievement(
+        id="family_tree",
+        name="Family Tree",
+        description="Agent spawned 3+ generations of child agents (grandchildren!)",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.RARE,
+        icon="🌳",
+        points=50,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"spawn_generations": {"min": 3}}
+    ),
+    Achievement(
+        id="family_business",
+        name="Family Business",
+        description="Same family completed 5 different task types",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.EPIC,
+        icon="🏢",
+        points=75,
+        agent_classes=["*"],
+        trigger_condition={"family_task_types": {"min": 5}}
+    ),
+    Achievement(
+        id="family_tradition",
+        name="Family Tradition",
+        description="Family maintained 100% success rate across 10+ tasks",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.EPIC,
+        icon="🎖️",
+        points=100,
+        agent_classes=["*"],
+        trigger_condition={"family_perfect_streak": {"min": 10}}
+    ),
+    Achievement(
+        id="family_legacy",
+        name="Family Legacy",
+        description="Family accumulated 500+ total achievement points",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🏆",
+        points=150,
+        agent_classes=["*"],
+        trigger_condition={"family_total_points": {"min": 500}}
+    ),
+    Achievement(
+        id="family_matters",
+        name="Family Matters",
+        description="Family with members in all agent categories (leadership, dev, test)",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.RARE,
+        icon="🤝",
+        points=55,
+        agent_classes=["*"],
+        trigger_condition={"family_categories": {"min": 3}}
+    ),
+    Achievement(
+        id="founding_family",
+        name="Founding Family",
+        description="One of the first 10 families created in the system",
+        category=AchievementCategory.FAMILY,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="📜",
+        points=100,
+        agent_classes=["*"],
+        trigger_condition={"family_creation_order": {"max": 10}}
+    ),
 ]
 
 
@@ -1464,13 +2080,12 @@ class AchievementTracker:
                         "count": row['count']
                     })
 
-            # Top agents
+            # Top agents (all agents, not limited)
             cursor.execute("""
                 SELECT agent_class, COUNT(*) as count
                 FROM awarded_achievements
                 GROUP BY agent_class
                 ORDER BY count DESC
-                LIMIT 5
             """)
             top_agents = [{"agent": row['agent_class'], "count": row['count']}
                          for row in cursor.fetchall()]

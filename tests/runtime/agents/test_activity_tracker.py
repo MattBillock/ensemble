@@ -18,7 +18,8 @@ class TestAgentActivityTracker:
 
     def test_tracker_initialization(self):
         """Test basic initialization."""
-        tracker = AgentActivityTracker()
+        # Disable persistence to avoid loading state from previous runs
+        tracker = AgentActivityTracker(enable_persistence=False)
         assert len(tracker.activities) == 0
         assert len(tracker.agent_hierarchy) == 0
         assert len(tracker.agent_states) == 0
@@ -26,7 +27,8 @@ class TestAgentActivityTracker:
 
     def test_record_agent_started(self):
         """Test recording agent start."""
-        tracker = AgentActivityTracker()
+        # Disable persistence to avoid loading state from previous runs
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         tracker.record_agent_started(
             agent_id="test-agent-1",
@@ -56,7 +58,7 @@ class TestAgentCompletionDataCapture:
 
     def test_record_agent_completed_with_summary(self):
         """Test recording agent completion with summary."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start agent first
         tracker.record_agent_started(
@@ -95,7 +97,7 @@ class TestAgentCompletionDataCapture:
 
     def test_record_agent_completed_without_summary(self):
         """Test recording agent completion without summary (backward compatibility)."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start agent
         tracker.record_agent_started(
@@ -127,7 +129,7 @@ class TestAgentCompletionDataCapture:
 
     def test_record_agent_completed_with_none_result(self):
         """Test recording agent completion with None result."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start agent
         tracker.record_agent_started(
@@ -154,7 +156,7 @@ class TestAgentCompletionDataCapture:
 
     def test_record_agent_completed_with_partial_data(self):
         """Test recording agent completion with partial completion data."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start agent
         tracker.record_agent_started(
@@ -185,7 +187,7 @@ class TestAgentCompletionDataCapture:
 
     def test_record_agent_completed_with_multiple_deliverables(self):
         """Test recording agent completion with multiple deliverables."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start agent
         tracker.record_agent_started(
@@ -227,7 +229,7 @@ class TestAgentStateRetrieval:
 
     def test_get_agent_state_with_completion_data(self):
         """Test retrieving agent state includes completion data."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Start and complete agent
         tracker.record_agent_started(
@@ -261,7 +263,7 @@ class TestAgentStateRetrieval:
 
     def test_get_all_agent_states_includes_completion_data(self):
         """Test retrieving all agent states includes completion data."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Create multiple completed agents
         for i in range(3):
@@ -301,7 +303,7 @@ class TestAgentCompletionActivity:
 
     def test_completion_activity_includes_result(self):
         """Test completion activity includes full result in data."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         tracker.record_agent_started(
             agent_id="agent-7",
@@ -333,7 +335,7 @@ class TestAgentCompletionActivity:
 
     def test_multiple_agents_completion_data_isolated(self):
         """Test completion data is isolated between agents."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
 
         # Create two agents with different results
         for i in [1, 2]:
@@ -372,7 +374,7 @@ class TestCallbacks:
 
     def test_completion_callback_receives_activity(self):
         """Test callbacks receive agent completion activities."""
-        tracker = AgentActivityTracker()
+        tracker = AgentActivityTracker(enable_persistence=False)
         received_activities = []
 
         def callback(activity):

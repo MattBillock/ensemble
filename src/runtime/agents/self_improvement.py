@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class RecommendationType(Enum):
     """Types of improvement recommendations."""
+    # Original types
     MODEL_UPGRADE = "model_upgrade"       # Suggest using a better model
     MODEL_DOWNGRADE = "model_downgrade"   # Suggest using a cheaper model (when success is high)
     DEFINITION_TWEAK = "definition_tweak" # Minor definition change
@@ -36,6 +37,18 @@ class RecommendationType(Enum):
     ITERATION_DECREASE = "iteration_decrease"  # Decrease max iterations
     COMPLEXITY_CHANGE = "complexity_change"    # Change task complexity rating
     ALERT = "alert"                            # Something needs human attention
+
+    # New specialized improvement types
+    PROMPT_REFINEMENT = "prompt_refinement"     # Improve system prompt for clarity and effectiveness
+    TOOL_OPTIMIZATION = "tool_optimization"     # Optimize tool usage patterns and reduce unnecessary calls
+    CONTEXT_WINDOW_TUNING = "context_tuning"   # Adjust context usage (too much vs too little)
+    OUTPUT_FORMAT_IMPROVEMENT = "output_format" # Improve output structure and parsing reliability
+    ERROR_HANDLING_ENHANCEMENT = "error_handling"  # Better error recovery and graceful degradation
+    SPECIALIZATION_FOCUS = "specialization"    # Narrow agent focus for better performance in domain
+    COLLABORATION_IMPROVEMENT = "collaboration"  # Better handoff/coordination with other agents
+    MEMORY_STRATEGY = "memory_strategy"        # Improve context retention across iterations
+    TASK_DECOMPOSITION = "task_decomposition"  # Better breaking down complex tasks into subtasks
+    VALIDATION_ENHANCEMENT = "validation"      # Better self-validation of outputs before completion
 
 
 class RecommendationPriority(Enum):
@@ -790,6 +803,77 @@ class SelfImprovementLoop:
                 if note:
                     content = self._add_performance_note(content, note)
                     applied_changes.append("Added performance guidance to instructions")
+
+            # New specialized improvement type handlers
+            elif rec_type == "prompt_refinement":
+                # Improve system prompt clarity
+                prompt_note = changes.get("prompt_improvement", recommendation.get("description", ""))
+                if prompt_note:
+                    content = self._add_performance_note(content, f"[PROMPT REFINEMENT] {prompt_note}")
+                    applied_changes.append("Added prompt refinement guidance")
+
+            elif rec_type == "tool_optimization":
+                # Add tool usage guidance
+                tool_note = changes.get("tool_guidance", recommendation.get("description", ""))
+                if tool_note:
+                    content = self._add_performance_note(content, f"[TOOL OPTIMIZATION] {tool_note}")
+                    applied_changes.append("Added tool optimization guidance")
+
+            elif rec_type == "context_tuning":
+                # Add context management guidance
+                context_note = changes.get("context_guidance", recommendation.get("description", ""))
+                if context_note:
+                    content = self._add_performance_note(content, f"[CONTEXT TUNING] {context_note}")
+                    applied_changes.append("Added context window tuning guidance")
+
+            elif rec_type == "output_format":
+                # Add output format guidance
+                format_note = changes.get("format_guidance", recommendation.get("description", ""))
+                if format_note:
+                    content = self._add_performance_note(content, f"[OUTPUT FORMAT] {format_note}")
+                    applied_changes.append("Added output format improvement guidance")
+
+            elif rec_type == "error_handling":
+                # Add error handling guidance
+                error_note = changes.get("error_guidance", recommendation.get("description", ""))
+                if error_note:
+                    content = self._add_performance_note(content, f"[ERROR HANDLING] {error_note}")
+                    applied_changes.append("Added error handling enhancement guidance")
+
+            elif rec_type == "specialization":
+                # Add specialization focus guidance
+                spec_note = changes.get("specialization_guidance", recommendation.get("description", ""))
+                if spec_note:
+                    content = self._add_performance_note(content, f"[SPECIALIZATION] {spec_note}")
+                    applied_changes.append("Added specialization focus guidance")
+
+            elif rec_type == "collaboration":
+                # Add collaboration improvement guidance
+                collab_note = changes.get("collaboration_guidance", recommendation.get("description", ""))
+                if collab_note:
+                    content = self._add_performance_note(content, f"[COLLABORATION] {collab_note}")
+                    applied_changes.append("Added collaboration improvement guidance")
+
+            elif rec_type == "memory_strategy":
+                # Add memory/context retention guidance
+                memory_note = changes.get("memory_guidance", recommendation.get("description", ""))
+                if memory_note:
+                    content = self._add_performance_note(content, f"[MEMORY STRATEGY] {memory_note}")
+                    applied_changes.append("Added memory strategy guidance")
+
+            elif rec_type == "task_decomposition":
+                # Add task decomposition guidance
+                decomp_note = changes.get("decomposition_guidance", recommendation.get("description", ""))
+                if decomp_note:
+                    content = self._add_performance_note(content, f"[TASK DECOMPOSITION] {decomp_note}")
+                    applied_changes.append("Added task decomposition guidance")
+
+            elif rec_type == "validation":
+                # Add validation enhancement guidance
+                valid_note = changes.get("validation_guidance", recommendation.get("description", ""))
+                if valid_note:
+                    content = self._add_performance_note(content, f"[VALIDATION] {valid_note}")
+                    applied_changes.append("Added validation enhancement guidance")
 
             # Write updated definition if changed
             if content != original_content:

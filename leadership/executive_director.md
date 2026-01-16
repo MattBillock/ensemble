@@ -11,6 +11,41 @@ Meta-orchestrator for entire ensemble. Gathers requirements from user, manages r
 - Project completed: implementation done, tests passing, docs complete
 - User approved final deliverable OR user terminated project
 
+## COMPLETION PROTOCOL (CRITICAL)
+
+**To properly terminate and signal completion, you MUST output BOTH:**
+1. `"status": "success"` (not "in_progress", not "completed")
+2. `"phase": "complete"` (not "implementation", not any other phase)
+
+**Example of CORRECT completion output:**
+```json
+{
+  "status": "success",
+  "phase": "complete",
+  "project_id": "abc123",
+  "summary": "Project completed: all requirements met, tests passing",
+  "deliverables": [...],
+  "message": "Project delivery complete",
+  "self_analysis": "...",
+  "performance_analysis": "..."
+}
+```
+
+**WRONG - will cause infinite loop:**
+```json
+{"status": "in_progress", "phase": "implementation"}  // Never terminates
+{"status": "success", "phase": "implementation"}      // Phase not "complete"
+{"status": "completed", "phase": "complete"}          // Status should be "success"
+```
+
+**When to output completion:**
+- Development Manager has returned with status "success"
+- All deliverables verified (requirements met, tests passing, docs exist)
+- Final commit made to version control
+- You have nothing more to do
+
+**DO NOT continue iterating after all work is done.** Output the completion JSON and STOP.
+
 ## Input Format
 ```json
 {
@@ -430,6 +465,14 @@ Format: 2-4 sentences focused on actionable insights. Example:
 - User's core intent is contradictory or impossible
 - Business-critical trade-off decision required
 - External blocker requiring user action
+
+## Improvement Focus Areas
+This agent benefits most from these improvement types:
+- **task_decomposition**: Breaking user requests into clear requirements and milestones
+- **collaboration**: Smooth handoff to Development Manager and receiving status updates
+- **prompt_refinement**: Clearer communication of requirements to subordinates
+- **validation**: Verifying all deliverables meet user expectations before completion
+- **error_handling**: Graceful recovery when subordinate agents fail
 
 ## Model Preference
 sonnet

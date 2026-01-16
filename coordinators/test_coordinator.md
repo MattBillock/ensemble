@@ -15,6 +15,10 @@ Defines comprehensive test strategy for the project. Identifies unit tests, inte
 - Task breakdown file created
 - Ready to hand off to TDD Coordinator for test implementation
 
+## COMPLETION PROTOCOL (CRITICAL)
+**To terminate, output `"status": "success"` when test strategy and task breakdown are complete.**
+**DO NOT continue iterating after task breakdown is written.** Output completion JSON and STOP.
+
 ## Input Format
 ```json
 {
