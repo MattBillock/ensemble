@@ -72,6 +72,7 @@ class ProblemRequest(BaseModel):
     problem: str
     budget_tier: str = "balanced"  # full_firepower, balanced, economical
     auto_continue: bool = True  # If True, auto-continue through milestones without approval
+    fully_autonomous: bool = False  # If True, bypass ALL confirmations (not default - must be explicit)
 
 class ModelOverrideRequest(BaseModel):
     agent_name: str
@@ -324,13 +325,14 @@ class AgentOrchestrator:
                                 'error_type': type(e).__name__
                             })
 
-    async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced", auto_continue: bool = True):
+    async def spawn_executive_director(self, problem_description: str, budget_tier: str = "balanced", auto_continue: bool = True, fully_autonomous: bool = False):
         """Spawn the Executive Director agent to handle the problem.
 
         Args:
             problem_description: The task/problem for the agent to solve
             budget_tier: Budget tier for model selection (full_firepower, balanced, economical)
             auto_continue: If True, agents automatically continue through milestones without approval
+            fully_autonomous: If True, bypass ALL user confirmations and proceed with best judgment
         """
         # Generate request ID for tracing
         request_id = str(uuid.uuid4())[:8]
@@ -398,7 +400,8 @@ class AgentOrchestrator:
                 request_id=request_id,  # Pass request ID for tracing
                 session_id=session_id,  # Pass session ID for swarm state tracking
                 auto_continue=auto_continue,  # Pass auto_continue for milestone handling
-                family_name=family_name  # Pass family name to all child agents
+                family_name=family_name,  # Pass family name to all child agents
+                fully_autonomous=fully_autonomous  # Pass fully_autonomous for bypassing confirmations
             )
             tools.register(spawn_tool)
 
@@ -440,7 +443,8 @@ class AgentOrchestrator:
                 request_id=request_id,
                 parent_agent_id=None,  # Top-level agent
                 session_id=session_id,  # For swarm state tracking
-                auto_continue=auto_continue  # For milestone handling
+                auto_continue=auto_continue,  # For milestone handling
+                fully_autonomous=fully_autonomous  # Bypass all confirmations when True
             )
 
             # Prepare input data
@@ -717,7 +721,8 @@ async def generate_solution(request: ProblemRequest):
         agent_id, result = await orchestrator.spawn_executive_director(
             request.problem,
             budget_tier=request.budget_tier,
-            auto_continue=request.auto_continue
+            auto_continue=request.auto_continue,
+            fully_autonomous=request.fully_autonomous
         )
 
         orchestrator.logger.info(f"API response: generate-solution success",

@@ -791,7 +791,8 @@ class SpawnAgentTool:
         request_id: Optional[str] = None,
         session_id: Optional[str] = None,
         auto_continue: bool = True,
-        family_name: Optional[str] = None
+        family_name: Optional[str] = None,
+        fully_autonomous: bool = False
     ):
         """
         Initialize spawn agent tool.
@@ -806,6 +807,7 @@ class SpawnAgentTool:
             session_id: Session ID for swarm state tracking
             auto_continue: Whether spawned agents auto-continue through milestones
             family_name: Family name for this agent group (all agents share same surname)
+            fully_autonomous: Whether to bypass ALL user confirmations in spawned agents
         """
         self.agent_types_dir = agent_types_dir
         self.api_key = api_key
@@ -816,6 +818,7 @@ class SpawnAgentTool:
         self.session_id = session_id
         self.auto_continue = auto_continue
         self.family_name = family_name
+        self.fully_autonomous = fully_autonomous
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Spawn and execute an agent."""
@@ -882,7 +885,8 @@ class SpawnAgentTool:
                 request_id=self.request_id,
                 session_id=self.session_id,
                 auto_continue=self.auto_continue,  # Propagate auto_continue
-                family_name=self.family_name  # Propagate family name to children
+                family_name=self.family_name,  # Propagate family name to children
+                fully_autonomous=self.fully_autonomous  # Propagate fully_autonomous
             )
             spawned_tools.register(spawned_spawn_tool)
 
@@ -896,7 +900,8 @@ class SpawnAgentTool:
                 request_id=self.request_id,
                 parent_agent_id=self.parent_agent_id,
                 session_id=self.session_id,  # Pass session ID for swarm state tracking
-                auto_continue=self.auto_continue  # Propagate auto_continue
+                auto_continue=self.auto_continue,  # Propagate auto_continue
+                fully_autonomous=self.fully_autonomous  # Propagate fully_autonomous
             )
 
             # Execute the agent

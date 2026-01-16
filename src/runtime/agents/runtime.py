@@ -98,7 +98,8 @@ class AgentRuntime:
         parent_agent_id: Optional[str] = None,
         session_id: Optional[str] = None,
         use_dynamic_model_selection: bool = True,
-        auto_continue: bool = True
+        auto_continue: bool = True,
+        fully_autonomous: bool = False
     ):
         """
         Initialize agent runtime.
@@ -115,6 +116,7 @@ class AgentRuntime:
             session_id: Optional session ID for swarm state tracking
             use_dynamic_model_selection: Whether to use dynamic model router with fuzzing
             auto_continue: If True, automatically continue through milestones without approval
+            fully_autonomous: If True, bypass ALL user confirmations and proceed with best judgment
         """
         self.definition = definition
         self.api_key = api_key
@@ -125,6 +127,7 @@ class AgentRuntime:
         self.budget_tier = budget_tier
         self.use_dynamic_model_selection = use_dynamic_model_selection
         self.auto_continue = auto_continue  # Whether to auto-continue through milestones
+        self.fully_autonomous = fully_autonomous  # Whether to bypass ALL user confirmations
         # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
         self.agent_id = agent_id or generate_agent_name(
             agent_type=definition.name,
@@ -433,33 +436,48 @@ class AgentRuntime:
                 phase_not_complete = phase and phase.lower() not in ["complete", "completed", "done", "success"]
 
                 if needs_clarification or needs_user_input:
-                    # Agent needs user input - record question and wait
+                    # Agent needs user input - record question and wait (unless fully_autonomous)
                     question = response_data.get("user_question") or response_data.get("clarification_question", "")
 
                     if question:
-                        logger.info(f"Agent {self.definition.name} needs user input: {question}")
+                        if self.fully_autonomous:
+                            # In fully autonomous mode, skip the pause and proceed with best judgment
+                            logger.info(f"FULLY AUTONOMOUS MODE: Skipping user input for question: {question}")
 
-                        # Generate question ID
-                        import uuid
-                        question_id = f"q_{self.agent_id}_{uuid.uuid4().hex[:8]}"
+                            # Add a message to guide the agent to proceed with defaults
+                            messages.append({
+                                "role": "user",
+                                "content": f"AUTONOMOUS MODE ACTIVE: The system is running in fully autonomous mode. "
+                                          f"Your question was: '{question}'. "
+                                          f"Please proceed with your best judgment using reasonable defaults. "
+                                          f"Make standard technical assumptions and continue with the task."
+                            })
+                            api_kwargs["messages"] = messages
+                            # Don't return - continue the loop
+                        else:
+                            logger.info(f"Agent {self.definition.name} needs user input: {question}")
 
-                        # Record question in activity tracker
-                        activity_tracker.record_question(
-                            agent_id=self.agent_id,
-                            agent_name=self.definition.name,
-                            request_id=self.request_id,
-                            question_id=question_id,
-                            question=question,
-                            options=response_data.get("options")
-                        )
+                            # Generate question ID
+                            import uuid
+                            question_id = f"q_{self.agent_id}_{uuid.uuid4().hex[:8]}"
 
-                        # Add question_id to response for tracking
-                        response_data["question_id"] = question_id
-                        response_data["awaiting_user_input"] = True
+                            # Record question in activity tracker
+                            activity_tracker.record_question(
+                                agent_id=self.agent_id,
+                                agent_name=self.definition.name,
+                                request_id=self.request_id,
+                                question_id=question_id,
+                                question=question,
+                                options=response_data.get("options")
+                            )
 
-                        # Return partial response with question - execution will pause here
-                        # The orchestrator/UI will need to provide an answer and resume execution
-                        return response_data
+                            # Add question_id to response for tracking
+                            response_data["question_id"] = question_id
+                            response_data["awaiting_user_input"] = True
+
+                            # Return partial response with question - execution will pause here
+                            # The orchestrator/UI will need to provide an answer and resume execution
+                            return response_data
                     else:
                         logger.warning("Agent indicated needs_clarification/needs_user_input but didn't provide question")
                         # Continue anyway if no question provided
@@ -467,7 +485,7 @@ class AgentRuntime:
                     # Agent reported progress but stopped without using tools
                     logger.info(f"Agent reported status='{status}', phase='{phase}'")
 
-                    if not self.auto_continue:
+                    if not self.auto_continue and not self.fully_autonomous:
                         # Pause for approval - return with milestone status
                         logger.info(f"auto_continue=False, pausing for milestone approval")
 
