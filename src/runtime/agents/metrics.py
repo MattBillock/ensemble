@@ -63,6 +63,9 @@ class AgentMetricsTracker:
                     duration_ms INTEGER,
                     iterations INTEGER,
                     tokens_used INTEGER,
+                    input_tokens INTEGER,
+                    output_tokens INTEGER,
+                    estimated_cost REAL,
                     created_at TEXT NOT NULL,
                     completed_at TEXT,
                     request_id TEXT,
@@ -95,6 +98,31 @@ class AgentMetricsTracker:
                 CREATE INDEX IF NOT EXISTS idx_request_id
                 ON agent_executions(request_id)
             """)
+
+            # Migration: Add columns for existing databases that don't have them
+            self._migrate_add_cost_columns(cursor)
+
+    def _migrate_add_cost_columns(self, cursor):
+        """Add cost tracking columns to existing databases."""
+        # Check if columns exist by getting table info
+        cursor.execute("PRAGMA table_info(agent_executions)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        migrations = [
+            ("input_tokens", "INTEGER"),
+            ("output_tokens", "INTEGER"),
+            ("estimated_cost", "REAL"),
+        ]
+
+        for column_name, column_type in migrations:
+            if column_name not in existing_columns:
+                try:
+                    cursor.execute(
+                        f"ALTER TABLE agent_executions ADD COLUMN {column_name} {column_type}"
+                    )
+                    logger.info(f"Added column {column_name} to agent_executions table")
+                except Exception as e:
+                    logger.warning(f"Could not add column {column_name}: {e}")
 
     def record_execution(
         self,
@@ -408,7 +436,10 @@ class AgentMetricsTracker:
                     ROUND(AVG(iterations), 1) as avg_iterations,
                     COUNT(DISTINCT agent_name) as unique_agents,
                     COUNT(DISTINCT model_used) as models_used,
-                    SUM(spawned_agents_count) as total_spawned_agents
+                    SUM(spawned_agents_count) as total_spawned_agents,
+                    COALESCE(SUM(input_tokens), 0) as total_input_tokens,
+                    COALESCE(SUM(output_tokens), 0) as total_output_tokens,
+                    COALESCE(SUM(estimated_cost), 0.0) as total_estimated_cost
                 FROM agent_executions
                 WHERE created_at >= ?
             """, (cutoff_date,))

@@ -435,7 +435,7 @@ Format: 2-4 sentences focused on actionable insights. Example:
 sonnet
 
 ## Max Iterations
-20
+40
 
 ## Can Write Code
 false
