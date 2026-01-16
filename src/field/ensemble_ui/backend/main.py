@@ -2378,6 +2378,210 @@ async def get_guardrails_for_agent(agent_type: str):
         logger.error(f"Error getting guardrails for {agent_type}: {e}")
         return {"error": str(e)}
 
+# ========== Iteration Tuning Endpoints ==========
+
+@app.get("/api/iteration-tuning/status")
+async def get_iteration_tuning_status():
+    """Get current iteration tuning status for all agents."""
+    try:
+        from src.runtime.agents.iteration_tuner import get_iteration_tuner
+        tuner = get_iteration_tuner()
+        agents = tuner.get_all_tuned_agents()
+        return {
+            "agents": agents,
+            "total_agents": len(agents),
+            "flagged_for_escalation": len([a for a in agents if a.get("escalation_flagged")])
+        }
+    except Exception as e:
+        logger.error(f"Error getting iteration tuning status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/iteration-tuning/escalations")
+async def get_iteration_tuning_escalations():
+    """Get agents flagged for model escalation consideration."""
+    try:
+        from src.runtime.agents.iteration_tuner import get_iteration_tuner
+        tuner = get_iteration_tuner()
+        return {
+            "flagged_agents": tuner.get_flagged_for_escalation(),
+            "recommendation": "Consider upgrading these agents to a more capable model (e.g., Sonnet -> Opus)"
+        }
+    except Exception as e:
+        logger.error(f"Error getting escalation flags: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/iteration-tuning/history")
+async def get_iteration_tuning_history(agent_name: str = None, limit: int = 50):
+    """Get iteration tuning history."""
+    try:
+        from src.runtime.agents.iteration_tuner import get_iteration_tuner
+        tuner = get_iteration_tuner()
+        return {
+            "history": tuner.get_tuning_history(agent_name, limit),
+            "agent_filter": agent_name
+        }
+    except Exception as e:
+        logger.error(f"Error getting tuning history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/iteration-tuning/{agent_name}/reset")
+async def reset_iteration_tuning(agent_name: str):
+    """Reset tuning for a specific agent back to original values."""
+    try:
+        from src.runtime.agents.iteration_tuner import get_iteration_tuner
+        tuner = get_iteration_tuner()
+        success = tuner.reset_agent_tuning(agent_name)
+        if success:
+            return {"success": True, "message": f"Reset tuning for {agent_name}"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_name} not found in tuning database")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting tuning: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/iteration-tuning/reset-all")
+async def reset_all_iteration_tuning():
+    """Reset tuning for all agents back to original values."""
+    try:
+        from src.runtime.agents.iteration_tuner import get_iteration_tuner
+        tuner = get_iteration_tuner()
+        count = tuner.reset_all_tuning()
+        return {"success": True, "message": f"Reset tuning for {count} agents"}
+    except Exception as e:
+        logger.error(f"Error resetting all tuning: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== Agent Cleanup Endpoints ==========
+
+class AgentCleanupRequest(BaseModel):
+    statuses: Optional[List[str]] = None  # e.g., ['stalled', 'failed', 'pending']
+    max_age_hours: Optional[int] = None   # Only delete agents older than this
+    preserve_running: bool = True          # Always True by default for safety
+
+
+@app.post("/api/swarm/cleanup")
+async def cleanup_agents(request: AgentCleanupRequest):
+    """
+    Clean up stale/old agents.
+
+    Options:
+    - statuses: List of statuses to clean ['stalled', 'failed', 'pending', 'completed']
+    - max_age_hours: Only delete agents older than this many hours
+    - preserve_running: If True (default), never delete running agents
+    """
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm_state = get_swarm_state()
+
+        with swarm_state._get_connection() as conn:
+            conn.row_factory = None
+
+            # Build query for agents to delete
+            conditions = []
+            params = []
+
+            if request.statuses:
+                placeholders = ','.join('?' * len(request.statuses))
+                conditions.append(f"status IN ({placeholders})")
+                params.extend(request.statuses)
+
+            if request.preserve_running:
+                conditions.append("status != 'running'")
+
+            if request.max_age_hours:
+                conditions.append(f"created_at < datetime('now', '-{request.max_age_hours} hours')")
+
+            if not conditions:
+                conditions.append("status != 'running'")  # Default: clean non-running
+
+            where_clause = " AND ".join(conditions)
+
+            # Get agent IDs to delete
+            cursor = conn.execute(f"SELECT agent_id FROM agents WHERE {where_clause}", params)
+            agent_ids = [row[0] for row in cursor.fetchall()]
+
+            if not agent_ids:
+                return {"success": True, "deleted": {"agents": 0}, "message": "No agents matched cleanup criteria"}
+
+            agent_placeholders = ','.join('?' * len(agent_ids))
+
+            # Delete related data
+            deleted = {}
+            cursor = conn.execute(f"DELETE FROM agent_messages WHERE agent_id IN ({agent_placeholders})", agent_ids)
+            deleted["messages"] = cursor.rowcount
+
+            cursor = conn.execute(f"DELETE FROM tool_executions WHERE agent_id IN ({agent_placeholders})", agent_ids)
+            deleted["tool_executions"] = cursor.rowcount
+
+            cursor = conn.execute(f"DELETE FROM events WHERE agent_id IN ({agent_placeholders})", agent_ids)
+            deleted["events"] = cursor.rowcount
+
+            cursor = conn.execute(f"DELETE FROM recovery_queue WHERE agent_id IN ({agent_placeholders})", agent_ids)
+            deleted["recovery_queue"] = cursor.rowcount
+
+            cursor = conn.execute(f"DELETE FROM agents WHERE agent_id IN ({agent_placeholders})", agent_ids)
+            deleted["agents"] = cursor.rowcount
+
+            conn.commit()
+
+            return {"success": True, "deleted": deleted}
+
+    except Exception as e:
+        logger.error(f"Error cleaning up agents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/swarm/cleanup/preview")
+async def preview_cleanup(
+    statuses: str = Query(None, description="Comma-separated statuses to clean"),
+    max_age_hours: int = Query(None, description="Only agents older than this"),
+    preserve_running: bool = Query(True, description="Preserve running agents")
+):
+    """Preview what would be cleaned up without actually deleting."""
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm_state = get_swarm_state()
+
+        with swarm_state._get_connection() as conn:
+            conn.row_factory = None
+
+            query = "SELECT status, COUNT(*) as count FROM agents WHERE 1=1"
+            params = []
+
+            if statuses:
+                status_list = [s.strip() for s in statuses.split(',')]
+                placeholders = ','.join('?' * len(status_list))
+                query += f" AND status IN ({placeholders})"
+                params.extend(status_list)
+
+            if preserve_running:
+                query += " AND status != 'running'"
+
+            if max_age_hours:
+                query += f" AND created_at < datetime('now', '-{max_age_hours} hours')"
+
+            query += " GROUP BY status"
+
+            cursor = conn.execute(query, params)
+            rows = cursor.fetchall()
+
+            return {
+                "would_delete": {row[0]: row[1] for row in rows},
+                "total": sum(row[1] for row in rows)
+            }
+
+    except Exception as e:
+        logger.error(f"Error previewing cleanup: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     # Development mode with auto-reload
     uvicorn.run(

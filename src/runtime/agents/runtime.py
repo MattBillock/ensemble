@@ -25,6 +25,7 @@ from .achievements import get_achievement_tracker
 from .swarm_state import get_swarm_state
 from .event_bus import get_event_bus, EventType
 from .model_router import get_model_router, TaskProfile
+from .iteration_tuner import get_iteration_tuner
 
 # Set up structured logging
 logging.basicConfig(
@@ -128,6 +129,15 @@ class AgentRuntime:
         self.use_dynamic_model_selection = use_dynamic_model_selection
         self.auto_continue = auto_continue  # Whether to auto-continue through milestones
         self.fully_autonomous = fully_autonomous  # Whether to bypass ALL user confirmations
+
+        # Iteration tuning: store original and get effective (tuned) max iterations
+        self.original_max_iterations = definition.max_iterations
+        tuner = get_iteration_tuner()
+        effective_max = tuner.get_effective_max_iterations(definition.name, definition.max_iterations)
+        if effective_max != definition.max_iterations:
+            logger.info(f"Using tuned max_iterations for {definition.name}: {effective_max} (original: {definition.max_iterations})")
+            definition.max_iterations = effective_max
+
         # Generate whimsical, memorable agent ID (e.g., "Lumawick-Director-4729")
         self.agent_id = agent_id or generate_agent_name(
             agent_type=definition.name,
@@ -1039,6 +1049,18 @@ Remember to respond with valid JSON matching the expected output format.
             )
 
             logger.info(f"Recorded metrics for {self.definition.name}: success={success}, duration={duration_ms}ms")
+
+            # Record result for iteration tuning (unless error is API rate limit)
+            if error_type not in ("RateLimitError", "APIError", "APIConnectionError"):
+                tuner = get_iteration_tuner()
+                tuning_action = tuner.record_execution_result(
+                    agent_name=self.definition.name,
+                    success=success,
+                    original_max=self.original_max_iterations,
+                    actual_iterations=self.iteration_count
+                )
+                if tuning_action.value != "unchanged":
+                    logger.info(f"Iteration tuning for {self.definition.name}: {tuning_action.value}")
 
             # Check for achievements
             try:
