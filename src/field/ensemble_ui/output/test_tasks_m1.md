@@ -1,230 +1,207 @@
-# Test Strategy - Research & Documentation (Phase 1)
+# Test Strategy - Achievement Audit and Cleanup
 
 ## Overview
-This milestone focuses on research and documentation activities to inform the implementation strategy for API cost optimization. Since this phase is primarily documentation and analysis-based rather than code implementation, testing will focus on validating research methodologies, data collection accuracy, and documentation completeness.
+This milestone focuses on testing the whimsical name enhancement system within the broader achievement architecture. The testing strategy ensures name generation quality, diversity, family-friendliness, and system integration.
 
 ## Test Categories
 
-### 1. Research Data Validation Tests
+### Unit Tests (Target: 85% Coverage)
 
-#### Unit Tests for Research Tools
-- **Task ID**: RT-001
-- **Type**: Unit Test
-- **Component**: API Usage Analysis Scripts
-- **Description**: Test scripts that analyze current Anthropic API usage patterns
-- **Coverage Goal**: 90%
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Validate API call parsing from logs
-  - Test usage pattern aggregation
-  - Verify cost calculation accuracy
-  - Test data export functionality
+#### Name Generation Logic Tests
+**Task ID**: UNIT-001
+**Component**: Name generation algorithms
+**Description**: Test core name generation functions
+**Test Cases**:
+- Test name generation from each source (fantasy, sci-fi, roman, video games)
+- Validate name format and structure
+- Test edge cases (empty sources, invalid inputs)
+- Verify randomization and variety algorithms
+- Test name filtering for appropriateness
 
-#### Unit Tests for Agent Audit Tools
-- **Task ID**: RT-002
-- **Type**: Unit Test
-- **Component**: Agent Definition Parser
-- **Description**: Test tools that audit agent definitions for autonomy classification
-- **Coverage Goal**: 85%
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test agent file parsing
-  - Validate autonomy level detection
-  - Test complexity rating extraction
-  - Verify agent categorization logic
+#### Name Source Management Tests
+**Task ID**: UNIT-002  
+**Component**: Name database/source handlers
+**Description**: Test name source loading and management
+**Test Cases**:
+- Test loading names from different source files/databases
+- Validate source data integrity
+- Test source switching and configuration
+- Test source validation rules
+- Test fallback mechanisms for missing sources
 
-### 2. Documentation Quality Tests
+#### Name Validation Tests
+**Task ID**: UNIT-003
+**Component**: Name quality and appropriateness filters
+**Description**: Test family-friendly content validation
+**Test Cases**:
+- Test offensive content filtering
+- Validate pronunciation rules
+- Test length constraints
+- Test character restrictions
+- Test whimsical criteria validation
 
-#### Integration Tests for Research Pipeline
-- **Task ID**: RT-003
-- **Type**: Integration Test
-- **Component**: Research Data Collection Pipeline
-- **Description**: Test end-to-end research data collection and analysis
-- **Coverage Goal**: 100% of critical paths
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test complete API usage analysis flow
-  - Validate agent audit pipeline
-  - Test cost comparison matrix generation
-  - Verify report consolidation process
+### Integration Tests (Target: 100% API Coverage)
 
-#### Content Validation Tests
-- **Task ID**: RT-004
-- **Type**: Integration Test
-- **Component**: Documentation Generators
-- **Description**: Validate generated documentation meets quality standards
-- **Coverage Goal**: All document types
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test markdown formatting validation
-  - Verify required sections presence
-  - Test data accuracy in reports
-  - Validate cross-reference consistency
+#### Name Generation Service Integration
+**Task ID**: INTEG-001
+**Component**: Name generation API endpoints
+**Description**: Test complete name generation workflows
+**Test Cases**:
+- Test `/names/generate` endpoint with different themes
+- Test `/names/validate` endpoint
+- Test `/names/sources` configuration endpoint
+- Test error handling and fallbacks
+- Test rate limiting and performance
 
-### 3. Configuration and Setup Tests
+#### Database Integration Tests
+**Task ID**: INTEG-002
+**Component**: Name storage and retrieval
+**Description**: Test persistence layer integration
+**Test Cases**:
+- Test name source storage/retrieval
+- Test generated name caching (Redis integration)
+- Test database connection handling
+- Test data migration scenarios
+- Test backup/restore operations
 
-#### Unit Tests for Provider Research
-- **Task ID**: RT-005
-- **Type**: Unit Test
-- **Component**: Provider Capability Research Tools
-- **Description**: Test tools that research OpenAI and local Claude capabilities
-- **Coverage Goal**: 80%
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test OpenAI API capability enumeration
-  - Test local Claude detection logic
-  - Validate pricing data collection
-  - Test capability comparison matrix generation
+#### Achievement System Integration
+**Task ID**: INTEG-003
+**Component**: Names within achievement context
+**Description**: Test naming integration with achievement system
+**Test Cases**:
+- Test achievement name generation
+- Test category-specific name themes
+- Test name consistency across achievement types
+- Test achievement audit with name validation
+- Test rarity-based name generation
 
-#### Environment Setup Tests
-- **Task ID**: RT-006
-- **Type**: Integration Test
-- **Component**: Research Environment Setup
-- **Description**: Validate research environment can access required data sources
-- **Coverage Goal**: All data sources
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test access to existing agent definitions
-  - Test API usage log accessibility
-  - Validate external API connectivity (for research)
-  - Test output file generation permissions
+### End-to-End Tests (Critical User Journeys)
 
-### 4. Data Analysis Validation
+#### Name Generation User Journey
+**Task ID**: E2E-001
+**User Journey**: Complete name generation experience
+**Description**: Test end-to-end name generation workflows
+**Test Scenarios**:
+- User requests whimsical name generation
+- System generates diverse, family-friendly names
+- User can refresh for new names
+- Names display correctly across UI components
+- Error states handled gracefully
 
-#### Statistical Analysis Tests
-- **Task ID**: RT-007
-- **Type**: Unit Test
-- **Component**: Cost Analysis Tools
-- **Description**: Test statistical analysis of cost optimization opportunities
-- **Coverage Goal**: 85%
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test cost projection calculations
-  - Validate savings estimates
-  - Test statistical significance calculations
-  - Verify confidence interval computations
+#### Achievement Audit with Names
+**Task ID**: E2E-002
+**User Journey**: Achievement audit including name validation
+**Description**: Test achievement audit process with name quality checks
+**Test Scenarios**:
+- Trigger comprehensive achievement audit
+- System validates all achievement names for quality
+- Report shows name diversity metrics
+- Duplicate/problematic names are flagged
+- Cleanup recommendations provided
 
-#### Decision Framework Tests
-- **Task ID**: RT-008
-- **Type**: Integration Test
-- **Component**: Model Selection Decision Framework
-- **Description**: Test the decision framework for model selection based on research
-- **Coverage Goal**: All decision paths
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test autonomy level classification
-  - Test complexity-to-model mapping
-  - Validate cost-quality tradeoff logic
-  - Test fallback decision chains
+#### System Configuration Journey  
+**Task ID**: E2E-003
+**User Journey**: Name source configuration and validation
+**Description**: Test administrative configuration workflows
+**Test Scenarios**:
+- Admin configures new name sources
+- System validates source compatibility
+- Name generation reflects new sources
+- Quality metrics update appropriately
+- Changes persist across restarts
 
-## Quality Assurance Strategy
+### Performance Tests
 
-### Research Quality Metrics
-- **Data Accuracy**: 95%+ accuracy in API usage pattern identification
-- **Completeness**: 100% of agents audited and classified
-- **Consistency**: Cross-validation of research findings across multiple data sources
-- **Reproducibility**: Research scripts can be re-run with consistent results
+#### Load Testing
+**Task ID**: PERF-001
+**Component**: Name generation under load
+**Description**: Test system performance with concurrent requests
+**Metrics**: 
+- 1000+ concurrent name generation requests
+- Response time < 200ms for 95th percentile
+- Memory usage remains stable
+- Cache hit rates > 80%
 
-### Documentation Standards
-- **Format Compliance**: All documents follow established markdown standards
-- **Completeness**: All required sections documented per template
-- **Accuracy**: Technical details verified against source code and APIs
-- **Clarity**: Documentation reviewed for clarity and actionability
+#### Diversity Analysis
+**Task ID**: PERF-002
+**Component**: Name variety and repetition
+**Description**: Statistical testing of name generation diversity
+**Metrics**:
+- Generate 10,000 names, measure uniqueness
+- Target: 95%+ unique names in sample
+- Measure source distribution balance
+- Validate no single pattern dominates
 
-## Test Infrastructure
+## Test Data Requirements
 
-### Test Framework
-- **Primary**: pytest for Python-based research tools
-- **Secondary**: Shell scripts for document validation
-- **Mocking**: Mock external APIs to avoid costs during testing
-- **Coverage**: pytest-cov for test coverage reporting
+### Mock Data Sets
+- **Fantasy names**: 500+ curated fantasy terms
+- **Sci-fi names**: 500+ science fiction references  
+- **Roman terms**: 300+ adapted political/military terms
+- **Gaming names**: 400+ video game character references
+- **Offensive terms list**: Comprehensive filter database
 
-### Test Data
-- **Synthetic API Logs**: Generated test data mimicking real API usage
-- **Mock Agent Definitions**: Test agent files with known characteristics
-- **Reference Pricing Data**: Static pricing data for validation
-- **Expected Outputs**: Golden master documents for comparison
+### Test Fixtures
+- Sample achievement configurations
+- Mock user profiles for name generation
+- Database seed data for testing
+- Redis cache test scenarios
 
-## Risk Mitigation Testing
+## Coverage Goals
+- **Unit Test Coverage**: 85% minimum
+- **API Endpoint Coverage**: 100%
+- **Critical Path Coverage**: 100% (name generation, validation, audit)
+- **Error Scenario Coverage**: 90%
 
-### Data Privacy Tests
-- **Task ID**: RT-009
-- **Type**: Security Test
-- **Component**: Data Anonymization
-- **Description**: Ensure research tools properly anonymize sensitive data
-- **Coverage Goal**: All data handling paths
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test PII removal from API logs
-  - Validate credential scrubbing
-  - Test data aggregation anonymity
-  - Verify secure temporary file handling
+## Quality Gates
+1. All family-friendly validation tests pass
+2. Name diversity metrics meet targets (95% uniqueness)
+3. Performance benchmarks achieved
+4. No regression in existing functionality
+5. Security tests pass (input validation, injection prevention)
 
-### Research Bias Tests
-- **Task ID**: RT-010
-- **Type**: Quality Assurance Test
-- **Component**: Research Methodology
-- **Description**: Test for bias in research methodology and data collection
-- **Coverage Goal**: All research processes
-- **Assigned To**: TDD Coordinator
-- **Test Cases**:
-  - Test sampling methodology
-  - Validate statistical assumptions
-  - Test for selection bias in agent analysis
-  - Verify reproducibility across different time periods
+## Risk Mitigation Tests
 
-## Success Criteria
+### Data Quality Risks
+**Task ID**: RISK-001
+**Risk**: Poor quality names slip through validation
+**Tests**: 
+- Comprehensive content filtering tests
+- Manual review sample validation
+- Edge case pronunciation tests
 
-### Test Coverage Goals
-- **Unit Tests**: 85%+ coverage for all research tools
-- **Integration Tests**: 100% coverage of research pipeline
-- **Documentation Tests**: All generated documents pass validation
-- **Quality Tests**: All quality metrics meet defined thresholds
+### Performance Risks  
+**Task ID**: RISK-002
+**Risk**: Name generation becomes bottleneck
+**Tests**:
+- Load testing with realistic traffic
+- Memory leak detection
+- Cache efficiency validation
 
-### Performance Benchmarks
-- **Research Script Execution**: < 5 minutes for full analysis
-- **Document Generation**: < 2 minutes for all deliverables
-- **Data Processing**: Handle 30 days of API logs efficiently
-- **Memory Usage**: Research tools use < 1GB RAM
+### Integration Risks
+**Task ID**: RISK-003  
+**Risk**: Breaking existing achievement functionality
+**Tests**:
+- Regression test suite for core features
+- Backward compatibility validation
+- Migration rollback testing
 
-## Test Execution Strategy
+## Test Environment Requirements
+- **Unit Tests**: Local development environment
+- **Integration Tests**: Staging environment with full database
+- **E2E Tests**: Production-like environment with UI
+- **Performance Tests**: Dedicated load testing environment
 
-### Continuous Testing
-- Run research validation tests on every data update
-- Validate document generation with sample data
-- Test research tools against current codebase
-- Monitor research script performance
+## Success Metrics
+- All test tasks completed successfully
+- 85%+ unit test coverage achieved
+- 100% critical path coverage
+- Performance benchmarks met
+- Zero critical security vulnerabilities
+- Name quality standards validated
 
-### Manual Testing Checkpoints
-- Review generated documentation for completeness
-- Validate research findings against known baselines
-- Cross-check cost analysis with actual billing data
-- Verify agent classifications manually for accuracy
-
-## Deliverables
-
-### Test Artifacts
-1. **Test Suite**: Complete pytest test suite for research tools
-2. **Mock Data**: Comprehensive test data sets
-3. **Validation Scripts**: Automated document quality validation
-4. **Coverage Reports**: Test coverage reports for all components
-5. **Quality Metrics**: Research quality assessment reports
-
-### Documentation
-1. **Test Strategy Document**: This document
-2. **Test Execution Plan**: Detailed testing procedures
-3. **Quality Standards**: Research quality criteria
-4. **Validation Procedures**: Manual testing checklists
-
-## Notes
-- Research phase testing focuses on data quality and methodology validation
-- No user-facing functionality to test in this milestone
-- Emphasis on reproducible research and accurate data collection
-- Testing framework will be reused for implementation phases
-
-## Next Steps
-After milestone completion, these tests will serve as:
-- Baseline for implementation phase testing
-- Quality gates for research deliverables
-- Foundation for cost optimization validation
-- Reference for future research activities
+## Dependencies
+- Test data curation and validation
+- Test environment provisioning
+- Performance testing infrastructure
+- Security testing tools setup

@@ -1,159 +1,148 @@
-# Backend Tasks - Research & Documentation (Phase 1)
+# Backend Tasks - Achievement Audit and Cleanup
 
 ## Overview
-Complete comprehensive research and documentation to inform implementation strategy for API cost optimization system. This phase focuses on analysis, audit, and architectural planning without implementation.
+This milestone focuses on implementing the Achievement System infrastructure with emphasis on audit capabilities and data cleanup mechanisms. Based on the architecture, we'll build the core services needed to manage achievements, perform audits, and maintain system health.
 
 ## Task Breakdown
 
-### 1. Current API Usage Analysis
-**Task**: Analyze Anthropic API Usage Patterns
-**Description**: Examine current runtime system to understand how Anthropic API is used across all agent types, including call frequency, model usage patterns, token consumption, and cost distribution.
+### 1. Database Schema Implementation
+**Description**: Design and implement PostgreSQL database schema for achievements and categories
 **Acceptance Criteria**:
-- Document current API usage patterns from runtime.py and related files
-- Identify high-cost vs low-cost usage patterns
-- Map agent types to their API consumption profiles
-- Generate usage statistics and cost breakdown by agent type
+- SQLAlchemy models for Achievement and AchievementCategory entities
+- Database migration scripts for schema creation
+- Foreign key relationships properly established
+- Indexes on commonly queried fields (name, category, rarity_level)
+- UUID primary keys implemented
 **Dependencies**: None
 **Complexity**: Medium
 
-### 2. Agent Autonomy Audit
-**Task**: Classify Agent Autonomy Levels
-**Description**: Review all 40+ agent definitions to categorize them by autonomy level - which agents can operate fully autonomously vs require user interaction, and their task complexity ratings.
+### 2. Achievement Repository Service - Core CRUD
+**Description**: Implement basic CRUD operations for achievement management
 **Acceptance Criteria**:
-- Audit all agent definitions in the codebase
-- Classify each agent as: fully autonomous, semi-autonomous, or interactive
-- Document task complexity levels per agent
-- Identify agents suitable for cheaper model delegation
-- Create agent-to-autonomy mapping matrix
-**Dependencies**: None
+- FastAPI endpoints for GET, POST, PUT, DELETE operations on /achievements
+- Input validation using Pydantic models
+- Proper HTTP status codes and error handling
+- OpenAPI documentation auto-generated
+- Basic authentication middleware (JWT token validation)
+**Dependencies**: Database Schema Implementation
+**Complexity**: Medium
+
+### 3. Achievement Deduplication Logic
+**Description**: Implement sophisticated duplicate detection and merging capabilities
+**Acceptance Criteria**:
+- Algorithm to detect potential duplicates based on name similarity and criteria overlap
+- Safe merge operation with data preservation
+- Configurable similarity thresholds
+- Audit trail for all deduplication actions
+- Rollback capability for merge operations
+**Dependencies**: Achievement Repository Service - Core CRUD
 **Complexity**: Complex
 
-### 3. Local Claude Research
-**Task**: Research Local Claude Deployment Options
-**Description**: Investigate available local Claude deployment methods, API compatibility, performance characteristics, and integration approaches.
+### 4. Achievement Audit Service Implementation
+**Description**: Build comprehensive audit service for system-wide achievement analysis
 **Acceptance Criteria**:
-- Research ollama, local API servers, and other local Claude options
-- Document API compatibility with Anthropic Claude API
-- Analyze performance and quality trade-offs
-- Identify technical requirements and setup complexity
-- Document pros/cons of each deployment method
+- GET /audit endpoint returning system health metrics
+- Duplicate detection reporting
+- Rarity distribution analysis
+- Category balance reporting
+- Performance metrics (query times, cache hit rates)
+- Exportable audit reports in JSON/CSV format
+**Dependencies**: Achievement Deduplication Logic
+**Complexity**: Complex
+
+### 5. Category Management Service
+**Description**: Implement category CRUD operations with thematic consistency validation
+**Acceptance Criteria**:
+- GET/POST endpoints for /categories
+- Category creation with theme validation
+- Category-level metadata management
+- Achievement count tracking per category
+- Category deletion with achievement reassignment handling
+**Dependencies**: Database Schema Implementation
+**Complexity**: Medium
+
+### 6. Redis Caching Layer
+**Description**: Implement Redis caching for high-performance achievement lookups
+**Acceptance Criteria**:
+- Cache frequently accessed achievements and categories
+- Cache invalidation strategy for data updates
+- Cache warming on application startup
+- Redis connection pooling and error handling
+- Cache hit/miss metrics tracking
+**Dependencies**: Achievement Repository Service - Core CRUD
+**Complexity**: Medium
+
+### 7. Rarity Balancing Service
+**Description**: Implement statistical analysis and rarity adjustment mechanisms
+**Acceptance Criteria**:
+- Algorithm to analyze current rarity distribution
+- Automatic suggestions for rarity rebalancing
+- Safe rarity level updates with audit trail
+- Statistical integrity validation
+- Batch rarity update operations
+**Dependencies**: Achievement Audit Service Implementation
+**Complexity**: Complex
+
+### 8. Authentication and Authorization System
+**Description**: Implement JWT-based authentication with role-based access control
+**Acceptance Criteria**:
+- JWT token generation and validation
+- bcrypt password hashing
+- Role-based permissions (admin, user, readonly)
+- Token refresh mechanism
+- Rate limiting on authentication endpoints
 **Dependencies**: None
 **Complexity**: Medium
 
-### 4. OpenAI Model Evaluation
-**Task**: Evaluate OpenAI Model Capabilities vs Current Usage
-**Description**: Compare OpenAI models (GPT-4, GPT-3.5-turbo, etc.) against current Claude usage to determine suitable mappings for different agent types and task complexities.
+### 9. Data Migration and Backup Service
+**Description**: Implement safe data migration tools with backup/rollback capabilities
 **Acceptance Criteria**:
-- Map OpenAI models to current Claude model usage patterns
-- Compare capabilities, limitations, and pricing
-- Identify which agent types are good candidates for OpenAI delegation
-- Document quality expectations and trade-offs
-- Create model recommendation matrix
-**Dependencies**: Current API Usage Analysis
-**Complexity**: Medium
-
-### 5. Cost Comparison Matrix
-**Task**: Create Provider Cost Comparison Framework
-**Description**: Build comprehensive cost analysis comparing Anthropic, OpenAI, and local Claude options across different usage scenarios and agent types.
-**Acceptance Criteria**:
-- Create detailed pricing comparison matrix
-- Calculate potential cost savings by provider and agent type
-- Model different delegation scenarios and their financial impact
-- Include setup/maintenance costs for local options
-- Generate ROI projections for different implementation approaches
-**Dependencies**: Current API Usage Analysis, Agent Autonomy Audit, OpenAI Model Evaluation
+- Pre-migration backup creation
+- Safe achievement consolidation procedures
+- Rollback mechanism for failed migrations
+- Data integrity validation post-migration
+- Migration progress tracking and logging
+**Dependencies**: Achievement Audit Service Implementation
 **Complexity**: Complex
 
-### 6. Decision Framework Design
-**Task**: Create Model Selection Decision Framework
-**Description**: Design the logic framework for automatically selecting the most appropriate provider based on task complexity, autonomy level, cost optimization goals, and quality requirements.
+### 10. API Documentation and Testing
+**Description**: Comprehensive API documentation and test suite implementation
 **Acceptance Criteria**:
-- Define decision criteria and weight factors
-- Create decision tree/flowchart for provider selection
-- Specify fallback logic and quality thresholds
-- Document edge cases and failure handling
-- Design provider health check requirements
-**Dependencies**: Agent Autonomy Audit, OpenAI Model Evaluation, Cost Comparison Matrix
-**Complexity**: Complex
-
-### 7. Technical Architecture Design
-**Task**: Design Multi-Provider Architecture
-**Description**: Create detailed technical architecture for supporting multiple AI providers with smart routing, quality monitoring, and cost optimization.
-**Acceptance Criteria**:
-- Design provider abstraction layer and interfaces
-- Specify smart router components and algorithms
-- Define quality monitoring and validation mechanisms
-- Document data flow and component interactions
-- Create implementation roadmap and phase breakdown
-- Identify integration points with existing runtime system
+- Complete OpenAPI/Swagger documentation
+- Unit tests with 90%+ code coverage using pytest
+- Integration tests for all critical workflows
+- Performance tests for audit operations
+- Test data fixtures and factories
 **Dependencies**: All previous tasks
-**Complexity**: Complex
-
-### 8. Implementation Strategy Document
-**Task**: Create Comprehensive Implementation Plan
-**Description**: Synthesize all research findings into actionable implementation strategy with priorities, timelines, and risk mitigation approaches.
-**Acceptance Criteria**:
-- Consolidate all research findings into unified document
-- Prioritize implementation phases based on ROI and complexity
-- Define success metrics and quality thresholds
-- Document risks and mitigation strategies
-- Create detailed implementation roadmap
-- Provide clear recommendations for Phase 2 (OpenAI integration)
-**Dependencies**: All previous tasks
 **Complexity**: Medium
 
-## Task Dependencies
+## Priority Order
+1. Database Schema Implementation
+2. Authentication and Authorization System
+3. Achievement Repository Service - Core CRUD
+4. Category Management Service
+5. Redis Caching Layer
+6. Achievement Deduplication Logic
+7. Achievement Audit Service Implementation
+8. Rarity Balancing Service
+9. Data Migration and Backup Service
+10. API Documentation and Testing
 
-```
-1. Current API Usage Analysis (foundational)
-├── 4. OpenAI Model Evaluation
-└── 5. Cost Comparison Matrix
+## Critical Path Tasks
+- Database Schema Implementation → Achievement Repository Service → Achievement Audit Service
+- Authentication System (parallel track, needed by all services)
+- Achievement Deduplication Logic (prerequisite for audit service)
 
-2. Agent Autonomy Audit (foundational)
-├── 5. Cost Comparison Matrix
-└── 6. Decision Framework Design
+## Technical Notes
+- All services will use FastAPI with async/await patterns
+- SQLAlchemy with asyncpg for database operations
+- Redis for caching with redis-py async client
+- Pydantic for request/response validation
+- pytest with pytest-asyncio for testing
+- Alembic for database migrations
 
-3. Local Claude Research (independent)
-
-5. Cost Comparison Matrix
-└── 6. Decision Framework Design
-
-6. Decision Framework Design
-└── 7. Technical Architecture Design
-
-7. Technical Architecture Design
-└── 8. Implementation Strategy Document
-```
-
-## Critical Path
-1. Current API Usage Analysis → OpenAI Model Evaluation → Cost Comparison Matrix → Decision Framework Design → Technical Architecture Design → Implementation Strategy Document
-
-## Priority Groups
-
-### High Priority (Foundational)
-- Current API Usage Analysis
-- Agent Autonomy Audit
-
-### Medium Priority (Analysis)
-- Local Claude Research
-- OpenAI Model Evaluation
-- Cost Comparison Matrix
-
-### Low Priority (Synthesis)
-- Decision Framework Design
-- Technical Architecture Design
-- Implementation Strategy Document
-
-## Success Metrics
-- Complete audit of all agent definitions with autonomy classifications
-- Detailed cost analysis showing potential 30-50% savings
-- Technical architecture ready for Phase 2 implementation
-- Clear implementation roadmap with defined phases
-- Risk assessment and mitigation strategies documented
-
-## Output Deliverables
-- Comprehensive research document consolidating all findings
-- Agent autonomy classification matrix
-- Provider cost comparison spreadsheet/matrix
-- Technical architecture diagrams and specifications
-- Implementation strategy and roadmap document
+## Risk Mitigation
+- Data loss prevention: All destructive operations require explicit confirmation
+- Performance monitoring: Redis caching and database query optimization
+- Rollback capabilities: Every major operation must be reversible
+- Comprehensive logging: All audit and modification actions logged

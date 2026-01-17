@@ -1,206 +1,98 @@
-# Architecture Proposal: API Cost Optimization System
+# Achievement System Architecture Proposal
 
-## 1. Architecture Overview
+## A. Architecture Overview
+The Achievement System will be designed as a modular, extensible microservices architecture focusing on flexibility and maintainability. The system will support dynamic achievement management with clear separation of concerns.
 
-### Design Philosophy
-A flexible, extensible multi-provider architecture that enables intelligent, cost-effective AI model routing while maintaining system reliability and output quality.
+## B. Tech Stack
+- **Backend**: Python (FastAPI)
+  - Rationale: Lightweight, high-performance framework with excellent async support
+  - Alternatives Considered: Flask, Django - less suitable for real-time achievement processing
+- **Database**: PostgreSQL
+  - Rationale: ACID compliance, complex query support for achievement analytics
+  - Alternatives Considered: MongoDB - less structured, weaker for complex relational queries
+- **ORM**: SQLAlchemy
+  - Provides robust database interaction and migration support
+- **Caching**: Redis
+  - For high-performance achievement lookup and tracking
 
-### Architecture Pattern
-- **Layered Architecture** with clear separation of concerns
-- **Strategy Pattern** for provider management
-- **Decorator/Proxy Pattern** for quality monitoring and fallback
+## C. System Components
+1. **Achievement Repository Service**
+   - Manages CRUD operations for achievements
+   - Handles deduplication logic
+   - Tracks achievement metadata
 
-## 2. Tech Stack
+2. **Rarity Balancing Service**
+   - Analyzes achievement distribution
+   - Suggests and implements rarity adjustments
+   - Maintains statistical integrity of achievement system
 
-### Core Technologies
-- **Language**: Python 3.9+
-- **Provider SDKs**: 
-  - Anthropic Claude: `anthropic` 
-  - OpenAI: `openai`
-  - Local Providers: Custom REST client
+3. **Category Management Service**
+   - Handles creation and integration of new categories
+   - Ensures thematic consistency
+   - Manages category-level metadata
 
-### Key Libraries
-- `pydantic` for configuration and validation
-- `asyncio` for concurrent provider interactions
-- `prometheus_client` for metrics tracking
-- `structlog` for structured logging
+4. **Achievement Audit Service**
+   - Performs comprehensive system-wide achievement audits
+   - Identifies duplicates
+   - Generates reports on system health
 
-## 3. System Components
+## D. Data Model
+```python
+class Achievement:
+    id: UUID
+    name: str
+    category: str
+    rarity_level: Enum(RARE, EPIC, LEGENDARY)
+    description: str
+    criteria: Dict[str, Any]
+    created_at: DateTime
+    updated_at: DateTime
 
-### A. Provider Management Layer
-```
-ProviderManager
-├── BaseProvider (Abstract Base Class)
-│   ├── AnthropicProvider
-│   ├── OpenAIProvider
-│   └── LocalClaudeProvider
-└── ProviderRegistry
-```
-
-#### Responsibilities:
-- Standardized interface for different AI providers
-- Dynamic provider registration
-- Health check mechanisms
-- Credential management
-
-### B. Smart Router
-```
-SmartRouter
-├── TaskAnalyzer
-│   └── AutonomyClassifier
-├── ProviderSelector
-│   ├── CostOptimizer
-│   └── QualityPredictor
-└── FallbackHandler
-```
-
-#### Responsibilities:
-- Analyze task complexity and autonomy
-- Select most appropriate provider
-- Implement intelligent fallback logic
-
-### C. Quality Monitoring
-```
-QualityMonitor
-├── OutputValidator
-│   └── ModelQualityScorer
-├── CostTracker
-└── PerformanceReporter
+class AchievementCategory:
+    id: UUID
+    name: str
+    theme: str
+    achievements: List[Achievement]
 ```
 
-#### Responsibilities:
-- Validate model output quality
-- Track per-provider performance
-- Generate cost optimization reports
+## E. API Design
+- REST API with OpenAPI/Swagger documentation
+- Endpoints:
+  - `/achievements` (GET, POST, PUT, DELETE)
+  - `/categories` (GET, POST)
+  - `/audit` (GET)
 
-## 4. File/Directory Structure
+## F. Deployment Strategy
+- Docker containerization
+- Kubernetes for orchestration
+- CI/CD with GitHub Actions
+- Staging and production environments
 
-```
-src/runtime/
-│
-├── providers/
-│   ├── base_provider.py
-│   ├── anthropic_provider.py
-│   ├── openai_provider.py
-│   └── local_claude_provider.py
-│
-├── routing/
-│   ├── smart_router.py
-│   ├── task_analyzer.py
-│   └── provider_selector.py
-│
-├── monitoring/
-│   ├── quality_monitor.py
-│   ├── output_validator.py
-│   └── cost_tracker.py
-│
-└── config/
-    ├── providers.yaml
-    └── cost_rules.json
-```
+## G. Testing Strategy
+- Unit Tests: pytest
+  - 90%+ code coverage
+- Integration Tests: Test category creation, achievement deduplication
+- Performance Tests: Verify system responsiveness under load
 
-## 5. Data Flow
+## H. Risks and Mitigations
+1. **Risk**: Potential data loss during achievement consolidation
+   - **Mitigation**: Full backup before migration, rollback mechanism
+2. **Risk**: Performance degradation with increased achievements
+   - **Mitigation**: Redis caching, database indexing
 
-```
-Task Submission 
-  ↓
-TaskAnalyzer (Complexity & Autonomy Assessment)
-  ↓
-ProviderSelector (Select Optimal Provider)
-  ↓
-Selected Provider Execution
-  ↓
-QualityMonitor (Validate Output)
-  ↓
-Result Return or Fallback
-```
+## I. Open Questions
+- Exact rarity redistribution algorithm
+- Specific criteria for the new movie categories
 
-## 6. Configuration Management
+## J. Alternatives Considered
+- Monolithic architecture: Rejected due to reduced scalability
+- NoSQL database: Rejected due to need for complex relational queries
 
-### Provider Configuration (providers.yaml)
-```yaml
-providers:
-  anthropic:
-    default_model: claude-2
-    priority: 1
-  openai:
-    default_model: gpt-4
-    priority: 2
-  local_claude:
-    endpoint: http://localhost:8000
-    priority: 3
-```
-
-## 7. Deployment Strategy
-
-### Containerization
-- Docker containers for each provider adapter
-- Kubernetes for orchestration and scaling
-- Helm charts for configuration management
-
-### CI/CD
-- GitHub Actions for testing
-- Automated provider health checks
-- Feature flag support for gradual rollout
-
-## 8. Testing Strategy
-
-### Test Suites
-- Unit Tests: Provider adapters, routing logic
-- Integration Tests: Cross-provider workflows
-- Performance Tests: Provider latency and cost
-- Chaos Tests: Simulate provider failures
-
-### Quality Metrics
-- Output similarity across providers
-- Latency comparisons
-- Cost per successful task
-- Fallback success rates
-
-## 9. Risks and Mitigations
-
-### Potential Risks
-1. Inconsistent model quality
-2. Higher complexity
-3. Performance overhead
-
-### Mitigation Strategies
-- Comprehensive quality scoring
-- Intelligent caching
-- Minimal abstraction overhead
-- Detailed performance monitoring
-
-## 10. Open Questions for User
-
-1. Specific OpenAI model preferences?
-2. Tolerance for minor quality variations?
-3. Acceptable fallback chain priorities?
-
-## 11. Future Extensibility
-
-- Easy addition of new providers
-- Pluggable quality assessment algorithms
-- Machine learning-based provider selection
-
-## Appendix: Implementation Phases
-
-### Phase 1: Research & Base Infrastructure
-- Provider abstract interfaces
-- Basic routing mechanisms
-- Logging and metrics setup
-
-### Phase 2: OpenAI Integration
-- OpenAI provider implementation
-- Cost tracking enhancements
-- Initial routing logic
-
-### Phase 3: Local Claude Support
-- Local provider detection
-- Health check mechanisms
-- Fallback implementations
-
-## Performance Targets
-
-- Reduce API costs by 40%
-- Maintain 95% output quality
-- < 50ms additional routing overhead
+## K. Implementation Roadmap
+1. Design database schema
+2. Develop achievement repository service
+3. Build rarity balancing mechanisms
+4. Implement audit service
+5. Create category management functionality
+6. Extensive testing
+7. Gradual rollout with feature flags
