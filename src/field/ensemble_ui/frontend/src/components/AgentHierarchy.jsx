@@ -7,7 +7,8 @@ const CATEGORY_COLORS = {
   developers: '#34d399',   // green
   testers: '#a78bfa',      // purple
   designers: '#f472b6',    // pink
-  support: '#f97316'       // orange
+  support: '#f97316',      // orange
+  automation: '#06b6d4'    // cyan - for bots/automation
 };
 
 const HIERARCHY_DATA = {
@@ -125,7 +126,11 @@ const HIERARCHY_DATA = {
       purpose: 'Ensures code quality',
       children: [
         { name: 'CI Agent', category: 'support', purpose: 'Automated quality gate', children: [] },
-        { name: 'Code Reviewer', category: 'support', purpose: 'Reviews code changes', children: [] }
+        { name: 'Code Reviewer', category: 'support', purpose: 'Reviews code changes', children: [] },
+        { name: 'GitHub Commit Bot', category: 'automation', purpose: 'Commits code changes', children: [] },
+        { name: 'GitHub Push Bot', category: 'automation', purpose: 'Pushes to remote repos', children: [] },
+        { name: 'GitHub Sync Bot', category: 'automation', purpose: 'Syncs with upstream', children: [] },
+        { name: 'Documentation Bot', category: 'automation', purpose: 'Generates documentation', children: [] }
       ]
     },
     {

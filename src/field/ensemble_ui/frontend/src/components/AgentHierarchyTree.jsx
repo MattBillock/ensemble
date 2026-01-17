@@ -31,7 +31,8 @@ const CATEGORY_COLORS = {
   'developers': { bg: 'rgba(52, 211, 153, 0.3)', color: '#34d399', border: '#34d399' },
   'testers': { bg: 'rgba(167, 139, 250, 0.3)', color: '#a78bfa', border: '#a78bfa' },
   'designers': { bg: 'rgba(244, 114, 182, 0.3)', color: '#f472b6', border: '#f472b6' },
-  'support': { bg: 'rgba(249, 115, 22, 0.3)', color: '#f97316', border: '#f97316' }
+  'support': { bg: 'rgba(249, 115, 22, 0.3)', color: '#f97316', border: '#f97316' },
+  'automation': { bg: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4', border: '#06b6d4' }
 };
 
 // Get category from agent_type path (e.g., "leadership/executive_director" -> "leadership")
