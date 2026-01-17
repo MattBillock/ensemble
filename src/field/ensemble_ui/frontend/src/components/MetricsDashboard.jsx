@@ -376,7 +376,9 @@ function MetricsDashboard() {
                           </code>
                         </td>
                         <td>
-                          <code style={{ fontSize: '0.85rem' }}>{error.agent_name}</code>
+                          <code style={{ fontSize: '0.85rem' }}>
+                            {error.agent_name || <span style={{ color: '#6b7280', fontStyle: 'italic' }}>(unknown)</span>}
+                          </code>
                         </td>
                         <td className="text-end">
                           <Badge bg="danger">{error.occurrences}</Badge>
