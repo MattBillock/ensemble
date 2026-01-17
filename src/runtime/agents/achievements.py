@@ -1698,6 +1698,14 @@ class AchievementTracker:
         Returns:
             List of newly awarded achievements
         """
+        # Validate agent identification - reject empty values
+        if not agent_name or not agent_name.strip():
+            logger.warning(f"Skipping achievement check: empty agent_name (agent_id={agent_id})")
+            return []
+        if not agent_class or not agent_class.strip():
+            logger.warning(f"Skipping achievement check: empty agent_class (agent_id={agent_id})")
+            return []
+
         awarded = []
 
         # Update agent stats first
