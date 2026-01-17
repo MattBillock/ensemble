@@ -1,61 +1,176 @@
-# Frontend Tasks - Research & Documentation (Phase 1)
+# Frontend Tasks - Achievement Audit and Cleanup
 
-## Milestone Overview
-**Milestone**: Research & Documentation (Phase 1) - Complete comprehensive research and documentation to inform implementation strategy including current API usage analysis, agent audit, cost comparison matrix, and technical architecture design.
+## Overview
+This milestone focuses on implementing the frontend interface for the Achievement System's audit and cleanup functionality. The interface will provide administrators with tools to manage achievements, handle duplicates, and perform system-wide audits.
 
-## Frontend Task Analysis
+## Component Architecture
+- **Framework**: React with hooks
+- **Styling**: Tailwind CSS
+- **State Management**: Context API with useContext and useReducer
+- **API Client**: axios with error handling
+- **Testing**: Jest + React Testing Library
 
-### Assessment
-After reviewing the architecture and requirements documents, **this milestone has NO frontend tasks**.
+## Task Breakdown
 
-The Phase 1 deliverables are explicitly backend/research focused:
-1. Research Document - Analysis and implementation recommendations
-2. Cost Analysis - Provider comparison matrix with pricing projections
-3. Agent Audit - Documentation of autonomy levels and provider suitability per agent
-4. Architecture Design - Detailed technical design for multi-provider support
+### 1. Core Layout & Navigation
+**Task**: Create main application layout and navigation
+**Description**: Build the primary layout component with header, sidebar navigation, and main content area for the achievement management dashboard.
+**Dependencies**: None
+**Complexity**: Simple
+**Acceptance Criteria**:
+- Header displays app title and user info
+- Sidebar contains navigation links to all major sections
+- Responsive layout works on desktop and tablet
+- Navigation highlights current active section
 
-The requirements document explicitly states in "Out of Scope":
-> **UI Changes**: Backend optimization only (UI changes come later)
+### 2. Achievement List Component
+**Task**: Build achievement display and search interface
+**Description**: Create a comprehensive list view for displaying achievements with search, filtering, and sorting capabilities.
+**Dependencies**: Core Layout
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Displays achievements in a data table with pagination
+- Search by name, category, or description
+- Filter by rarity level and category
+- Sort by name, created date, or rarity
+- Shows achievement count and status indicators
 
-### Components Identified
-| Component Type | Count | Notes |
-|----------------|-------|-------|
-| Pages/Routes | 0 | No UI in Phase 1 |
-| UI Components | 0 | No UI in Phase 1 |
-| Services | 0 | No frontend services needed |
-| State Management | 0 | No state to manage |
+### 3. Achievement Card Component
+**Task**: Create individual achievement display component
+**Description**: Build a reusable card component for displaying achievement details in various contexts.
+**Dependencies**: None
+**Complexity**: Simple
+**Acceptance Criteria**:
+- Shows achievement name, category, rarity, and description
+- Visual rarity indicators (colors/badges)
+- Actions menu for edit/delete/duplicate operations
+- Responsive design for different container sizes
 
-## Recommendations
+### 4. Duplicate Detection Interface
+**Task**: Build duplicate achievement identification UI
+**Description**: Create interface for identifying and managing duplicate achievements with comparison tools.
+**Dependencies**: Achievement List Component, Achievement Card Component
+**Complexity**: Complex
+**Acceptance Criteria**:
+- Displays potential duplicates in side-by-side comparison
+- Highlights similar text and criteria
+- Allow selection of which achievement to keep
+- Batch operations for multiple duplicates
+- Confirmation dialogs for merge/delete operations
 
-### For This Milestone
-This milestone should be delegated to a **Backend Coordinator** or **Research Agent** rather than Frontend Coordinator, as it involves:
-- Code analysis of existing Python modules (`runtime.py`, `model_selector.py`, `cost_calculator.py`)
-- Documentation creation
-- Agent definition auditing (40+ agents)
-- Technical architecture documentation
+### 5. Category Management Interface
+**Task**: Build category creation and management UI
+**Description**: Create interface for managing achievement categories including creation, editing, and theme assignment.
+**Dependencies**: Core Layout
+**Complexity**: Medium
+**Acceptance Criteria**:
+- List all categories with achievement counts
+- Create new categories with name and theme
+- Edit existing category details
+- Delete categories (with warning for non-empty ones)
+- Drag-and-drop reordering of categories
 
-### Future Frontend Tasks (Later Phases)
-Based on the architecture, frontend work will likely emerge in later phases:
-- **Cost Dashboard**: Display cost tracking and reporting per provider
-- **Provider Health Status**: Show provider availability and health
-- **Quality Metrics Display**: Visualize output quality metrics
-- **Configuration UI**: Provider enablement/disablement interface
-- **Performance Reports**: Cost and quality tracking visualizations
+### 6. Rarity Balancing Dashboard
+**Task**: Create rarity distribution visualization and adjustment interface
+**Description**: Build dashboard showing rarity distribution with tools for adjusting achievement rarity levels.
+**Dependencies**: Achievement List Component
+**Complexity**: Complex
+**Acceptance Criteria**:
+- Charts showing current rarity distribution
+- Suggestions for rarity adjustments
+- Bulk rarity update functionality
+- Preview of changes before applying
+- Statistical summary of adjustments
 
-## Task Summary
+### 7. Audit Report Interface
+**Task**: Build system audit report display and generation
+**Description**: Create interface for displaying audit results and generating comprehensive system reports.
+**Dependencies**: Core Layout
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Display audit summary with key metrics
+- Show detailed findings in organized sections
+- Export audit reports to PDF/CSV
+- Schedule automatic audits
+- Historical audit comparison
 
-| ID | Task Name | Complexity | Status |
-|----|-----------|------------|--------|
-| - | No frontend tasks for Phase 1 | - | N/A |
+### 8. Achievement Form Component
+**Task**: Create achievement creation and editing form
+**Description**: Build comprehensive form for creating new achievements and editing existing ones.
+**Dependencies**: Category Management Interface
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Form fields for name, description, category, rarity
+- Criteria builder for achievement requirements
+- Form validation with error messaging
+- Draft save functionality
+- Preview of achievement before saving
 
-## Dependencies for Future Frontend Work
-When frontend work begins in later phases, it will depend on:
-1. Provider Manager API endpoints (backend)
-2. Smart Router status endpoints (backend)
-3. Quality Monitor metrics endpoints (backend)
-4. Cost Tracker data endpoints (backend)
+### 9. API Integration Service
+**Task**: Build API client service for backend communication
+**Description**: Create service layer for all backend API interactions with error handling and loading states.
+**Dependencies**: None
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Methods for all achievement CRUD operations
+- Category management API calls
+- Audit and report generation endpoints
+- Consistent error handling and logging
+- Loading state management
 
----
+### 10. Global State Management
+**Task**: Implement application state management
+**Description**: Create Context providers and reducers for managing global application state.
+**Dependencies**: API Integration Service
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Achievement state management (list, filters, selection)
+- Category state management
+- UI state (loading, modals, notifications)
+- Error state handling
+- Persistent state for user preferences
 
-*Generated by Frontend Coordinator*
-*Note: This milestone contains no frontend deliverables. Recommend routing to Backend Coordinator.*
+### 11. Loading States & Error Handling
+**Task**: Implement consistent loading and error UX
+**Description**: Create reusable components for loading states, error messages, and empty states throughout the application.
+**Dependencies**: Global State Management
+**Complexity**: Simple
+**Acceptance Criteria**:
+- Skeleton loaders for data fetching
+- Error boundary components
+- Toast notifications for success/error messages
+- Empty state illustrations and messages
+- Retry mechanisms for failed requests
+
+### 12. Responsive Mobile Interface
+**Task**: Optimize interface for mobile devices
+**Description**: Ensure all components work well on mobile devices with touch-friendly interactions.
+**Dependencies**: All UI Components
+**Complexity**: Medium
+**Acceptance Criteria**:
+- Mobile-first responsive design
+- Touch-friendly buttons and interactions
+- Collapsible navigation for small screens
+- Optimized data tables for mobile
+- Swipe gestures where appropriate
+
+## Task Dependencies Flow
+1. Core Layout & Navigation → Category Management, Audit Report Interface
+2. Achievement Card Component → Achievement List Component
+3. Achievement List Component → Duplicate Detection Interface, Rarity Balancing Dashboard
+4. API Integration Service → Global State Management
+5. Global State Management → All data-driven components
+6. All UI Components → Responsive Mobile Interface
+
+## Implementation Priority
+**Phase 1**: Core Layout, Achievement Card, API Service, Global State
+**Phase 2**: Achievement List, Category Management, Achievement Form
+**Phase 3**: Duplicate Detection, Audit Reports, Rarity Balancing
+**Phase 4**: Loading States, Error Handling, Mobile Optimization
+
+## Testing Strategy
+- Unit tests for all components using React Testing Library
+- Integration tests for user workflows
+- Mock API responses for consistent testing
+- Accessibility testing with screen readers
+- Cross-browser compatibility testing
