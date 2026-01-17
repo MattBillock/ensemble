@@ -175,7 +175,7 @@ This agent benefits most from these improvement types:
 - **context_tuning**: Right amount of context from implementation to write good tests
 
 ## Model Preference
-sonnet
+haiku
 
 ## Max Iterations
 5
