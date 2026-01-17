@@ -1,91 +1,65 @@
-# Test Strategy: Activity Tracking Mechanism
+# Test Strategy - Real-time Monitoring System
 
-## Unit Test Suite (Recommended Coverage: 90%)
+## Unit Test Tasks
 
-### 1. WriteFileTool Tests
-- **Objective**: Verify optional tracking context functionality
-- **Test Cases**:
-  - Initialize tool without tracking context
-  - Initialize tool with full tracking context
-  - Verify original file writing functionality preserved
-  - Check context propagation mechanism
-  - Validate zero-overhead when tracking disabled
-  - Test edge cases (empty/null contexts)
+### 1. Task Parser Tests
+- [ ] Test JSON parsing accuracy
+- [ ] Validate handling of malformed project files
+- [ ] Verify task metadata extraction
+- [ ] Test error handling for incomplete data
 
-### 2. ActivityTracker Tests
-- **Objective**: Validate tracking and logging mechanisms
-- **Test Cases**:
-  - Record file generation events
-  - Verify automatic request count increments
-  - Test logging with different context scenarios
-  - Validate performance thresholds (< 1ms overhead)
-  - Check graceful degradation on tracking failures
-  - Verify audit trail generation
+### 2. Display Formatter Tests
+- [ ] Verify color coding logic
+- [ ] Test status icon mapping
+- [ ] Validate task summary statistics generation
+- [ ] Check text formatting for different task statuses
 
-### 3. Context Propagation Tests
-- **Objective**: Ensure flexible, reliable context management
-- **Test Cases**:
-  - Propagate context through multiple tool calls
-  - Verify context preservation across agent interactions
-  - Test optional context scenarios
-  - Validate no performance degradation
-  - Check memory usage constraints (< 1MB)
+### 3. File Watcher Tests
+- [ ] Test file change detection
+- [ ] Validate update triggering mechanism
+- [ ] Verify error handling for file access issues
+- [ ] Check performance of file monitoring
 
-## Integration Test Scenarios
+## Integration Tests
 
-### 1. WriteFileTool + ActivityTracker Integration
-- Verify seamless integration between tools
-- Test tracking activation with various context configurations
-- Ensure no disruption to existing file writing processes
+### 1. Data Flow Integration
+- [ ] End-to-end test of JSON parsing to display
+- [ ] Verify real-time update synchronization
+- [ ] Test handling of concurrent file modifications
 
-### 2. Agent Context Tracking
-- Simulate agent file generation with different context levels
-- Verify complete tracking workflow
-- Test multiple simultaneous agent interactions
+### 2. Performance Integration
+- [ ] Measure parsing and display update time
+- [ ] Test memory usage under sustained monitoring
+- [ ] Validate update interval consistency
 
-## End-to-End Test Scenarios
+### 3. Cross-Platform Compatibility
+- [ ] Test on macOS
+- [ ] Test on Linux systems
+- [ ] Verify terminal color rendering
 
-### 1. Full Tracking Workflow
-- Complete agent task with full tracking context
-- Verify end-to-end tracking pipeline
-- Validate logging and metrics generation
+## E2E Scenario Tests
 
-### 2. Performance and Reliability Verification
-- Long-running test with continuous file generation
-- Stress test tracking mechanism
-- Monitor system stability and resource consumption
+### 1. Happy Path Scenarios
+- [ ] Complete task workflow monitoring
+- [ ] Multiple project file tracking
+- [ ] Seamless tmux dashboard integration
 
-## Test Task Breakdown
+### 2. Error Scenarios
+- [ ] Missing project files
+- [ ] Corrupted JSON handling
+- [ ] Network/filesystem interruption recovery
 
-### Phase 1: Unit Testing
-- [ ] Implement WriteFileTool context tests
-- [ ] Develop ActivityTracker unit tests
-- [ ] Create context propagation test suite
+## Test Coverage Goals
+- Unit Test Coverage: 85%
+- Integration Test Coverage: 100%
+- E2E Test Coverage: Critical paths
 
-### Phase 2: Integration Testing
-- [ ] Design WriteFileTool + ActivityTracker integration tests
-- [ ] Develop multi-agent tracking scenarios
-- [ ] Performance integration tests
+## Testing Tools
+- pytest for unit and integration testing
+- Playwright for E2E testing
+- Coverage.py for code coverage analysis
 
-### Phase 3: E2E Testing
-- [ ] Full workflow tracking test scenarios
-- [ ] Long-running performance verification
-- [ ] Edge case and failure mode testing
-
-## Coverage and Quality Goals
-- **Unit Test Coverage**: 90%
-- **Integration Test Coverage**: 100%
-- **Performance Overhead**: < 1ms per operation
-- **Memory Usage**: < 1MB additional overhead
-- **Reliability Target**: 99.9% tracking success rate
-
-## Recommended Testing Tools
-- pytest for backend testing
-- Mock library for dependency isolation
-- Python's builtin `timeit` for performance measurements
-- Logging framework for detailed tracking
-
-## Risks and Mitigation
-- **Performance Impact**: Lightweight implementation, comprehensive profiling
-- **Context Loss**: Robust propagation mechanisms
-- **Integration Complexity**: Gradual, modular testing approach
+## Risks and Mitigations
+- Implement robust error handling
+- Create comprehensive mock data
+- Use cross-platform testing environments

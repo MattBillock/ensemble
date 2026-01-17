@@ -1,73 +1,79 @@
-# Milestone Plan: Activity Tracking Fixes Implementation
+# Ensemble UI Bug Fixes - Milestone Plan
 
 ## Project Overview
-Implement enhanced activity tracking with minimal system disruption, focusing on file generation and request count tracking.
+Fix three identified bugs in the Ensemble UI:
+1. Approve All button not spawning agents
+2. Blank agent names in Metrics Dashboard
+3. Verify YOLO mode is working (confirmed working - no fix needed)
 
-## Milestones
+## Milestone 1: Backend Bug Fixes
 
-### Milestone 1: Core Implementation
-**Objective**: Enhance WriteFileTool and ActivityTracker with optional tracking context
-**Duration**: 1 sprint (2 weeks)
-**Deliverables**:
-- Enhanced WriteFileTool with optional tracking parameters
-- Updated ActivityTracker integration
-- Basic unit tests for new functionality
+### Objective
+Fix the "Approve All" button to correctly spawn executive agents for pending reviews.
 
-**Acceptance Criteria**:
-- Tools support optional tracking context
-- Zero breaking changes to existing implementation
-- Performance overhead < 1ms per operation
-- 90% test coverage
+### Root Cause
+The `approve_all_pending_reviews` function calls `swarm.update_pending_review_status()` but the `SwarmStateManager` class only defines `update_pending_review()`. This method name mismatch causes an AttributeError.
 
-### Milestone 2: Integration and Testing
-**Objective**: Comprehensive testing and validation
-**Duration**: 1 sprint (2 weeks)
-**Deliverables**:
-- Integration tests covering various tracking scenarios
-- Performance benchmarking
-- Backward compatibility verification
-- Documentation updates
+### Deliverables
+1. Fix method call at line ~2309: `update_pending_review_status` → `update_pending_review`
+2. Fix method call at lines ~2336-2339: Same correction with proper keyword arguments
+3. Unit tests verifying the fix
 
-**Acceptance Criteria**:
-- All existing tests pass
-- Performance meets NFR requirements
-- Tracking can be enabled/disabled without system impact
-- Complete API documentation
+### File Changes
+- `/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/backend/main.py`
 
-### Milestone 3: Deployment Preparation
-**Objective**: Final verification and deployment readiness
-**Duration**: 0.5 sprint (1 week)
-**Deliverables**:
-- Final code review
-- Deployment scripts
-- Monitoring and rollback strategy
-- Release documentation
+### Acceptance Criteria
+- [ ] Approve All button spawns agents for all pending reviews
+- [ ] Approved count shows correct number (> 0 when reviews exist)
+- [ ] Status changes to "in_progress" for approved items
 
-**Acceptance Criteria**:
-- All code reviews completed
-- Deployment process documented
-- Monitoring hooks in place
-- Rollback plan established
+---
+
+## Milestone 2: Frontend Bug Fixes
+
+### Objective
+Fix blank agent names in the Metrics Dashboard by adding fallback text.
+
+### Root Cause
+The MetricsDashboard component renders `{agent.agent_name}` directly without null checks.
+
+### Deliverables
+1. Add fallback `|| '(unknown agent)'` for agent names in:
+   - Most Active Agents table (line ~137)
+   - Best Performing Agents table (line ~169)
+   - Agent Performance table (line ~212)
+   - Error Analysis table (line ~373)
+
+### File Changes
+- `/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/frontend/src/components/MetricsDashboard.jsx`
+
+### Acceptance Criteria
+- [ ] No blank entries in agent name columns
+- [ ] Shows "(unknown agent)" for null/empty values
+- [ ] Existing valid agent names still display correctly
+
+---
+
+## Milestone 3: Verification
+
+### Objective
+Verify all fixes work correctly and YOLO mode is functioning as designed.
+
+### Deliverables
+1. Manual verification checklist completed
+2. Integration test results
+
+### Acceptance Criteria
+- [ ] Bug #1: Approve All creates agents with approved count > 0
+- [ ] Bug #2: No blank agent names in Metrics Dashboard
+- [ ] Bug #3: YOLO mode bypasses review phases (confirmed working)
+
+---
+
+## Timeline
+- Milestone 1: Backend Fix - Immediate
+- Milestone 2: Frontend Fix - Immediate (parallel)
+- Milestone 3: Verification - After M1 and M2 complete
 
 ## Dependencies
-- Phase 1 depends on: None
-- Phase 2 depends on: Successful completion of Phase 1
-- Phase 3 depends on: Successful completion of Phase 2
-
-## Quality Gates
-1. 90% test coverage
-2. Zero breaking changes
-3. Performance overhead < 1ms
-4. Successful code reviews
-5. All existing tests pass
-
-## Risks and Mitigations
-- Performance Impact: Lightweight implementation, optional tracking
-- Integration Issues: Comprehensive testing, backward compatibility
-- Context Propagation: Clear documentation, thorough testing
-
-## Success Metrics
-1. Tracking accuracy: 99.9%
-2. Performance overhead: < 1ms per operation
-3. Zero system disruption
-4. Gradual, opt-in adoption possible
+- Milestone 3 depends on Milestone 1 and 2 completion

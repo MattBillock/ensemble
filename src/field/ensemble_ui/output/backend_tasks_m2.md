@@ -1,168 +1,92 @@
-# Backend Tasks - Integration Testing: Verify Performance and Compatibility
+# Backend Tasks - Tmux Monitoring Dashboard
 
-## Overview
-This milestone focuses on comprehensive integration testing to verify that the enhanced activity tracking mechanism works correctly across all scenarios while maintaining performance requirements and backward compatibility.
+## Core Task Breakdown
 
-## Task Breakdown
-
-### 1. Performance Integration Testing
-**Task ID**: BT-M2-001  
-**Description**: Create and execute comprehensive performance tests to verify that tracking overhead meets the < 1ms requirement and memory usage stays under 1MB.
-
+### 1. Task Parser Implementation
+**Complexity**: Medium
+**Description**: Develop robust JSON parsing mechanism for project tracking files
 **Acceptance Criteria**:
-- Performance test suite measures tracking overhead vs. baseline
-- Tests verify < 1ms overhead per tracked file operation
-- Memory usage tests confirm < 1MB increase
-- Benchmark comparison with/without tracking enabled
-- Performance regression tests for existing functionality
+- Parses JSON files from `~/.ensemble/projects/`
+- Validates task schema 
+- Handles missing/malformed data gracefully
+- Extracts key task metadata (status, progress, details)
 
-**Dependencies**: Core tracking implementation complete  
-**Complexity**: Medium  
-**Estimated Effort**: 2-3 days
+**Dependencies**: 
+- File access permissions
+- Project tracking JSON schema
 
-### 2. Backward Compatibility Integration Testing
-**Task ID**: BT-M2-002  
-**Description**: Develop comprehensive test suite to verify zero breaking changes and that all existing functionality works unchanged with the enhanced WriteFileTool.
-
+### 2. File Watching Mechanism
+**Complexity**: Complex
+**Description**: Implement real-time file monitoring for project tracking updates
 **Acceptance Criteria**:
-- All existing unit tests continue to pass
-- Integration tests for legacy tool usage patterns
-- Tests for tools initialized without tracking context
-- Verification that default behavior is preserved
-- Edge case testing for missing/invalid context
+- Uses `watchdog` library for file system events
+- Detects changes in project tracking JSON
+- Triggers task list refresh with minimal delay
+- Configurable update interval (1-2 seconds)
 
-**Dependencies**: Enhanced WriteFileTool implementation  
-**Complexity**: Medium  
-**Estimated Effort**: 2 days
+**Dependencies**:
+- Task Parser implementation
+- Error handling strategy
 
-### 3. Cross-Component Integration Testing  
-**Task ID**: BT-M2-003  
-**Description**: Test integration between WriteFileTool, ActivityTracker, and context propagation mechanisms across various agent scenarios.
-
+### 3. Display Data Preparation
+**Complexity**: Medium
+**Description**: Transform parsed task data into display-ready format
 **Acceptance Criteria**:
-- End-to-end tests for full tracking pipeline
-- Multi-agent scenarios with different tracking contexts
-- Concurrent file operations with tracking
-- Error propagation and graceful degradation tests
-- Context preservation across tool chain
+- Converts task metadata to structured display data
+- Applies color coding and status icons
+- Generates task summary statistics
+- Supports multiple task statuses (completed, in-progress, pending, blocked)
 
-**Dependencies**: All core components implemented  
-**Complexity**: Complex  
-**Estimated Effort**: 3-4 days
+**Dependencies**:
+- Task Parser implementation
+- Color scheme configuration
 
-### 4. Reliability and Error Handling Testing
-**Task ID**: BT-M2-004  
-**Description**: Verify that tracking failures don't affect core functionality and that the system degrades gracefully under various failure conditions.
-
+### 4. Error Handling & Logging
+**Complexity**: Medium
+**Description**: Implement robust error management for file access and parsing
 **Acceptance Criteria**:
-- Tests for tracking service unavailability
-- File operations succeed when ActivityTracker fails
-- Exception isolation between core and tracking functionality
-- Recovery testing after tracking failures
-- 99.9% tracking success rate verification
+- Graceful handling of file read errors
+- Configurable logging mechanism
+- Fallback display for incomplete data
+- Retry strategies for transient file access issues
 
-**Dependencies**: Error handling implementation  
-**Complexity**: Medium  
-**Estimated Effort**: 2 days
+**Dependencies**:
+- File Watching Mechanism
+- Task Parser implementation
 
-### 5. Context Propagation Integration Testing
-**Task ID**: BT-M2-005  
-**Description**: Test context propagation mechanisms across different tool initialization patterns and agent scenarios.
-
+### 5. Performance Optimization
+**Complexity**: Simple
+**Description**: Ensure lightweight and efficient task monitoring
 **Acceptance Criteria**:
-- Tests for tools with full tracking context
-- Tests for tools with partial context
-- Tests for tools with no tracking context
-- Context validation and sanitization tests
-- Context consistency across multiple operations
+- Minimal CPU usage during parsing
+- Low memory footprint
+- Fast update cycle (1-2 seconds)
+- Efficient file watching implementation
 
-**Dependencies**: Context propagation implementation  
-**Complexity**: Medium  
-**Estimated Effort**: 2 days
+**Dependencies**:
+- All previous task implementations
 
-### 6. Load and Stress Testing
-**Task ID**: BT-M2-006  
-**Description**: Execute load testing scenarios to verify system behavior under high file operation volumes with tracking enabled.
+## Testing Requirements
+1. Unit Tests to Validate:
+- Task parsing accuracy
+- File watching reliability
+- Display formatting logic
+- Error handling scenarios
 
-**Acceptance Criteria**:
-- High-volume file operation tests (1000+ operations)
-- Concurrent agent operation testing
-- Memory leak detection under sustained load
-- Performance stability over extended periods
-- Resource cleanup verification
+2. Integration Tests to Verify:
+- Real-time update performance
+- Cross-platform compatibility
+- Tmux dashboard integration
 
-**Dependencies**: All core functionality complete  
-**Complexity**: Medium  
-**Estimated Effort**: 2-3 days
+## Risks and Mitigations
+- Inconsistent project file formats: Implement robust schema validation
+- Performance overhead: Use efficient parsing techniques
+- Cross-platform compatibility: Extensive testing with cross-platform libraries
 
-### 7. Integration Test Automation and CI/CD
-**Task ID**: BT-M2-007  
-**Description**: Set up automated integration test execution and reporting within the existing CI/CD pipeline.
-
-**Acceptance Criteria**:
-- Integration tests run automatically on code changes
-- Performance benchmark reporting
-- Test coverage reporting for integration tests
-- Failure notification and reporting mechanisms
-- Integration with existing test infrastructure
-
-**Dependencies**: All integration tests implemented  
-**Complexity**: Simple  
-**Estimated Effort**: 1-2 days
-
-### 8. Documentation and Test Results Validation
-**Task ID**: BT-M2-008  
-**Description**: Document all test results, create validation reports, and ensure compliance with success criteria from requirements.
-
-**Acceptance Criteria**:
-- Comprehensive test results documentation
-- Performance benchmark results report
-- Compatibility validation report
-- Test coverage analysis
-- Final validation against all success criteria
-
-**Dependencies**: All tests executed  
-**Complexity**: Simple  
-**Estimated Effort**: 1 day
-
-## Task Dependencies
-
-```
-BT-M2-001 (Performance) → BT-M2-006 (Load Testing)
-BT-M2-002 (Compatibility) → BT-M2-003 (Cross-Component)
-BT-M2-003 (Cross-Component) → BT-M2-007 (Automation)
-BT-M2-004 (Reliability) → BT-M2-003 (Cross-Component)
-BT-M2-005 (Context Propagation) → BT-M2-003 (Cross-Component)
-BT-M2-006 (Load Testing) → BT-M2-008 (Documentation)
-BT-M2-007 (Automation) → BT-M2-008 (Documentation)
-All tasks → BT-M2-008 (Documentation)
-```
-
-## Critical Path
-1. BT-M2-002 (Backward Compatibility)
-2. BT-M2-005 (Context Propagation)  
-3. BT-M2-003 (Cross-Component Integration)
-4. BT-M2-001 (Performance Testing)
-5. BT-M2-006 (Load Testing)
-6. BT-M2-007 (Automation)
-7. BT-M2-008 (Documentation)
-
-## Success Metrics
-- All integration tests pass with 90%+ coverage
-- Performance requirements met (< 1ms overhead, < 1MB memory)
-- Zero breaking changes confirmed
-- 99.9% tracking success rate achieved
-- Comprehensive test automation in place
-
-## Testing Framework Stack
-- **Primary**: pytest for Python testing
-- **Performance**: pytest-benchmark for performance testing
-- **Coverage**: pytest-cov for coverage reporting
-- **Load Testing**: Custom load testing utilities
-- **CI Integration**: Existing project CI/CD pipeline
-
-## Risk Mitigation
-- **Performance Risks**: Continuous benchmarking during development
-- **Integration Risks**: Incremental testing approach
-- **Compatibility Risks**: Extensive legacy scenario testing
-- **Quality Risks**: Automated test execution and reporting
+## Technology Stack
+- Language: Python 3.9+
+- Key Libraries: 
+  - `json` for parsing
+  - `rich` for terminal formatting
+  - `watchdog` for file monitoring
+  - `colorama` for color support
