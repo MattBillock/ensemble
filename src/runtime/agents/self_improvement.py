@@ -798,82 +798,152 @@ class SelfImprovementLoop:
                 applied_changes.append(f"Decreased max iterations to {new_iterations}")
 
             elif rec_type in ["definition_tweak", "definition_major"]:
-                # For definition changes, add guardrails/notes to instructions
-                note = changes.get("note", recommendation.get("description", ""))
-                if note:
-                    content = self._add_performance_note(content, note)
-                    applied_changes.append("Added performance guidance to instructions")
+                # For underperforming agents, make targeted changes based on evidence
+                evidence = recommendation.get("evidence", {})
+                success_rate = evidence.get("success_rate", 100)
+                error_types = evidence.get("error_types", "")
+                avg_iterations = evidence.get("avg_iterations", 0)
 
-            # New specialized improvement type handlers
+                # If critical failure, upgrade model
+                if success_rate < 50:
+                    content = self._update_model_preference(content, "opus")
+                    applied_changes.append("Upgraded model to opus due to critical failure rate")
+
+                # If moderate failure, try sonnet
+                elif success_rate < 75:
+                    # Check current model first
+                    if "haiku" in content.lower():
+                        content = self._update_model_preference(content, "sonnet")
+                        applied_changes.append("Upgraded model from haiku to sonnet")
+
+                # If running out of iterations, increase them
+                if avg_iterations and avg_iterations > 8:
+                    content = self._update_max_iterations(content, 20)
+                    applied_changes.append("Increased max iterations to 20 (was hitting limits)")
+
+                # Add specific error handling based on error types
+                if error_types:
+                    error_section = self._generate_error_handling_section(error_types)
+                    if error_section:
+                        content = self._insert_section(content, "## Error Handling Guidelines", error_section)
+                        applied_changes.append(f"Added error handling for: {error_types}")
+
             elif rec_type == "prompt_refinement":
-                # Improve system prompt clarity
-                prompt_note = changes.get("prompt_improvement", recommendation.get("description", ""))
-                if prompt_note:
-                    content = self._add_performance_note(content, f"[PROMPT REFINEMENT] {prompt_note}")
-                    applied_changes.append("Added prompt refinement guidance")
+                # Analyze and improve the instructions section
+                evidence = recommendation.get("evidence", {})
+                # Add explicit decisiveness instructions
+                decisiveness_section = """
+## Decision Making
+- Make reasonable assumptions for standard implementation details
+- Do NOT ask users for choices that have obvious defaults
+- When in doubt, pick the most common/standard approach and proceed
+- Only ask clarifying questions for genuinely ambiguous requirements
+"""
+                content = self._insert_section(content, "## Decision Making", decisiveness_section)
+                applied_changes.append("Added explicit decision-making guidelines")
 
             elif rec_type == "tool_optimization":
-                # Add tool usage guidance
-                tool_note = changes.get("tool_guidance", recommendation.get("description", ""))
-                if tool_note:
-                    content = self._add_performance_note(content, f"[TOOL OPTIMIZATION] {tool_note}")
-                    applied_changes.append("Added tool optimization guidance")
+                # Add tool usage best practices
+                evidence = recommendation.get("evidence", {})
+                tool_section = """
+## Tool Usage Optimization
+- Batch related operations when possible
+- Prefer specific tools over generic ones (e.g., use write_file, not bash echo)
+- Check tool results before proceeding
+- Minimize redundant tool calls
+"""
+                content = self._insert_section(content, "## Tool Usage Optimization", tool_section)
+                applied_changes.append("Added tool optimization guidelines")
 
             elif rec_type == "context_tuning":
-                # Add context management guidance
-                context_note = changes.get("context_guidance", recommendation.get("description", ""))
-                if context_note:
-                    content = self._add_performance_note(content, f"[CONTEXT TUNING] {context_note}")
-                    applied_changes.append("Added context window tuning guidance")
+                # Adjust context window usage
+                evidence = recommendation.get("evidence", {})
+                if evidence.get("context_too_large"):
+                    # Add instructions to be more concise
+                    content = self._insert_section(content, "## Context Management",
+                        "- Keep responses focused and concise\n- Summarize long outputs\n- Don't repeat information unnecessarily")
+                    applied_changes.append("Added context management guidelines (reduce verbosity)")
 
             elif rec_type == "output_format":
-                # Add output format guidance
-                format_note = changes.get("format_guidance", recommendation.get("description", ""))
-                if format_note:
-                    content = self._add_performance_note(content, f"[OUTPUT FORMAT] {format_note}")
-                    applied_changes.append("Added output format improvement guidance")
+                # Improve output structure
+                format_section = """
+## Output Format Requirements
+- Structure outputs clearly with headers/sections
+- Use consistent formatting throughout
+- Validate output format before returning
+- Include all required fields in responses
+"""
+                content = self._insert_section(content, "## Output Format Requirements", format_section)
+                applied_changes.append("Added output format requirements")
 
             elif rec_type == "error_handling":
-                # Add error handling guidance
-                error_note = changes.get("error_guidance", recommendation.get("description", ""))
-                if error_note:
-                    content = self._add_performance_note(content, f"[ERROR HANDLING] {error_note}")
-                    applied_changes.append("Added error handling enhancement guidance")
+                # Add comprehensive error handling
+                evidence = recommendation.get("evidence", {})
+                error_types = evidence.get("error_types", "general")
+                error_section = self._generate_error_handling_section(error_types)
+                if error_section:
+                    content = self._insert_section(content, "## Error Recovery", error_section)
+                    applied_changes.append("Added error recovery procedures")
 
             elif rec_type == "specialization":
-                # Add specialization focus guidance
-                spec_note = changes.get("specialization_guidance", recommendation.get("description", ""))
-                if spec_note:
-                    content = self._add_performance_note(content, f"[SPECIALIZATION] {spec_note}")
-                    applied_changes.append("Added specialization focus guidance")
+                # Narrow agent focus
+                evidence = recommendation.get("evidence", {})
+                spec_section = """
+## Focus Area
+- Stay strictly within your designated responsibilities
+- Delegate tasks outside your specialty to appropriate agents
+- Do not attempt tasks beyond your defined scope
+"""
+                content = self._insert_section(content, "## Focus Area", spec_section)
+                applied_changes.append("Added specialization focus guidelines")
 
             elif rec_type == "collaboration":
-                # Add collaboration improvement guidance
-                collab_note = changes.get("collaboration_guidance", recommendation.get("description", ""))
-                if collab_note:
-                    content = self._add_performance_note(content, f"[COLLABORATION] {collab_note}")
-                    applied_changes.append("Added collaboration improvement guidance")
+                # Improve handoffs
+                collab_section = """
+## Collaboration Protocol
+- Provide complete context when spawning sub-agents
+- Include clear success criteria in delegated tasks
+- Wait for and verify sub-agent completion before proceeding
+- Report blockers immediately to parent agent
+"""
+                content = self._insert_section(content, "## Collaboration Protocol", collab_section)
+                applied_changes.append("Added collaboration protocol")
 
             elif rec_type == "memory_strategy":
-                # Add memory/context retention guidance
-                memory_note = changes.get("memory_guidance", recommendation.get("description", ""))
-                if memory_note:
-                    content = self._add_performance_note(content, f"[MEMORY STRATEGY] {memory_note}")
-                    applied_changes.append("Added memory strategy guidance")
+                # Add context retention guidance
+                memory_section = """
+## Context Retention
+- Track key decisions made in previous iterations
+- Summarize progress at each milestone
+- Don't repeat work already completed
+- Reference previous outputs when relevant
+"""
+                content = self._insert_section(content, "## Context Retention", memory_section)
+                applied_changes.append("Added context retention guidelines")
 
             elif rec_type == "task_decomposition":
-                # Add task decomposition guidance
-                decomp_note = changes.get("decomposition_guidance", recommendation.get("description", ""))
-                if decomp_note:
-                    content = self._add_performance_note(content, f"[TASK DECOMPOSITION] {decomp_note}")
-                    applied_changes.append("Added task decomposition guidance")
+                # Add task breakdown guidance
+                decomp_section = """
+## Task Breakdown Strategy
+- Break complex tasks into 3-5 subtasks maximum
+- Each subtask should be independently verifiable
+- Complete subtasks sequentially, verify each before proceeding
+- Report progress after each subtask completion
+"""
+                content = self._insert_section(content, "## Task Breakdown Strategy", decomp_section)
+                applied_changes.append("Added task decomposition strategy")
 
             elif rec_type == "validation":
-                # Add validation enhancement guidance
-                valid_note = changes.get("validation_guidance", recommendation.get("description", ""))
-                if valid_note:
-                    content = self._add_performance_note(content, f"[VALIDATION] {valid_note}")
-                    applied_changes.append("Added validation enhancement guidance")
+                # Add validation steps
+                valid_section = """
+## Output Validation
+- Verify all required deliverables are complete before reporting success
+- Test outputs when possible (run code, validate formats)
+- Double-check critical values and configurations
+- Never report success if any validation fails
+"""
+                content = self._insert_section(content, "## Output Validation", valid_section)
+                applied_changes.append("Added output validation requirements")
 
             # Write updated definition if changed
             if content != original_content:
@@ -945,23 +1015,82 @@ class SelfImprovementLoop:
         replacement = f'\\g<1>{new_iterations}'
         return re.sub(pattern, replacement, content)
 
+    def _insert_section(self, content: str, section_header: str, section_content: str) -> str:
+        """
+        Insert a new section into agent definition, avoiding duplicates.
+
+        Inserts before the "## Model Preference" section if it exists,
+        otherwise appends to the end.
+        """
+        # Check if section already exists (avoid duplicates)
+        if section_header in content:
+            logger.info(f"Section {section_header} already exists, skipping")
+            return content
+
+        # Find a good insertion point - before Model Preference or at end
+        insert_markers = ["## Model Preference", "## Max Iterations", "## Can Write Code"]
+
+        for marker in insert_markers:
+            if marker in content:
+                # Insert before this marker
+                parts = content.split(marker)
+                new_content = parts[0].rstrip() + "\n\n" + section_header + "\n" + section_content.strip() + "\n\n" + marker + parts[1]
+                return new_content
+
+        # No marker found, append to end
+        return content.rstrip() + "\n\n" + section_header + "\n" + section_content.strip() + "\n"
+
+    def _generate_error_handling_section(self, error_types: str) -> str:
+        """
+        Generate specific error handling instructions based on observed error types.
+        """
+        if not error_types:
+            return ""
+
+        error_list = [e.strip() for e in error_types.split(",") if e.strip()]
+        if not error_list:
+            return ""
+
+        lines = ["## Error Handling Guidelines\n"]
+
+        error_handlers = {
+            "api_error": "- **API Errors**: Retry with exponential backoff, check rate limits, validate request format",
+            "timeout": "- **Timeouts**: Break large operations into smaller chunks, add progress checkpoints",
+            "validation_error": "- **Validation Errors**: Verify input/output formats before processing, use schema validation",
+            "spawn_error": "- **Spawn Errors**: Verify agent definitions exist, check permissions, validate parameters",
+            "tool_error": "- **Tool Errors**: Validate tool inputs, handle missing files gracefully, check permissions",
+            "parse_error": "- **Parse Errors**: Use try/catch for parsing, validate JSON/YAML before processing",
+            "permission_error": "- **Permission Errors**: Check file/directory permissions, verify agent capabilities",
+            "network_error": "- **Network Errors**: Implement retry logic, check connectivity, use timeouts",
+            "rate_limit": "- **Rate Limits**: Implement backoff, batch requests, cache results when possible",
+        }
+
+        for error_type in error_list:
+            error_key = error_type.lower().replace(" ", "_").replace("-", "_")
+            if error_key in error_handlers:
+                lines.append(error_handlers[error_key])
+            else:
+                # Generic handler for unknown error types
+                lines.append(f"- **{error_type}**: Log error details, attempt recovery, escalate if unrecoverable")
+
+        lines.append("- **General**: Always log errors with context, never silently fail")
+
+        return "\n".join(lines)
+
     def _add_performance_note(self, content: str, note: str) -> str:
-        """Add a performance note to the instructions section."""
-        # Find the Instructions section and add note at the end
-        marker = "## Instructions"
-        if marker in content:
-            # Find next section after Instructions
-            parts = content.split(marker)
-            if len(parts) >= 2:
-                # Find the next ## header in the second part
-                instruction_content = parts[1]
-                next_section_match = re.search(r'\n## [A-Z]', instruction_content)
-                if next_section_match:
-                    insert_pos = next_section_match.start()
-                    note_section = f"\n\n**Performance Insight (Auto-Applied):**\n{note}\n"
-                    new_instruction = instruction_content[:insert_pos] + note_section + instruction_content[insert_pos:]
-                    return parts[0] + marker + new_instruction
-        return content
+        """
+        DEPRECATED: This method injected useless "Performance Insight" text into agent
+        definitions, which cluttered them without providing actionable value.
+
+        Agent improvements should be made through:
+        1. Actual code/configuration changes (model, iterations, etc.)
+        2. Human review and manual definition updates
+        3. NOT by injecting vague "think about this" guidance
+
+        This method now returns content unchanged.
+        """
+        logger.warning("_add_performance_note is deprecated - not injecting text")
+        return content  # Return unchanged - don't inject garbage
 
     def auto_approve_and_apply_all(self) -> Dict[str, Any]:
         """Auto-approve and apply all pending recommendations."""
