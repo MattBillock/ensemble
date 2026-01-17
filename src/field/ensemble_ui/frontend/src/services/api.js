@@ -1572,6 +1572,50 @@ export const clearFinishedAgents = async () => {
 // ========== Agent Definition Management API ==========
 
 /**
+ * Get all discovered agent categories
+ */
+export const getAgentCategories = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-categories`);
+    if (!response.ok) throw new Error('Failed to fetch agent categories');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent categories error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get agent definition hierarchy built from spawn permissions
+ */
+export const getAgentDefinitionHierarchy = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-hierarchy`);
+    if (!response.ok) throw new Error('Failed to fetch agent definition hierarchy');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent definition hierarchy error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Refresh the agent cache
+ */
+export const refreshAgentCache = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/refresh-agent-cache`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Failed to refresh agent cache');
+    return await response.json();
+  } catch (error) {
+    console.error('Refresh agent cache error:', error);
+    throw error;
+  }
+};
+
+/**
  * List all agent definitions by category
  */
 export const getAgentDefinitions = async () => {

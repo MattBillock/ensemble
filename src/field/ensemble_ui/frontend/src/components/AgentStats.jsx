@@ -8,32 +8,38 @@ import {
   getAgentDefinition,
   updateAgentDefinition,
   restoreAgentDefinition,
-  getAgentTemplate
+  getAgentTemplate,
+  getAgentCategories
 } from '../services/api';
 
-const CATEGORY_ICONS = {
-  leadership: '👑',
-  coordinators: '🎭',
-  developers: '💻',
-  testers: '🧪',
-  designers: '🎨'
+// Default category metadata - will be merged with dynamically discovered categories
+const DEFAULT_CATEGORY_META = {
+  leadership: { icon: '👑', color: 'warning', description: 'Strategic agents that coordinate the overall development process' },
+  coordinators: { icon: '🎭', color: 'info', description: 'Agents that break down tasks and delegate to developers/testers' },
+  developers: { icon: '💻', color: 'success', description: 'Agents that write code - frontend, backend, and API' },
+  testers: { icon: '🧪', color: 'primary', description: 'Agents that write tests - unit, integration, and API' },
+  designers: { icon: '🎨', color: 'secondary', description: 'Agents that handle styling and design' },
+  support: { icon: '🛠️', color: 'danger', description: 'Cross-cutting agents for code review, documentation, and refactoring' },
+  automation: { icon: '🤖', color: 'light', description: 'GitHub integration bots for commits, pushes, and syncing' }
 };
 
-const CATEGORY_COLORS = {
-  leadership: 'warning',
-  coordinators: 'info',
-  developers: 'success',
-  testers: 'primary',
-  designers: 'secondary'
+// Generate default metadata for unknown categories
+const getDefaultCategoryMeta = (category) => {
+  if (DEFAULT_CATEGORY_META[category]) {
+    return DEFAULT_CATEGORY_META[category];
+  }
+  // Generate fallback for unknown categories
+  return {
+    icon: '📁',
+    color: 'secondary',
+    description: `Agents in the ${category} category`
+  };
 };
 
-const CATEGORY_DESCRIPTIONS = {
-  leadership: 'Strategic agents that coordinate the overall development process',
-  coordinators: 'Agents that break down tasks and delegate to developers/testers',
-  developers: 'Agents that write code - frontend, backend, and API',
-  testers: 'Agents that write tests - unit, integration, and API',
-  designers: 'Agents that handle styling and design'
-};
+// Helper functions to get category metadata dynamically
+const getCategoryIcon = (category) => getDefaultCategoryMeta(category).icon;
+const getCategoryColor = (category) => getDefaultCategoryMeta(category).color;
+const getCategoryDescription = (category) => getDefaultCategoryMeta(category).description;
 
 function AgentStats() {
   const [loading, setLoading] = useState(true);
@@ -57,6 +63,11 @@ function AgentStats() {
     try {
       const data = await getAgentDefinitions();
       setDefinitions(data);
+      // Set activeCategory to first available if current doesn't exist
+      const categories = data?.categories ? Object.keys(data.categories) : [];
+      if (categories.length > 0 && !categories.includes(activeCategory)) {
+        setActiveCategory(categories[0]);
+      }
     } catch (err) {
       setError('Failed to load agent definitions');
       console.error(err);
@@ -172,8 +183,8 @@ function AgentStats() {
             {definitions?.total_agents || 0} Agents
           </Badge>
           {Object.entries(definitions?.category_counts || {}).map(([cat, count]) => (
-            <Badge key={cat} bg={CATEGORY_COLORS[cat]} className="me-1">
-              {CATEGORY_ICONS[cat]} {count}
+            <Badge key={cat} bg={getCategoryColor(cat)} className="me-1">
+              {getCategoryIcon(cat)} {count}
             </Badge>
           ))}
         </Col>
@@ -196,14 +207,14 @@ function AgentStats() {
         </Col>
         <Col md={8}>
           <ButtonGroup>
-            {Object.keys(CATEGORY_ICONS).map(cat => (
+            {(definitions?.categories ? Object.keys(definitions.categories) : []).map(cat => (
               <Button
                 key={cat}
-                variant={activeCategory === cat ? CATEGORY_COLORS[cat] : `outline-${CATEGORY_COLORS[cat]}`}
+                variant={activeCategory === cat ? getCategoryColor(cat) : `outline-${getCategoryColor(cat)}`}
                 onClick={() => setActiveCategory(cat)}
                 size="sm"
               >
-                {CATEGORY_ICONS[cat]} {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                {getCategoryIcon(cat)} {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 <Badge bg="dark" className="ms-1">
                   {filteredAgents(cat).length}
                 </Badge>
@@ -219,10 +230,10 @@ function AgentStats() {
           <Card bg="dark" text="light" style={{ height: '100%' }}>
             <Card.Header>
               <div className="d-flex justify-content-between align-items-center">
-                <strong>{CATEGORY_ICONS[activeCategory]} {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}</strong>
+                <strong>{getCategoryIcon(activeCategory]} {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}</strong>
               </div>
               <small style={{ color: '#9ca3af' }}>
-                {CATEGORY_DESCRIPTIONS[activeCategory]}
+                {getCategoryDescription(activeCategory)}
               </small>
             </Card.Header>
             <ListGroup variant="flush" style={{ overflowY: 'auto' }}>
@@ -241,14 +252,14 @@ function AgentStats() {
                     style={{
                       cursor: 'pointer',
                       borderLeft: selectedAgent?.filename === agent.filename && selectedAgent?.category === activeCategory
-                        ? `3px solid var(--bs-${CATEGORY_COLORS[activeCategory]})`
+                        ? `3px solid var(--bs-${getCategoryColor(activeCategory]})`
                         : '3px solid transparent',
                       transition: 'all 0.15s ease'
                     }}
                   >
                     <div className="d-flex align-items-center gap-2 mb-1">
                       <Badge
-                        bg={selectedAgent?.filename === agent.filename ? 'light' : CATEGORY_COLORS[activeCategory]}
+                        bg={selectedAgent?.filename === agent.filename ? 'light' : getCategoryColor(activeCategory]}
                         text={selectedAgent?.filename === agent.filename ? 'dark' : 'light'}
                         style={{ fontSize: '10px', padding: '2px 6px' }}
                       >
@@ -278,7 +289,7 @@ function AgentStats() {
               <Card.Body className="d-flex align-items-center justify-content-center">
                 <div className="text-center" style={{ color: '#9ca3af' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                    {CATEGORY_ICONS[activeCategory]}
+                    {getCategoryIcon(activeCategory]}
                   </div>
                   <h5>Select an Agent</h5>
                   <p>Click on an agent from the list to view and edit its definition.</p>
@@ -299,8 +310,8 @@ function AgentStats() {
                 <Card.Header>
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      <Badge bg={CATEGORY_COLORS[selectedAgent.category]} className="me-2">
-                        {CATEGORY_ICONS[selectedAgent.category]} {selectedAgent.category}
+                      <Badge bg={getCategoryColor(selectedAgent.category]} className="me-2">
+                        {getCategoryIcon(selectedAgent.category]} {selectedAgent.category}
                       </Badge>
                       <strong className="fs-5">
                         {agentContent?.content?.split('\n')[0]?.replace(/^#\s*/, '') || selectedAgent.filename}

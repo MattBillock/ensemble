@@ -4084,13 +4084,160 @@ async def preview_cleanup(
 
 # ========== Agent Definition Management API ==========
 
-AGENT_DIRS = {
-    "leadership": "leadership",
-    "coordinators": "coordinators",
-    "developers": "developers",
-    "testers": "testers",
-    "designers": "designers"
-}
+def discover_agent_directories() -> Dict[str, str]:
+    """Dynamically discover agent directories by scanning the project root."""
+    project_root = Path(__file__).parent.parent.parent.parent.parent
+    agent_dirs = {}
+
+    # Scan for directories that contain .md files that look like agent definitions
+    # (have ## Purpose section)
+    for item in project_root.iterdir():
+        if item.is_dir() and not item.name.startswith(('.', '_', 'venv', 'node_modules', '__')):
+            # Check if directory contains agent definition files
+            md_files = list(item.glob("*.md"))
+            for md_file in md_files:
+                if md_file.name.startswith(("_", "README", "AGENT_TEMPLATE")):
+                    continue
+                try:
+                    content = md_file.read_text(encoding='utf-8')
+                    if "## Purpose" in content or "## Instantiation" in content:
+                        agent_dirs[item.name] = item.name
+                        break
+                except Exception:
+                    continue
+    return agent_dirs
+
+
+def get_agent_dirs() -> Dict[str, str]:
+    """Get agent directories, using cache for performance."""
+    if not hasattr(get_agent_dirs, '_cache') or get_agent_dirs._cache is None:
+        get_agent_dirs._cache = discover_agent_directories()
+    return get_agent_dirs._cache
+
+
+def invalidate_agent_dirs_cache():
+    """Invalidate the agent directories cache."""
+    get_agent_dirs._cache = None
+
+
+@app.get("/api/agent-categories")
+async def list_agent_categories():
+    """List all discovered agent categories."""
+    try:
+        agent_dirs = get_agent_dirs()
+        return {
+            "categories": list(agent_dirs.keys()),
+            "count": len(agent_dirs)
+        }
+    except Exception as e:
+        logger.error(f"Error listing agent categories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agent-hierarchy")
+async def get_agent_hierarchy():
+    """Build agent hierarchy dynamically from spawn permissions in definitions."""
+    import re
+    try:
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        agents = {}  # agent_path -> {name, purpose, category, can_spawn: []}
+
+        # First pass: collect all agents and their spawn permissions
+        for category, dirname in get_agent_dirs().items():
+            agent_dir = project_root / dirname
+            if not agent_dir.exists():
+                continue
+
+            for md_file in sorted(agent_dir.glob("*.md")):
+                if md_file.name.startswith(("_", "AGENT_TEMPLATE", "README")):
+                    continue
+
+                content = md_file.read_text(encoding='utf-8')
+                lines = content.split('\n')
+
+                # Extract name
+                name = md_file.stem.replace("_", " ").title()
+                for line in lines:
+                    if line.startswith("# "):
+                        name = line[2:].strip()
+                        break
+
+                # Extract purpose
+                purpose = ""
+                in_purpose = False
+                for line in lines:
+                    if line.startswith("## Purpose"):
+                        in_purpose = True
+                        continue
+                    if in_purpose:
+                        if line.startswith("##"):
+                            break
+                        if line.strip():
+                            purpose = line.strip()[:100]
+                            break
+
+                # Extract spawn permissions (CAN Spawn section)
+                can_spawn = []
+                in_spawn = False
+                for line in lines:
+                    if "**CAN Spawn" in line or "CAN Spawn:" in line:
+                        in_spawn = True
+                        continue
+                    if in_spawn:
+                        if line.startswith("**CANNOT") or line.startswith("## ") or (line.strip() == "" and can_spawn):
+                            break
+                        # Parse agent paths like developers/backend_lead, testers/unit_test_lead
+                        matches = re.findall(r'([a-z_]+/[a-z_]+)', line)
+                        can_spawn.extend(matches)
+
+                agent_path = f"{category}/{md_file.stem}"
+                agents[agent_path] = {
+                    "name": name,
+                    "purpose": purpose,
+                    "category": category,
+                    "can_spawn": can_spawn,
+                    "path": agent_path
+                }
+
+        # Build hierarchy tree (find children for each agent)
+        hierarchy = {}
+        for agent_path, agent_data in agents.items():
+            children = []
+            for child_path in agent_data["can_spawn"]:
+                if child_path in agents:
+                    children.append({
+                        "path": child_path,
+                        "name": agents[child_path]["name"],
+                        "category": agents[child_path]["category"]
+                    })
+            hierarchy[agent_path] = {
+                **agent_data,
+                "children": children
+            }
+
+        # Find root agents (not spawned by anyone else)
+        all_spawnable = set()
+        for agent_data in agents.values():
+            all_spawnable.update(agent_data["can_spawn"])
+
+        roots = [path for path in agents.keys() if path not in all_spawnable]
+
+        return {
+            "agents": hierarchy,
+            "roots": roots,
+            "total_agents": len(agents),
+            "categories": list(get_agent_dirs().keys())
+        }
+    except Exception as e:
+        logger.error(f"Error building agent hierarchy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/refresh-agent-cache")
+async def refresh_agent_cache():
+    """Force refresh of the agent directory cache."""
+    invalidate_agent_dirs_cache()
+    return {"success": True, "message": "Agent cache invalidated"}
 
 
 @app.get("/api/agent-definitions")
@@ -4100,7 +4247,7 @@ async def list_agent_definitions():
         project_root = Path(__file__).parent.parent.parent.parent.parent
         agents_by_category = {}
 
-        for category, dirname in AGENT_DIRS.items():
+        for category, dirname in get_agent_dirs().items():
             agent_dir = project_root / dirname
             agents = []
 
@@ -4164,11 +4311,11 @@ async def list_agent_definitions():
 async def get_agent_definition(category: str, filename: str):
     """Get a specific agent definition file content."""
     try:
-        if category not in AGENT_DIRS:
+        if category not in get_agent_dirs():
             raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
 
         project_root = Path(__file__).parent.parent.parent.parent.parent
-        file_path = project_root / AGENT_DIRS[category] / filename
+        file_path = project_root / get_agent_dirs()[category] / filename
 
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="Agent definition not found")
@@ -4219,11 +4366,11 @@ class AgentDefinitionUpdate(BaseModel):
 async def update_agent_definition(category: str, filename: str, update: AgentDefinitionUpdate):
     """Update an agent definition file."""
     try:
-        if category not in AGENT_DIRS:
+        if category not in get_agent_dirs():
             raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
 
         project_root = Path(__file__).parent.parent.parent.parent.parent
-        file_path = project_root / AGENT_DIRS[category] / filename
+        file_path = project_root / get_agent_dirs()[category] / filename
 
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="Agent definition not found")
@@ -4259,11 +4406,11 @@ async def update_agent_definition(category: str, filename: str, update: AgentDef
 async def restore_agent_definition(category: str, filename: str):
     """Restore an agent definition from backup."""
     try:
-        if category not in AGENT_DIRS:
+        if category not in get_agent_dirs():
             raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
 
         project_root = Path(__file__).parent.parent.parent.parent.parent
-        file_path = project_root / AGENT_DIRS[category] / filename
+        file_path = project_root / get_agent_dirs()[category] / filename
         backup_path = file_path.with_suffix('.md.backup')
 
         if not backup_path.exists():

@@ -1,155 +1,34 @@
-import React from 'react';
-import { Card, Badge } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Badge, Spinner, Alert } from 'react-bootstrap';
+import { getAgentDefinitionHierarchy } from '../services/api';
 
-const CATEGORY_COLORS = {
+// Default category colors - will work for any discovered category
+const DEFAULT_CATEGORY_COLORS = {
   leadership: '#fbbf24',   // yellow
   coordinators: '#60a5fa', // blue
   developers: '#34d399',   // green
   testers: '#a78bfa',      // purple
   designers: '#f472b6',    // pink
   support: '#f97316',      // orange
-  automation: '#06b6d4'    // cyan - for bots/automation
+  automation: '#06b6d4'    // cyan
 };
 
-const HIERARCHY_DATA = {
-  name: 'Executive Director',
-  category: 'leadership',
-  purpose: 'Strategic coordination',
-  children: [
-    {
-      name: 'Development Manager',
-      category: 'leadership',
-      purpose: 'Manages development workflow',
-      children: [
-        {
-          name: 'System Architect',
-          category: 'leadership',
-          purpose: 'Designs system architecture',
-          children: []
-        },
-        {
-          name: 'Logistics Manager',
-          category: 'support',
-          purpose: 'Maps and explores codebases',
-          children: []
-        },
-        {
-          name: 'Knowledge Repository',
-          category: 'support',
-          purpose: 'Maintains project knowledge',
-          children: []
-        },
-        {
-          name: 'Drill Writer',
-          category: 'support',
-          purpose: 'Writes documentation',
-          children: []
-        },
-        {
-          name: 'TDD Coordinator',
-          category: 'leadership',
-          purpose: 'Coordinates TDD workflow',
-          children: [
-            { name: 'Visual Tech', category: 'support', purpose: 'Refactors code (TDD Refactor)', children: [] }
-          ]
-        },
-        {
-          name: 'Backend Coordinator',
-          category: 'coordinators',
-          purpose: 'Coordinates backend work',
-          children: [
-            {
-              name: 'Backend Lead',
-              category: 'developers',
-              purpose: 'Leads backend dev',
-              children: [
-                { name: 'Backend Developer', category: 'developers', purpose: 'Writes backend code', children: [] }
-              ]
-            },
-            {
-              name: 'API Lead',
-              category: 'developers',
-              purpose: 'Leads API dev',
-              children: [
-                { name: 'API Developer', category: 'developers', purpose: 'Writes API code', children: [] }
-              ]
-            },
-            { name: 'Database Manager', category: 'developers', purpose: 'Manages DB schemas', children: [] }
-          ]
-        },
-        {
-          name: 'Frontend Coordinator',
-          category: 'coordinators',
-          purpose: 'Coordinates frontend work',
-          children: [
-            {
-              name: 'Frontend Lead',
-              category: 'developers',
-              purpose: 'Leads frontend dev',
-              children: [
-                { name: 'Frontend Developer', category: 'developers', purpose: 'Writes frontend code', children: [] }
-              ]
-            },
-            { name: 'Style Developer', category: 'designers', purpose: 'Writes CSS/styling', children: [] }
-          ]
-        },
-        {
-          name: 'Test Coordinator',
-          category: 'coordinators',
-          purpose: 'Coordinates testing',
-          children: [
-            {
-              name: 'Unit Test Lead',
-              category: 'testers',
-              purpose: 'Leads unit testing',
-              children: [
-                { name: 'Unit Test Writer', category: 'testers', purpose: 'Writes unit tests', children: [] }
-              ]
-            },
-            {
-              name: 'Integration Test Lead',
-              category: 'testers',
-              purpose: 'Leads integration testing',
-              children: [
-                { name: 'Integration Test Writer', category: 'testers', purpose: 'Writes integration tests', children: [] }
-              ]
-            },
-            { name: 'API Test Writer', category: 'testers', purpose: 'Writes API tests', children: [] }
-          ]
-        }
-      ]
-    },
-    { name: 'Question Marshal', category: 'leadership', purpose: 'Handles clarification questions', children: [] },
-    {
-      name: 'Code Quality Director',
-      category: 'leadership',
-      purpose: 'Ensures code quality',
-      children: [
-        { name: 'CI Agent', category: 'support', purpose: 'Automated quality gate', children: [] },
-        { name: 'Code Reviewer', category: 'support', purpose: 'Reviews code changes', children: [] },
-        { name: 'GitHub Commit Bot', category: 'automation', purpose: 'Commits code changes', children: [] },
-        { name: 'GitHub Push Bot', category: 'automation', purpose: 'Pushes to remote repos', children: [] },
-        { name: 'GitHub Sync Bot', category: 'automation', purpose: 'Syncs with upstream', children: [] },
-        { name: 'Documentation Bot', category: 'automation', purpose: 'Generates documentation', children: [] }
-      ]
-    },
-    {
-      name: 'System Polish Director',
-      category: 'leadership',
-      purpose: 'Final polish and refinement',
-      children: [
-        { name: 'Agent Refactorer', category: 'support', purpose: 'Improves agent definitions', children: [] },
-        { name: 'Parameter Enhancer', category: 'support', purpose: 'Enhances failed prompts', children: [] },
-        { name: 'State Evolution Agent', category: 'support', purpose: 'Manages state lifecycle', children: [] }
-      ]
-    },
-    { name: 'Bug Fix Director', category: 'leadership', purpose: 'Autonomous bug fixing', children: [] }
-  ]
+const getCategoryColor = (category) => {
+  if (DEFAULT_CATEGORY_COLORS[category]) {
+    return DEFAULT_CATEGORY_COLORS[category];
+  }
+  // Generate consistent color for unknown categories
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = hash % 360;
+  return `hsl(${hue}, 60%, 60%)`;
 };
 
 function HierarchyNode({ node, level = 0, isLast = false, parentLines = [] }) {
   const hasChildren = node.children && node.children.length > 0;
-  const color = CATEGORY_COLORS[node.category] || '#6b7280';
+  const color = getCategoryColor(node.category);
 
   // Build the prefix with tree lines
   let prefix = '';
@@ -197,7 +76,7 @@ function HierarchyNode({ node, level = 0, isLast = false, parentLines = [] }) {
         const newParentLines = [...parentLines, !isLast];
         return (
           <HierarchyNode
-            key={child.name}
+            key={child.path || child.name}
             node={child}
             level={level + 1}
             isLast={idx === node.children.length - 1}
@@ -209,22 +88,93 @@ function HierarchyNode({ node, level = 0, isLast = false, parentLines = [] }) {
   );
 }
 
+// Build tree structure from flat hierarchy data
+function buildTree(hierarchy, roots) {
+  const buildNode = (agentPath) => {
+    const agent = hierarchy[agentPath];
+    if (!agent) return null;
+
+    return {
+      name: agent.name,
+      category: agent.category,
+      purpose: agent.purpose || 'No description',
+      path: agentPath,
+      children: (agent.children || []).map(child => ({
+        name: child.name,
+        category: child.category,
+        purpose: hierarchy[child.path]?.purpose || 'No description',
+        path: child.path,
+        children: buildNode(child.path)?.children || []
+      }))
+    };
+  };
+
+  // Build trees starting from root agents
+  return roots.map(rootPath => buildNode(rootPath)).filter(Boolean);
+}
+
 function AgentHierarchy() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [trees, setTrees] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetchHierarchy();
+  }, []);
+
+  const fetchHierarchy = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAgentDefinitionHierarchy();
+      const builtTrees = buildTree(data.agents, data.roots);
+      setTrees(builtTrees);
+      setCategories(data.categories || []);
+    } catch (err) {
+      setError('Failed to load agent hierarchy');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card bg="dark" text="light" style={{ height: '100%' }}>
+        <Card.Body className="d-flex align-items-center justify-content-center">
+          <Spinner animation="border" variant="primary" />
+          <span className="ms-2">Loading hierarchy...</span>
+        </Card.Body>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card bg="dark" text="light" style={{ height: '100%' }}>
+        <Card.Body>
+          <Alert variant="danger">{error}</Alert>
+        </Card.Body>
+      </Card>
+    );
+  }
+
   return (
     <Card bg="dark" text="light" style={{ height: '100%' }}>
       <Card.Header className="d-flex justify-content-between align-items-center">
         <div>
           <strong>Agent Hierarchy</strong>
           <span style={{ color: '#9ca3af', marginLeft: '12px', fontSize: '14px' }}>
-            Visual representation of agent spawning relationships
+            Dynamically built from agent spawn permissions
           </span>
         </div>
         <div className="d-flex gap-2">
-          {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
+          {categories.map(cat => (
             <Badge
               key={cat}
               bg="none"
-              style={{ backgroundColor: color, color: '#000', fontSize: '10px' }}
+              style={{ backgroundColor: getCategoryColor(cat), color: '#000', fontSize: '10px' }}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </Badge>
@@ -232,7 +182,15 @@ function AgentHierarchy() {
         </div>
       </Card.Header>
       <Card.Body style={{ overflowY: 'auto', backgroundColor: '#1a1d29' }}>
-        <HierarchyNode node={HIERARCHY_DATA} />
+        {trees.length === 0 ? (
+          <div style={{ color: '#9ca3af', textAlign: 'center', padding: '20px' }}>
+            No agent hierarchy found. Check that agent definitions have spawn permissions defined.
+          </div>
+        ) : (
+          trees.map((tree, idx) => (
+            <HierarchyNode key={tree.path || idx} node={tree} />
+          ))
+        )}
       </Card.Body>
     </Card>
   );

@@ -136,6 +136,7 @@ class PerformanceAnalyzer:
                     ROUND(AVG(CASE WHEN success = 1 THEN 100.0 ELSE 0.0 END), 2) as success_rate,
                     ROUND(AVG(duration_ms), 0) as avg_duration_ms,
                     ROUND(AVG(iterations), 1) as avg_iterations,
+                    MAX(iterations) as max_iterations_used,
                     GROUP_CONCAT(DISTINCT error_type) as error_types
                 FROM agent_executions
                 WHERE created_at >= ?
@@ -147,6 +148,9 @@ class PerformanceAnalyzer:
                 agent_name = row['agent_name']
                 success_rate = row['success_rate'] or 0
                 total = row['total_executions']
+                avg_iterations = row['avg_iterations'] or 0
+                max_iterations_used = row['max_iterations_used'] or 0
+                error_types = row['error_types'] or ""
 
                 # Critical: Very low success rate
                 if success_rate < self.CRITICAL_SUCCESS_THRESHOLD:
@@ -158,8 +162,8 @@ class PerformanceAnalyzer:
                             "success_rate": success_rate,
                             "total_executions": total,
                             "failed_count": row['failed'],
-                            "error_types": row['error_types'],
-                            "avg_iterations": row['avg_iterations']
+                            "error_types": error_types,
+                            "avg_iterations": avg_iterations
                         }
                     ))
 
@@ -172,7 +176,7 @@ class PerformanceAnalyzer:
                         evidence={
                             "success_rate": success_rate,
                             "total_executions": total,
-                            "error_types": row['error_types']
+                            "error_types": error_types
                         }
                     ))
 
@@ -188,6 +192,95 @@ class PerformanceAnalyzer:
                             "avg_duration_ms": row['avg_duration_ms']
                         }
                     ))
+
+                # Additional checks for all agents regardless of success rate:
+
+                # High iteration usage - agent may need more capacity or better instructions
+                if avg_iterations > 8 and max_iterations_used >= 10:
+                    issues.append(PerformanceIssue(
+                        agent_name=agent_name,
+                        issue_type="high_iteration_usage",
+                        severity=RecommendationPriority.MEDIUM,
+                        evidence={
+                            "avg_iterations": avg_iterations,
+                            "max_iterations_used": max_iterations_used,
+                            "success_rate": success_rate,
+                            "total_executions": total
+                        }
+                    ))
+
+                # Recurring error patterns - needs error handling improvement
+                if error_types and len(error_types.split(",")) >= 2:
+                    issues.append(PerformanceIssue(
+                        agent_name=agent_name,
+                        issue_type="recurring_errors",
+                        severity=RecommendationPriority.MEDIUM,
+                        evidence={
+                            "error_types": error_types,
+                            "failed_count": row['failed'],
+                            "success_rate": success_rate
+                        }
+                    ))
+
+            # Check for spawn failures and tool usage from swarm_state.db if available
+            try:
+                swarm_db_path = Path.home() / ".ensemble" / "swarm_state.db"
+                if swarm_db_path.exists():
+                    with sqlite3.connect(str(swarm_db_path)) as swarm_conn:
+                        swarm_conn.row_factory = sqlite3.Row
+                        swarm_cursor = swarm_conn.cursor()
+
+                        # Check for spawn failures (collaboration issues)
+                        swarm_cursor.execute("""
+                            SELECT
+                                agent_name,
+                                COUNT(*) as spawn_failures
+                            FROM tool_executions
+                            WHERE tool_name = 'spawn_agent'
+                              AND success = 0
+                              AND created_at >= ?
+                            GROUP BY agent_name
+                            HAVING spawn_failures >= 2
+                        """, (cutoff_date,))
+
+                        for row in swarm_cursor.fetchall():
+                            issues.append(PerformanceIssue(
+                                agent_name=row['agent_name'],
+                                issue_type="spawn_failures",
+                                severity=RecommendationPriority.HIGH,
+                                evidence={
+                                    "spawn_failures": row['spawn_failures'],
+                                    "issue": "Agent has recurring spawn_agent failures"
+                                }
+                            ))
+
+                        # Check for agents with high tool call counts
+                        swarm_cursor.execute("""
+                            SELECT
+                                agent_name,
+                                ROUND(AVG(tool_count), 1) as avg_tool_calls
+                            FROM (
+                                SELECT agent_name, COUNT(*) as tool_count
+                                FROM tool_executions
+                                WHERE created_at >= ?
+                                GROUP BY agent_name, session_id
+                            )
+                            GROUP BY agent_name
+                            HAVING avg_tool_calls > 20
+                        """, (cutoff_date,))
+
+                        for row in swarm_cursor.fetchall():
+                            issues.append(PerformanceIssue(
+                                agent_name=row['agent_name'],
+                                issue_type="excessive_tool_usage",
+                                severity=RecommendationPriority.LOW,
+                                evidence={
+                                    "avg_tool_calls": row['avg_tool_calls'],
+                                    "recommendation": "Consider optimizing tool usage patterns"
+                                }
+                            ))
+            except (sqlite3.OperationalError, sqlite3.DatabaseError) as e:
+                logger.debug(f"Could not query swarm_state.db for tool data: {e}")
 
         return issues
 
@@ -448,6 +541,83 @@ class RecommendationEngine:
                     "action": "optimize_cost_efficiency",
                     "current_performance": issue.evidence['success_rate'],
                     "note": "Reducing model tier for cost savings while maintaining quality"
+                }
+            )
+
+        elif issue.issue_type == "high_iteration_usage":
+            return Recommendation(
+                id=f"iterations_{issue.agent_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                agent_name=issue.agent_name,
+                recommendation_type=RecommendationType.ITERATION_INCREASE,
+                priority=RecommendationPriority.MEDIUM,
+                title=f"Iteration capacity needed: {issue.agent_name} (avg {issue.evidence['avg_iterations']:.1f} iterations)",
+                description=f"Agent {issue.agent_name} frequently uses many iterations (avg: {issue.evidence['avg_iterations']:.1f}, "
+                           f"max: {issue.evidence['max_iterations_used']}). Consider increasing max_iterations or improving "
+                           f"task decomposition to reduce per-task complexity.",
+                evidence=issue.evidence,
+                suggested_changes={
+                    "action": "increase_iteration_capacity",
+                    "new_max_iterations": max(20, int(issue.evidence['max_iterations_used'] * 1.5)),
+                    "alternative": "Review if tasks can be decomposed into smaller subtasks"
+                }
+            )
+
+        elif issue.issue_type == "recurring_errors":
+            return Recommendation(
+                id=f"errors_{issue.agent_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                agent_name=issue.agent_name,
+                recommendation_type=RecommendationType.ERROR_HANDLING_ENHANCEMENT,
+                priority=RecommendationPriority.MEDIUM,
+                title=f"Error handling needed: {issue.agent_name} has recurring failures",
+                description=f"Agent {issue.agent_name} experiences multiple error types: {issue.evidence['error_types']}. "
+                           f"Adding specific error handling guidance can improve resilience.",
+                evidence=issue.evidence,
+                suggested_changes={
+                    "action": "add_error_handling",
+                    "error_types": issue.evidence['error_types'],
+                    "add_sections": ["Error Recovery", "Error Handling Guidelines"]
+                }
+            )
+
+        elif issue.issue_type == "spawn_failures":
+            return Recommendation(
+                id=f"collab_{issue.agent_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                agent_name=issue.agent_name,
+                recommendation_type=RecommendationType.COLLABORATION_IMPROVEMENT,
+                priority=RecommendationPriority.HIGH,
+                title=f"Spawn failures: {issue.agent_name} has {issue.evidence['spawn_failures']} failed spawns",
+                description=f"Agent {issue.agent_name} has recurring spawn_agent failures. This indicates issues with "
+                           f"agent path references, parameter validation, or spawn permission configuration.",
+                evidence=issue.evidence,
+                suggested_changes={
+                    "action": "improve_collaboration",
+                    "check_points": [
+                        "Verify agent paths are correct (e.g., 'developers/backend_developer')",
+                        "Ensure all required parameters are provided",
+                        "Check spawn permissions in agent definition",
+                        "Add collaboration protocol section"
+                    ]
+                }
+            )
+
+        elif issue.issue_type == "excessive_tool_usage":
+            return Recommendation(
+                id=f"tools_{issue.agent_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                agent_name=issue.agent_name,
+                recommendation_type=RecommendationType.TOOL_OPTIMIZATION,
+                priority=RecommendationPriority.LOW,
+                title=f"Tool optimization: {issue.agent_name} (avg {issue.evidence['avg_tool_calls']:.0f} tool calls)",
+                description=f"Agent {issue.agent_name} makes an above-average number of tool calls ({issue.evidence['avg_tool_calls']:.0f}). "
+                           f"Consider batching operations or optimizing tool usage patterns.",
+                evidence=issue.evidence,
+                suggested_changes={
+                    "action": "optimize_tool_usage",
+                    "recommendations": [
+                        "Batch related file operations",
+                        "Use specific tools instead of generic ones",
+                        "Cache results when possible",
+                        "Add tool usage optimization section"
+                    ]
                 }
             )
 

@@ -81,13 +81,6 @@ See [Common Instructions](../docs/common_instructions.md) for shared rules.
 - Multiple approaches with major trade-offs
 - Security/compliance requirements ambiguous
 
-## Error Recovery
-## Error Handling Guidelines
-
-- **CircuitBreakerOpenError**: Log error details, attempt recovery, escalate if unrecoverable
-- **RateLimitError**: Log error details, attempt recovery, escalate if unrecoverable
-- **General**: Always log errors with context, never silently fail
-
 ## Model Preference
 haiku
 
