@@ -1,323 +1,193 @@
-# Backend Tasks - Test Framework Setup and Haiku Baseline
+# Backend Tasks - Family Name Generation Core (M1)
 
-## Overview
-This document breaks down the backend implementation for establishing the testing framework and capturing haiku model baseline performance across low, medium, and high complexity TDD scenarios.
+## Milestone Overview
+Implement the foundational family naming system that generates unique, whimsical family names and ensures inheritance across agent hierarchies. This milestone focuses on the core backend components needed for family name generation and propagation.
 
-## Priority Groups
+## Task Breakdown
 
-### P1: Core Infrastructure (Must complete first)
-These tasks establish the foundational systems required for any model testing.
-
-### P2: Testing Framework (Depends on P1)
-Tasks that implement the TDD testing capabilities and scenario execution.
-
-### P3: Baseline Collection (Depends on P1, P2)
-Tasks focused on capturing haiku model performance data.
-
----
-
-## P1: Core Infrastructure Tasks
-
-### P1.1: Database Schema and Connection Setup
-**Description**: Implement PostgreSQL database with core tables for experiments, model runs, scenarios, and metrics.
+### Task 1: Core Name Generator Implementation
+**Name**: Implement FamilyNameGenerator class
+**Description**: Create a robust name generator that produces whimsical, memorable family names using adjective + noun patterns with guaranteed uniqueness.
 
 **Acceptance Criteria**:
-- PostgreSQL database running locally with Docker
-- Database connection with proper error handling
-- Core tables created: experiments, model_runs, scenarios, metrics
-- Database migration system set up
-- Connection pooling configured
+- Generate names using adjective + noun pattern (e.g., "Sparkling Otters", "Mysterious Penguins")
+- Ensure uniqueness using hash + timestamp methodology
+- Performance target: < 1ms per name generation
+- Include curated word lists with 100+ adjectives and 100+ nouns
+- Return structured name data (full name, adjective, noun, hash)
 
 **Dependencies**: None
-
 **Complexity**: Medium
+**Files to Create**:
+- `src/runtime/family_system/name_generator.py`
+- `src/runtime/family_system/__init__.py`
+- `tests/test_name_generator.py`
 
-**Technical Details**:
-- Use PostgreSQL 15 with connection pooling
-- Implement repository pattern for data access
-- Include proper indexes for performance
-- Add foreign key constraints for data integrity
-
----
-
-### P1.2: Model Adapter Infrastructure
-**Description**: Create base model adapter interface and implement Claude Haiku adapter for consistent AI model interactions.
+### Task 2: Family Metadata Data Model
+**Name**: Design family data structures and storage
+**Description**: Define data models for family metadata that can be stored in agent metadata structure without breaking changes.
 
 **Acceptance Criteria**:
-- BaseModelAdapter interface defines standard model operations
-- ClaudeHaikuAdapter implements interface with error handling
-- Model factory can instantiate adapters by type
-- Rate limiting and retry logic implemented
-- API key configuration from environment variables
+- Define FamilyInfo dataclass with name, creation_time, members, lineage
+- Ensure JSON serializable for metadata storage
+- Backwards compatibility with existing agent metadata
+- Optional family fields with sensible defaults
+- Include validation for family name format
 
-**Dependencies**: None
-
-**Complexity**: Medium
-
-**Technical Details**:
-- Use Anthropic SDK for Claude integration
-- Implement exponential backoff for retries
-- Add request/response logging for debugging
-- Handle API rate limits gracefully
-
----
-
-### P1.3: Express API Server Setup
-**Description**: Set up Express.js server with TypeScript, middleware, and basic health check endpoints.
-
-**Acceptance Criteria**:
-- Express server running on configurable port
-- TypeScript compilation working
-- Middleware for CORS, JSON parsing, logging
-- Health check endpoint returns system status
-- Environment-specific configuration loading
-- Graceful shutdown handling
-
-**Dependencies**: None
-
+**Dependencies**: Task 1 (uses name generation output)
 **Complexity**: Simple
+**Files to Create**:
+- `src/runtime/family_system/models.py`
+- `tests/test_family_models.py`
 
-**Technical Details**:
-- Use Winston for structured logging
-- Add request ID middleware for tracing
-- Configure CORS for development
-- Add error handling middleware
-
----
-
-### P1.4: Configuration Management
-**Description**: Implement environment-based configuration system for database, models, and experiment settings.
+### Task 3: Family Assignment Service
+**Name**: Implement family assignment and inheritance logic
+**Description**: Create service layer to handle family name assignment for new agents and inheritance propagation to child agents.
 
 **Acceptance Criteria**:
-- Configuration files for dev/test/prod environments
-- Environment variable validation on startup
-- Database connection strings configurable
-- Model API keys and settings configurable
-- Experiment parameters configurable
-- Configuration validation with helpful error messages
+- Assign new family names to root agents (no parent)
+- Propagate family names from parent to child agents
+- Handle edge cases (missing parent, orphaned agents)
+- Maintain family lineage tracking
+- Thread-safe implementation for concurrent agent spawning
 
-**Dependencies**: None
+**Dependencies**: Task 1, Task 2
+**Complexity**: Medium
+**Files to Create**:
+- `src/runtime/family_system/family_service.py`
+- `tests/test_family_service.py`
 
+### Task 4: Agent Runtime Integration
+**Name**: Integrate family system with AgentRuntime
+**Description**: Modify existing agent runtime to automatically assign and propagate family names during agent creation and spawning.
+
+**Acceptance Criteria**:
+- New agents get family names assigned on creation
+- Child agents inherit parent's family name
+- Family information stored in agent metadata
+- No breaking changes to existing agent creation APIs
+- Backwards compatibility with legacy agents
+
+**Dependencies**: Task 1, Task 2, Task 3
+**Complexity**: Complex
+**Files to Modify**:
+- `src/runtime/runtime.py`
+- `src/runtime/agents/base.py` (if agent metadata structure needs updates)
+**Files to Create**:
+- `tests/test_runtime_family_integration.py`
+
+### Task 5: Family System Utilities and Helpers
+**Name**: Implement family system utility functions
+**Description**: Create utility functions for family system operations like family lookup, member counting, and validation.
+
+**Acceptance Criteria**:
+- Find family by name or member ID
+- Count family members
+- Validate family data integrity
+- Format family names for display
+- Export family relationships for debugging
+
+**Dependencies**: Task 2, Task 3
 **Complexity**: Simple
+**Files to Create**:
+- `src/runtime/family_system/utils.py`
+- `tests/test_family_utils.py`
 
-**Technical Details**:
-- Use dotenv for local development
-- Validate required environment variables
-- Provide sensible defaults where appropriate
-- Support different configs per environment
-
----
-
-## P2: Testing Framework Tasks
-
-### P2.1: Scenario Engine Implementation
-**Description**: Create scenario execution engine that can run low, medium, and high complexity TDD scenarios.
+### Task 6: Configuration and Error Handling
+**Name**: Add family system configuration and robust error handling
+**Description**: Implement configuration options for the family system and comprehensive error handling for edge cases.
 
 **Acceptance Criteria**:
-- BaseScenario abstract class with standard lifecycle
-- LowComplexityScenario: Simple React component creation
-- MediumComplexityScenario: Form validation with state management
-- HighComplexityScenario: Complex state synchronization
-- Scenario factory can instantiate by complexity level
-- Each scenario includes requirements and success criteria
+- Configuration for custom word lists
+- Graceful fallback when name generation fails
+- Proper error logging for debugging
+- Performance monitoring hooks
+- Configurable family name patterns
 
-**Dependencies**: P1.1, P1.2
-
-**Complexity**: Complex
-
-**Technical Details**:
-- Define clear scenario interfaces
-- Include timeout handling for long-running scenarios
-- Implement scenario isolation (separate directories)
-- Add progress tracking and logging
-
----
-
-### P2.2: Experiment Orchestrator
-**Description**: Build orchestrator that manages experiment lifecycle, coordinates model testing, and ensures fair comparison conditions.
-
-**Acceptance Criteria**:
-- Create and manage experiment instances
-- Execute scenarios with different models in isolation
-- Manage experiment state (pending/running/completed/failed)
-- Coordinate parallel execution safely
-- Handle experiment interruption and recovery
-- Log all experiment events for auditability
-
-**Dependencies**: P1.1, P1.2, P2.1
-
-**Complexity**: Complex
-
-**Technical Details**:
-- Use async/await for non-blocking execution
-- Implement experiment queue for managing multiple runs
-- Add experiment timeout handling
-- Include cleanup logic for failed experiments
-
----
-
-### P2.3: Metrics Collection System
-**Description**: Implement comprehensive metrics collection for test coverage, code quality, timing, and error tracking.
-
-**Acceptance Criteria**:
-- Test coverage analysis using Jest coverage reports
-- Code quality scoring with ESLint and complexity metrics
-- TDD cycle timing measurement (test→code→refactor)
-- Error count and type tracking
-- Real-time metrics storage during execution
-- Metrics aggregation and calculation accuracy
-
-**Dependencies**: P1.1, P2.1
-
-**Complexity**: Complex
-
-**Technical Details**:
-- Parse Jest coverage JSON reports
-- Integrate ESLint programmatically
-- Calculate cyclomatic complexity
-- Use high-resolution timers for accuracy
-- Store metrics incrementally for long experiments
-
----
-
-### P2.4: Results Analysis Engine
-**Description**: Build statistical analysis system to compare model performance and validate success criteria.
-
-**Acceptance Criteria**:
-- Calculate performance deltas between models
-- Statistical significance testing
-- Success rate calculation (+50% improvement validation)
-- Confidence interval calculation
-- Per-scenario and aggregate analysis
-- Export results in multiple formats (JSON, CSV, HTML report)
-
-**Dependencies**: P1.1, P2.3
-
-**Complexity**: Medium
-
-**Technical Details**:
-- Use statistical libraries for significance testing
-- Calculate means, medians, standard deviations
-- Generate comparison visualizations
-- Support multiple export formats
-
----
-
-## P3: Baseline Collection Tasks
-
-### P3.1: Haiku Model Testing Pipeline
-**Description**: Implement automated pipeline to execute all three complexity scenarios with Haiku model and collect baseline performance data.
-
-**Acceptance Criteria**:
-- Run all scenario types (low/medium/high) with Haiku model
-- Execute multiple iterations per scenario for statistical validity
-- Store all results in database with proper metadata
-- Generate baseline performance report
-- Handle and retry failed executions
-- Track completion progress
-
-**Dependencies**: P1.1, P1.2, P2.1, P2.2, P2.3
-
-**Complexity**: Medium
-
-**Technical Details**:
-- Default to 10 iterations per scenario
-- Implement parallel execution where safe
-- Add retry logic for transient failures
-- Store raw outputs for manual verification
-
----
-
-### P3.2: Baseline Performance Validation
-**Description**: Validate collected baseline data for consistency and identify any data quality issues before future model comparisons.
-
-**Acceptance Criteria**:
-- Validate data completeness across all scenarios
-- Check for statistical outliers and anomalies
-- Verify metric calculations are correct
-- Generate baseline summary statistics
-- Identify any systematic issues in data collection
-- Create baseline performance benchmarks
-
-**Dependencies**: P3.1, P2.4
-
+**Dependencies**: Task 1, Task 3, Task 4
 **Complexity**: Simple
+**Files to Create**:
+- `src/runtime/family_system/config.py`
+- `tests/test_family_config.py`
+**Files to Modify**:
+- `src/runtime/family_system/name_generator.py` (add error handling)
+- `src/runtime/family_system/family_service.py` (add error handling)
 
-**Technical Details**:
-- Run statistical validation on collected data
-- Compare results across scenario complexity levels
-- Verify no missing or corrupt data points
-- Generate summary dashboard/report
-
----
-
-### P3.3: API Endpoints for Experiment Management
-**Description**: Create REST API endpoints for starting experiments, monitoring progress, and retrieving results.
+### Task 7: Performance Optimization and Testing
+**Name**: Performance validation and comprehensive testing
+**Description**: Ensure all family system components meet performance targets and have comprehensive test coverage.
 
 **Acceptance Criteria**:
-- POST /api/experiments - Create new experiment
-- POST /api/experiments/:id/start - Start experiment execution  
-- GET /api/experiments/:id - Get experiment status
-- GET /api/experiments/:id/results - Get complete results
-- GET /api/experiments/:id/metrics - Real-time metrics
-- All endpoints include proper error handling and validation
+- Name generation < 1ms verified with performance tests
+- Family assignment < 5ms overhead on agent creation
+- 90%+ test coverage on all new family system code
+- Integration tests with mock agent scenarios
+- Memory usage profiling and optimization
 
-**Dependencies**: P1.3, P2.2, P2.4
-
+**Dependencies**: All previous tasks
 **Complexity**: Medium
+**Files to Create**:
+- `tests/performance/test_family_performance.py`
+- `tests/integration/test_family_integration.py`
+**Files to Modify**:
+- All family system files (optimize based on profiling)
 
-**Technical Details**:
-- Use JSON schemas for request validation
-- Include proper HTTP status codes
-- Add request rate limiting
-- Implement pagination for large result sets
+## Implementation Order
+1. Task 1: Core Name Generator Implementation
+2. Task 2: Family Metadata Data Model  
+3. Task 3: Family Assignment Service
+4. Task 5: Family System Utilities and Helpers
+5. Task 6: Configuration and Error Handling
+6. Task 4: Agent Runtime Integration (depends on most components)
+7. Task 7: Performance Optimization and Testing
 
----
+## Technical Architecture Notes
 
-## Task Dependencies Map
-
+### Directory Structure
 ```
-P1.1 (Database) → P2.1 (Scenarios), P2.3 (Metrics), P2.4 (Results), P3.1 (Haiku Testing)
-P1.2 (Model Adapter) → P2.1 (Scenarios), P2.2 (Orchestrator), P3.1 (Haiku Testing)  
-P1.3 (API Server) → P3.3 (API Endpoints)
-P1.4 (Config) → [All other tasks]
-
-P2.1 (Scenarios) → P2.2 (Orchestrator), P2.3 (Metrics), P3.1 (Haiku Testing)
-P2.2 (Orchestrator) → P3.1 (Haiku Testing), P3.3 (API Endpoints)
-P2.3 (Metrics) → P2.4 (Results), P3.1 (Haiku Testing)
-P2.4 (Results) → P3.2 (Validation)
-
-P3.1 (Haiku Testing) → P3.2 (Validation)
+src/runtime/family_system/
+├── __init__.py
+├── name_generator.py
+├── models.py
+├── family_service.py
+├── utils.py
+└── config.py
 ```
 
-## Implementation Order Recommendation
+### Key Design Patterns
+- **Service Layer**: FamilyService handles business logic
+- **Data Transfer Objects**: FamilyInfo for structured data
+- **Factory Pattern**: NameGenerator creates names on demand
+- **Dependency Injection**: Configuration injected into services
 
-**Week 1**: P1.1, P1.2, P1.3, P1.4 (Core Infrastructure)
-**Week 2**: P2.1, P2.3 (Scenarios and Metrics)  
-**Week 3**: P2.2, P2.4 (Orchestrator and Analysis)
-**Week 4**: P3.1, P3.2, P3.3 (Baseline Collection and API)
+### Integration Points
+- **AgentRuntime**: Call family service during agent creation
+- **Agent Metadata**: Store family info in existing metadata structure
+- **Logging**: Use existing logging framework for family operations
 
-## Risk Mitigation Notes
+### Testing Strategy
+- **Unit Tests**: Each component tested in isolation
+- **Integration Tests**: Full workflow from agent creation to family assignment
+- **Performance Tests**: Validate timing requirements
+- **Property-Based Tests**: Name uniqueness and format validation
 
-**Model API Rate Limits**: All model adapters include rate limiting and exponential backoff
-**Long Experiment Duration**: Orchestrator supports parallel execution and progress tracking
-**Data Integrity**: Database transactions ensure consistent experiment results
-**Error Recovery**: All components include proper error handling and retry logic
+## Assumptions Made
+- Existing agent metadata can store additional JSON fields
+- Current agent creation flow can accommodate new family assignment step
+- Performance targets are achievable with Python implementation
+- Thread-safety can be achieved with standard Python threading primitives
+- Word lists can be stored as static data in Python files
+
+## Out of Scope for M1
+- Achievement tracking (M2)
+- API endpoints (M3)
+- Frontend integration (M3)
+- Family management UI
+- Historical family analytics
 
 ## Success Metrics
-
-- All P1 tasks completed: Core infrastructure operational
-- All P2 tasks completed: Can execute TDD scenarios and collect metrics
-- All P3 tasks completed: Haiku baseline captured and validated
-- API functional: Can start/monitor experiments via REST endpoints
-- Data quality validated: Baseline results are statistically sound
-
-## Technical Assumptions Made
-
-- **Database**: PostgreSQL with ACID compliance for experiment integrity
-- **Testing Framework**: Jest for coverage analysis (industry standard)
-- **API Style**: REST with JSON (matches frontend expectations)
-- **Model Integration**: Anthropic SDK (official Claude integration)
-- **Concurrency**: Node.js async/await patterns for non-blocking execution
-- **Configuration**: Environment variables for secrets, config files for settings
-- **Logging**: Structured JSON logs for debugging and audit trails
+- All new agents receive unique family names
+- Child agents inherit parent family names correctly
+- Name generation meets < 1ms performance target
+- Zero breaking changes to existing functionality
+- 90%+ test coverage achieved

@@ -1,54 +1,75 @@
-# Milestone Plan: Design Phase Pause Fix Implementation
+# Milestone Plan: Logs & Agents Tab Implementation
 
-## Milestone 1: Core State Management and Detection
-### Objective
-Implement core mechanisms to detect and pause agents returning `needs_user_input`
-
-### Deliverables
-- Modify `_execute_agent_background` to handle new status
-- Update agent status tracking logic
-- Implement initial state tracking for awaiting user input
-- Create basic unit tests for status detection
-
-### Acceptance Criteria
-- ✓ Agents with `needs_user_input` marked as `awaiting_user_input`
-- ✓ Original agent context preserved
-- ✓ Unit tests pass for status detection
-- ✓ No regression in normal agent execution
-
-## Milestone 2: Question-Answer Flow Implementation
-### Objective
-Develop robust question-answer handling and agent continuation mechanism
+## Milestone 1: Backend WebSocket Log Streaming (2-3 days)
+### Objectives
+- Implement `/ws/logs` WebSocket endpoint
+- Create log buffering mechanism
+- Develop server-side filtering capabilities
 
 ### Deliverables
-- Create `continue_agent_with_answer` method
-- Enhance `answer_question` endpoint
-- Implement context restoration for agent continuation
-- Develop comprehensive integration tests
+- WebSocket log streaming implementation
+- Log entry data structure
+- Server-side filtering logic
 
 ### Acceptance Criteria
-- ✓ Answers matched to correct waiting agents
-- ✓ Agent spawned with full original and answer context
-- ✓ Asynchronous answer processing
-- ✓ Integration tests validate full flow
+- Log entries have correct timestamp, level, agent_id, request_id
+- 1000-entry log buffer
+- Filtering by log level and agent_id works
 
-## Milestone 3: Final Validation and Refinement
-### Objective
-Comprehensive testing, error handling, and edge case management
+## Milestone 2: Frontend Log Viewer (3-4 days)
+### Objectives
+- Create LogStreamPanel React component
+- Implement WebSocket connection
+- Develop log viewing controls
 
 ### Deliverables
-- Complete end-to-end testing
-- Implement robust error handling
-- Performance and stability optimization
-- Documentation and final review
+- LogStreamPanel component
+- Log level and search filtering
+- Auto-scroll and streaming controls
 
 ### Acceptance Criteria
-- ✓ All tests pass (unit and integration)
-- ✓ Graceful error handling
-- ✓ No performance degradation
-- ✓ Clear documentation of new flow
+- Real-time log display
+- Pause/resume functionality
+- Color-coded log levels
+- Responsive design
+
+## Milestone 3: Agent Definition Explorer & Editor (3-4 days)
+### Objectives
+- Implement AgentExplorer with tree-view
+- Create AgentDefinitionViewer
+- Enable file selection and editing
+
+### Deliverables
+- AgentExplorer component
+- Agent file selection mechanism
+- Read/edit functionality with backups
+
+### Acceptance Criteria
+- Tree-view of agent directories
+- File selection with visual feedback
+- Edit mode with markdown preview
+- Backup and revert functionality
+
+## Milestone 4: Tab Integration & Final Testing (2-3 days)
+### Objectives
+- Add new tab to main application
+- Integrate all components
+- Comprehensive testing
+
+### Deliverables
+- Updated App.jsx with new tab
+- Complete system integration
+- Full test coverage
+
+### Acceptance Criteria
+- New tab works without breaking existing functionality
+- All components integrated
+- All tests pass
+- Performance maintained
 
 ## Dependencies
-- Milestone 1 must complete before Milestone 2
-- Milestone 2 must complete before Milestone 3
-- Consistent coordination with Executive Director agent
+1. Milestone 1 must complete before Milestone 2
+2. Milestone 2 must complete before Milestone 3
+3. All previous milestones must complete before Milestone 4
+
+## Total Estimated Timeline: 10-14 days

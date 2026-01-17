@@ -1,167 +1,214 @@
-# Frontend Tasks - Background Color Update
+# Frontend Tasks - Text-based UI Components for Task Display
 
-## Project Overview
-Change web UI background from dark blue to dark green while maintaining accessibility and functionality.
+## Overview
+Develop text-based UI components for the Tmux Monitoring Dashboard milestone, focusing on task display functionality within a terminal-based interface.
 
-## Architecture Summary
-- **Pattern**: Configuration-based theming with minimal changes
-- **Primary Target**: `/src/field/ensemble_ui/frontend/src/index.css`
-- **Strategy**: Direct CSS modification with comprehensive testing
-- **Color Change**: `#1a1d29` (dark blue) → `#1a291d` (dark green)
+## Component Architecture
+Based on the system architecture, we need to build components that render text-based UI within tmux panes for monitoring and task management.
 
 ## Task Breakdown
 
-### Task 1: Environment Preparation
-**Name**: Setup and Backup
-**Description**: Prepare development environment and create backup of current styling
+### 1. Task Display Component
+**Name**: `task-display-component`
+**Description**: Core component for rendering formatted task lists in tmux pane
+**Complexity**: Medium
+
 **Acceptance Criteria**:
-- Development environment is set up and functional
-- Current `index.css` file is backed up
-- Git working directory is clean with current state committed
-- Local testing environment is verified working
+- Displays tasks grouped by status (todo, in_progress, completed)
+- Shows task priority indicators
+- Renders task metadata (assignee, complexity)
+- Updates display when task data changes
+- Handles empty state gracefully
+
+**Dependencies**: None (foundational component)
+
+### 2. Task Status Formatter
+**Name**: `task-status-formatter`
+**Description**: Utility for formatting task status with visual indicators
+**Complexity**: Simple
+
+**Acceptance Criteria**:
+- Converts task status to visual symbols (✓ ⏳ ❌)
+- Applies appropriate text coloring/styling
+- Handles unknown status values
+- Provides consistent formatting across components
+
 **Dependencies**: None
-**Complexity**: Simple
 
-### Task 2: Color Value Analysis
-**Name**: Color Contrast and Accessibility Validation
-**Description**: Validate proposed dark green color meets accessibility standards
-**Acceptance Criteria**:
-- Proposed color `#1a291d` tested for WCAG 2.1 AA compliance
-- Color contrast ratios documented for text combinations
-- Alternative colors identified if primary fails accessibility tests
-- Color choice documented with rationale
-**Dependencies**: Task 1
-**Complexity**: Simple
-
-### Task 3: CSS Background Update
-**Name**: Update Background Color in index.css
-**Description**: Modify the main background color from dark blue to dark green
-**Acceptance Criteria**:
-- Background color changed from `#1a1d29` to `#1a291d` in body selector
-- No other CSS properties modified unless required for contrast
-- CSS syntax remains valid and error-free
-- File saved and ready for testing
-**Dependencies**: Task 2
-**Complexity**: Simple
-
-### Task 4: Bootstrap Compatibility Testing
-**Name**: Verify Bootstrap Integration
-**Description**: Ensure Bootstrap classes and components work correctly with new background
-**Acceptance Criteria**:
-- All Bootstrap components render correctly
-- No CSS conflicts or overrides broken
-- Bootstrap utility classes function as expected
-- No visual artifacts or styling issues detected
-**Dependencies**: Task 3
+### 3. Task List Renderer
+**Name**: `task-list-renderer`
+**Description**: Renders structured task lists for terminal display
 **Complexity**: Medium
 
-### Task 5: Cross-Browser Testing
-**Name**: Multi-Browser Compatibility Validation
-**Description**: Test new background color across different browsers and devices
 **Acceptance Criteria**:
-- Background displays correctly in Chrome, Firefox, Safari, Edge
-- Color renders consistently across browsers
-- No browser-specific rendering issues
-- Mobile and desktop views both validated
-**Dependencies**: Task 3
+- Groups tasks by category/status
+- Applies hierarchical indentation
+- Truncates long descriptions appropriately
+- Maintains consistent column alignment
+- Handles variable terminal widths
+
+**Dependencies**: task-status-formatter
+
+### 4. Real-time Task Updater
+**Name**: `realtime-task-updater`
+**Description**: Service for watching and updating task display in real-time
 **Complexity**: Medium
 
-### Task 6: Accessibility Compliance Testing
-**Name**: Real-World Accessibility Validation
-**Description**: Test actual accessibility with screen readers and contrast tools
 **Acceptance Criteria**:
-- WCAG color contrast checker passes for all text/background combinations
-- Screen reader functionality unaffected
-- No accessibility regressions introduced
-- Documentation of accessibility test results
-**Dependencies**: Task 3, Task 4
-**Complexity**: Medium
+- Monitors project state file changes
+- Triggers task display refresh
+- Handles file watch errors gracefully
+- Provides configurable refresh intervals
+- Minimizes unnecessary rerenders
 
-### Task 7: Functional Regression Testing
-**Name**: Complete Application Walkthrough
-**Description**: Verify all application functionality works with new background color
-**Acceptance Criteria**:
-- All pages/components render and function correctly
-- Interactive elements (buttons, forms, modals) work as expected
-- No performance degradation observed
-- User experience remains unchanged except for color
-**Dependencies**: Task 5, Task 6
-**Complexity**: Medium
+**Dependencies**: task-display-component, task-list-renderer
 
-### Task 8: Performance Impact Assessment
-**Name**: Performance and Load Testing
-**Description**: Ensure color change has no negative performance impact
-**Acceptance Criteria**:
-- Page load times remain consistent
-- CSS parsing performance unaffected
-- Memory usage shows no regression
-- Build process completes without issues
-**Dependencies**: Task 7
+### 5. Task Filter Component
+**Name**: `task-filter-component`
+**Description**: Text-based interface for filtering task display
 **Complexity**: Simple
 
-### Task 9: Documentation and Deployment
-**Name**: Final Documentation and Rollout
-**Description**: Document changes and prepare for deployment
 **Acceptance Criteria**:
-- Change log updated with color modification details
-- Testing results documented
-- Deployment instructions prepared
-- Rollback procedure documented
-**Dependencies**: Task 8
+- Filters by task status
+- Filters by assignee
+- Provides quick filter shortcuts
+- Shows current filter state
+- Resets filters easily
+
+**Dependencies**: task-display-component
+
+### 6. Terminal Layout Manager
+**Name**: `terminal-layout-manager`
+**Description**: Manages text positioning and layout within tmux panes
+**Complexity**: Medium
+
+**Acceptance Criteria**:
+- Calculates available display area
+- Handles terminal resize events
+- Maintains layout consistency
+- Provides scrolling for overflow content
+- Supports multiple layout modes
+
+**Dependencies**: None (foundational)
+
+### 7. Task Detail Viewer
+**Name**: `task-detail-viewer`
+**Description**: Expandable detail view for individual tasks
 **Complexity**: Simple
 
-## Task Dependencies Flow
+**Acceptance Criteria**:
+- Shows full task description
+- Displays all task metadata
+- Handles keyboard navigation
+- Toggles between summary and detail views
+- Fits within terminal constraints
+
+**Dependencies**: task-display-component, terminal-layout-manager
+
+### 8. Progress Indicator Component
+**Name**: `progress-indicator-component`
+**Description**: ASCII-based progress bars and completion indicators
+**Complexity**: Simple
+
+**Acceptance Criteria**:
+- Renders progress bars with ASCII characters
+- Shows percentage completion
+- Displays milestone progress
+- Updates smoothly without flicker
+- Supports various progress formats
+
+**Dependencies**: None
+
+### 9. Error Display Component
+**Name**: `error-display-component`
+**Description**: Handles error states and user feedback in terminal
+**Complexity**: Simple
+
+**Acceptance Criteria**:
+- Shows clear error messages
+- Provides suggested actions
+- Displays connection status
+- Handles timeout scenarios
+- Uses appropriate visual styling
+
+**Dependencies**: terminal-layout-manager
+
+### 10. Keyboard Navigation Handler
+**Name**: `keyboard-navigation-handler`
+**Description**: Manages keyboard input for terminal-based interaction
+**Complexity**: Medium
+
+**Acceptance Criteria**:
+- Handles arrow key navigation
+- Supports vim-style key bindings
+- Provides keyboard shortcuts
+- Manages focus between components
+- Handles input validation
+
+**Dependencies**: task-display-component, task-filter-component
+
+## Implementation Order
+
+### Phase 1: Foundation (Tasks 1, 2, 6, 8)
+1. terminal-layout-manager
+2. task-status-formatter
+3. progress-indicator-component
+4. task-display-component
+
+### Phase 2: Core Functionality (Tasks 3, 4, 9)
+1. task-list-renderer
+2. error-display-component
+3. realtime-task-updater
+
+### Phase 3: User Interaction (Tasks 5, 7, 10)
+1. task-filter-component
+2. task-detail-viewer
+3. keyboard-navigation-handler
+
+## Technical Specifications
+
+### Framework Approach
+- **Language**: Python 3.8+ for task watcher logic
+- **Terminal Control**: ANSI escape sequences for formatting
+- **File Watching**: Python `watchdog` library
+- **Layout**: Fixed-width text formatting with padding
+
+### State Management
+- Local component state for display preferences
+- Shared state for task data via file system watching
+- Event-driven updates for real-time synchronization
+
+### Styling
+- ASCII art and Unicode symbols for visual elements
+- ANSI color codes for status indication
+- Consistent spacing and alignment
+- Responsive layout for different terminal sizes
+
+### Testing Strategy
+- Unit tests for each component
+- Mock terminal environments for testing
+- Integration tests with actual tmux sessions
+- Performance tests for large task lists
+
+## Dependencies Summary
 ```
-Task 1 (Setup) 
-    ↓
-Task 2 (Color Analysis)
-    ↓
-Task 3 (CSS Update)
-    ↓
-Task 4 (Bootstrap Testing) → Task 5 (Browser Testing)
-    ↓                           ↓
-Task 6 (Accessibility) ←--------+
-    ↓
-Task 7 (Functional Testing)
-    ↓
-Task 8 (Performance Testing)
-    ↓
-Task 9 (Documentation)
+terminal-layout-manager (foundation)
+├── task-display-component
+│   ├── task-filter-component
+│   ├── task-detail-viewer
+│   └── keyboard-navigation-handler
+├── task-list-renderer
+│   └── realtime-task-updater
+├── error-display-component
+└── progress-indicator-component
+
+task-status-formatter (utility)
+└── task-list-renderer
 ```
 
-## Implementation Notes
-
-### Key Files
-- **Primary**: `src/field/ensemble_ui/frontend/src/index.css`
-- **Testing**: All existing frontend components and pages
-
-### Color Specifications
-- **Current**: `#1a1d29` (dark blue)
-- **Target**: `#1a291d` (dark green)
-- **Fallbacks**: `#1d2a1a`, `#1f2d1c` (if accessibility issues)
-
-### Testing Priorities
-1. **Accessibility**: WCAG 2.1 AA compliance is non-negotiable
-2. **Functionality**: Zero regression in existing features
-3. **Compatibility**: Consistent rendering across browsers
-4. **Performance**: No measurable impact on load times
-
-### Risk Mitigation
-- **Backup Strategy**: Git commits before each major change
-- **Rollback Plan**: Immediate revert capability documented
-- **Progressive Testing**: Each task validates before proceeding
-- **Multiple Browsers**: Cross-platform testing throughout
-
-## Estimated Timeline
-- **Setup and Analysis**: 1 hour (Tasks 1-2)
-- **Implementation**: 30 minutes (Task 3)
-- **Testing**: 2-3 hours (Tasks 4-8)
-- **Documentation**: 30 minutes (Task 9)
-- **Total**: 4-5 hours for complete implementation
-
-## Success Metrics
-1. Background color visibly changed to dark green
-2. All accessibility standards maintained
-3. Zero functional regressions
-4. Consistent cross-browser rendering
-5. No performance degradation
+## Notes
+- All components must work within tmux pane constraints
+- Focus on readable text-based interfaces
+- Prioritize performance for real-time updates
+- Ensure compatibility with common terminal emulators
+- Plan for graceful degradation in limited environments
