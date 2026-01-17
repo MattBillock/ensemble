@@ -1,233 +1,167 @@
-# Activity Tracking Fixes - System Architecture
+# Architecture Proposal: Design Phase Pause Fix
 
-## A) Architecture Overview
-A focused, surgical fix to the Ensemble UI activity tracking system. The architecture addresses three specific bugs preventing file generation tracking and request count updates with minimal system disruption and maximum backward compatibility.
+## A. Architecture Overview
 
-## B) Current System Analysis
+### Purpose
+Implement a robust agent pipeline mechanism that allows pausing and continuing agent execution when user input is required, without terminating the entire process.
 
-### Existing Components (Working Correctly)
-- **ActivityTracker** (`src/runtime/agents/activity_tracker.py`) - Core tracking logic works
-- **Activity APIs** (`src/field/ensemble_ui/backend/main.py`) - Endpoints correctly query tracker
-- **Frontend Display** - UI correctly consumes API data
-- **Agent Execution** - Agents successfully create files and complete tasks
+### Architecture Pattern
+**Chosen Pattern**: Event-Driven Stateful Microservice Architecture
+- Allows dynamic agent state management
+- Supports asynchronous user interaction
+- Maintains clear separation of concerns
 
-### Problem Areas (Requiring Fixes)
-1. **WriteFileTool** - Doesn't record file generation to ActivityTracker
-2. **Request Counting** - `increment_request_counts()` method never called
-3. **File Discovery** - Limited to output directory only
+## B. Tech Stack
 
-## C) Proposed Architecture Changes
+### Backend
+- **Language**: Python (existing ecosystem)
+- **Framework**: FastAPI 
+  - Async support
+  - Efficient request handling
+  - Built-in Swagger/OpenAPI documentation
+- **State Management**: In-memory dictionary (`active_agents`)
+- **Logging**: Standard Python `logging` module
 
-### 1. Enhanced WriteFileTool with Context Propagation
+### Frontend
+- **Framework**: Likely React (based on existing codebase)
+- **State Management**: Redux or Context API
+- **Components**: PendingQuestions, AgentStatus
 
-**Current Architecture:**
-```
-AgentRuntime → ToolRegistry → WriteFileTool → File System
-                                    ↓
-                              (No tracking)
-```
+## C. System Components
 
-**Fixed Architecture:**
-```
-AgentRuntime → ToolRegistry → WriteFileTool → File System
-     ↓              ↓              ↓
- Context Info → Tracking Params → ActivityTracker.record_file_generated()
-```
+### 1. Agent Orchestrator
+**Responsibilities**:
+- Detect `needs_user_input` status
+- Preserve agent execution context
+- Manage agent state transitions
+- Spawn continuation agents
 
-**Implementation Pattern:**
-- **Context Injection**: Pass agent_id, request_id, agent_name through tool construction
-- **Optional Parameters**: Maintain backward compatibility with optional tracking parameters
-- **Error Isolation**: Wrap tracking calls in try-catch to prevent tool failures
+### 2. State Tracker
+**Responsibilities**:
+- Record agent state changes
+- Maintain agent hierarchy
+- Track request/execution lineage
 
-### 2. Auto-Increment Request Counters
+### 3. Continuation Mechanism
+**Responsibilities**:
+- Build continuation context
+- Inject user answer into new agent
+- Maintain original task context
 
-**Pattern:** Hook into existing activity recording methods
-
-```
-record_agent_started() → increment_request_counts(agents=+1)
-record_file_generated() → increment_request_counts(files=+1) 
-record_git_commit() → increment_request_counts(commits=+1)
-```
-
-**Thread Safety:** Leverage existing ActivityTracker synchronization mechanisms
-
-### 3. Enhanced File Discovery (Optional Enhancement)
-
-**Current:** Scan output directory only
-**Enhanced:** Scan multiple directories with intelligent filtering
+## D. Data Flow Diagram
 
 ```
-File Discovery Strategy:
-- Output directory (priority 1)
-- Test directories (priority 2) 
-- Source directories (priority 3)
-- Filter by file extensions and relevance
+Agent Execution 
+  ↓
+Detects Needs User Input 
+  ↓
+Set Status: awaiting_user_input
+  ↓
+Store Continuation Context
+  ↓
+Wait for User Answer
+  ↓
+User Provides Answer
+  ↓
+Spawn New Agent Instance
+  ↓
+Continue Execution
 ```
 
-## D) Technical Implementation Details
+## E. API Design
 
-### WriteFileTool Modification
+### Endpoints
+1. `POST /continue-agent`
+   - Input: 
+     ```json
+     {
+       "agent_id": "string",
+       "user_answer": "string",
+       "original_context": "object"
+     }
+     ```
+   - Response: New agent execution details
+
+2. `GET /pending-questions`
+   - Returns list of agents awaiting user input
+
+## F. State Management
+
+### Agent State Machine
+- `running` → `awaiting_user_input` → `running`
+- Prevents premature completion
+- Maintains execution context
+
+### Continuation Context
 ```python
-class WriteFileTool:
-    def __init__(
-        self, 
-        agent_definition: Optional["AgentDefinition"] = None,
-        agent_id: Optional[str] = None,
-        agent_name: Optional[str] = None,
-        request_id: Optional[str] = None
-    ):
-        # Store tracking context
-        self.tracking_context = {
-            'agent_id': agent_id,
-            'agent_name': agent_name or (agent_definition.name if agent_definition else 'unknown'),
-            'request_id': request_id
-        }
-    
-    def execute(self, file_path: str, content: str):
-        # ... existing file write logic ...
-        
-        # Add tracking after successful write
-        if self.tracking_context['agent_id'] and self.tracking_context['request_id']:
-            self._record_file_generation(file_path, content)
+{
+  "original_task": "...",
+  "previous_question": "...",
+  "agent_config": {...},
+  "parent_agent_id": "..."
+}
 ```
 
-### ToolRegistry Context Injection
-```python
-def default(agent_definition, agent_id=None, request_id=None):
-    registry = ToolRegistry()
-    
-    # Pass context to tools that support it
-    registry.register(WriteFileTool(
-        agent_definition=agent_definition,
-        agent_id=agent_id,
-        agent_name=agent_definition.name if agent_definition else None,
-        request_id=request_id
-    ))
-    
-    return registry
-```
+## G. Deployment Strategy
 
-### ActivityTracker Auto-Increment Integration
-```python
-def record_file_generated(self, agent_id, agent_name, request_id, file_path, ...):
-    # ... existing record logic ...
-    
-    # Auto-increment file count
-    self.increment_request_counts(request_id, files=1)
-```
+### Containerization
+- Docker containers
+- Easy scalability
+- Consistent environment
 
-## E) Data Flow Architecture
+### Deployment Targets
+- Cloud platforms (AWS/GCP)
+- Kubernetes for orchestration
 
-### Before (Broken):
-```
-Agent Executes → WriteFileTool → File Created ✓
-                      ↓
-                (No tracking) ✗
-                      ↓
-              ActivityTracker (empty) ✗
-                      ↓
-                 API Returns [] ✗
-                      ↓
-                UI Shows "No Activity" ✗
-```
+## H. Testing Strategy
 
-### After (Fixed):
-```
-Agent Executes → WriteFileTool → File Created ✓
-                      ↓              ↓
-                Tracking Context → ActivityTracker.record_file_generated() ✓
-                      ↓              ↓
-                Auto-increment → Request Counters Updated ✓
-                      ↓
-                 API Returns [files...] ✓
-                      ↓
-                UI Shows Real Activity ✓
-```
+### Unit Tests
+- State transition logic
+- Context preservation
+- Continuation mechanism
 
-## F) Backward Compatibility Strategy
+### Integration Tests
+- Full agent pause/continue flow
+- User interaction simulation
+- Context integrity checks
 
-### Design Principles:
-1. **Optional Parameters** - All tracking parameters have defaults
-2. **Graceful Degradation** - Tools work without tracking context
-3. **Error Isolation** - Tracking failures don't break tool execution
-4. **Existing Test Compatibility** - No changes to existing test interfaces
+## I. Alternatives Considered
 
-### Migration Path:
-- **Phase 1**: Add optional tracking parameters
-- **Phase 2**: Update calling code to pass context
-- **Phase 3**: Monitor and validate tracking works
-- **Phase 4**: Remove old parameter patterns (future)
+### 1. In-Place Agent Resume
+**Pros**: 
+- Potentially simpler implementation
+**Cons**:
+- More complex state management
+- Harder to maintain agent isolation
 
-## G) Risk Mitigation
+### 2. Stateless Respawn (Current Choice)
+**Pros**:
+- Clear separation of concerns
+- Easier to implement
+- More robust
+**Cons**:
+- Slight overhead in agent spawning
 
-### Import Cycles
-**Risk**: ActivityTracker import in tools.py creates circular dependency
-**Mitigation**: Use local imports within methods, lazy loading
+## J. Risks and Mitigations
 
-### Performance Impact
-**Risk**: Tracking adds overhead to file operations
-**Mitigation**: Minimal tracking code, efficient data structures
+### Risk: Context Loss
+**Mitigation**: 
+- Comprehensive context serialization
+- Robust error handling
+- Logging of all state transitions
 
-### Thread Safety
-**Risk**: Concurrent access to ActivityTracker
-**Mitigation**: Leverage existing thread-safe implementation
+### Risk: Performance Overhead
+**Mitigation**:
+- Lightweight agent spawning
+- In-memory state management
+- Minimal serialization
 
-### Error Propagation
-**Risk**: Tracking errors break tool execution
-**Mitigation**: Comprehensive try-catch around all tracking calls
+## K. Open Questions
 
-## H) Testing Strategy
+1. Long-term persistence of continuation contexts?
+2. Support for multi-question interactions?
+3. Timeout handling for pending questions?
 
-### Unit Tests:
-- WriteFileTool with and without tracking context
-- ActivityTracker increment methods
-- ToolRegistry context propagation
+## Conclusion
 
-### Integration Tests:
-- End-to-end agent execution with tracking
-- API endpoint data validation
-- UI display verification
-
-### Regression Tests:
-- All existing tool tests continue passing
-- Backward compatibility validation
-
-## I) Deployment Considerations
-
-### Zero-Downtime Deployment:
-- Changes are additive and backward compatible
-- No API endpoint modifications required
-- No database schema changes needed
-
-### Rollback Strategy:
-- Simple code revert restores original behavior
-- No data migration concerns
-
-## J) Success Metrics
-
-### Primary:
-- `/api/activity/files` returns files created by agents
-- `/api/activity/timeline` shows non-zero counts for active requests
-
-### Secondary:
-- Zero regression in existing functionality
-- All tests pass
-- Performance overhead < 5%
-
-## K) Future Enhancements
-
-### Potential Additions:
-- More granular file type detection
-- Activity analytics and reporting
-- Historical activity trending
-- Performance monitoring integration
-
-### Architecture Scalability:
-- Current design supports future activity types
-- Extensible tracking context system
-- Plugin architecture for custom tracking
-
----
-*Architecture Design: 2026-01-14*
-*Project: Activity Tracking Fixes*
-*System Architect: AI Assistant*
+The proposed architecture provides a flexible, robust solution for pausing and continuing agent execution, with clear mechanisms for state management and user interaction.
