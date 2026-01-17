@@ -1,255 +1,287 @@
-# Whimsical Name Enhancement - Architecture Document
+# Timeline Page Data Refresh Focus Fix - Architecture
 
-## A. Architecture Overview
+## Architecture Overview
 
-The enhanced naming system will extend the existing modular architecture with a category-based name database and improved generation algorithm. The system maintains backward compatibility while significantly expanding name variety and reducing repetition.
+### Problem Analysis
+The timeline page currently disrupts user experience by changing views during data refresh. This suggests the current implementation couples data refresh with view state management, causing unintended side effects.
 
-## B. Current System Analysis
+### Solution Approach
+We will implement a **Separation of Concerns** pattern with **State Preservation** to decouple data refresh from view management. The architecture uses a reactive state management pattern with view position persistence.
 
-### Existing Components
-1. **name_data.py** - Contains 60 base whimsical names repeated for a pool of 1000
-2. **name_generator.py** (naming module) - Main generator with family name support
-3. **name_generator.py** (agents module) - Legacy FamilyNameGenerator class
+### Core Pattern
+**Data-View Separation Pattern**: Separating data updates from view rendering while preserving scroll position and focus state through dedicated state managers.
 
-### Current Name Format
-- Full name: `FirstName FamilyName-ShortType-Suffix` (e.g., "Bramblejay Sparrow-BackendDev-4730")
-- Simple name: `WhimsicalName-ShortType-Suffix` (e.g., "Lumawick-Director-4729")
+## Tech Stack
 
-## C. Enhanced Architecture
+### Frontend (React-based assumption)
+- **React** with hooks for component state management
+- **Custom hooks** for scroll position management
+- **React.memo** for preventing unnecessary re-renders
+- **Intersection Observer API** for viewport tracking
 
-### Module Structure
+**Why React?**: Given the ensemble UI context, React is likely already in use. The hooks pattern provides clean separation of concerns.
+
+### State Management
+- **React Context** or existing state management (Redux/Zustand)
+- **Custom ViewState manager** for scroll position persistence
+- **Data refresh queue** for managing updates
+
+**Why this approach?**: Minimal overhead, works with existing patterns, doesn't require major dependencies.
+
+### Performance Optimization
+- **Virtual scrolling** (if not already implemented)
+- **Debounced scroll tracking**
+- **Memoized components** for timeline items
+
+## System Components
+
+### 1. ViewStateManager
+**Responsibility**: Track and preserve user's current view state
+- Current scroll position
+- Focused element
+- Visible viewport range
+- User interaction state (scrolling, selecting)
+
+### 2. DataRefreshQueue
+**Responsibility**: Handle data updates without triggering view changes
+- Queue incoming data updates
+- Apply updates during safe moments
+- Coordinate with view state to prevent conflicts
+
+### 3. TimelineRenderer
+**Responsibility**: Render timeline while respecting view state
+- Preserve scroll position during updates
+- Maintain element focus
+- Handle incremental data updates
+
+### 4. ScrollPositionHook
+**Responsibility**: Custom hook for scroll position management
+- Track scroll position changes
+- Restore position after data updates
+- Detect user-initiated vs. programmatic scrolling
+
+## Component Interaction Flow
+
 ```
-src/runtime/agents/naming/
-├── __init__.py           # Module exports
-├── name_generator.py     # Enhanced NameGenerator class
-├── name_data.py          # Base whimsical names (existing)
-├── categories/           # NEW: Category-based name modules
-│   ├── __init__.py
-│   ├── fantasy.py        # Fantasy/mythology names
-│   ├── scifi.py          # Science fiction names
-│   ├── roman.py          # Roman politics/military names (whimsical)
-│   ├── gaming.py         # Video game inspired names
-│   └── creative.py       # Animation, comics, literature names
-├── family_names.py       # NEW: Expanded family name database
-└── anti_repetition.py    # NEW: Repetition tracking and prevention
-```
-
-## D. Data Model
-
-### Name Categories
-```python
-from enum import Enum
-from dataclasses import dataclass
-from typing import List, Optional
-
-class NameCategory(Enum):
-    FANTASY = "fantasy"
-    SCIFI = "scifi"
-    ROMAN = "roman"
-    GAMING = "gaming"
-    CREATIVE = "creative"
-    CLASSIC = "classic"  # Original whimsical names
-
-@dataclass
-class NameEntry:
-    name: str
-    category: NameCategory
-    subcategory: Optional[str] = None  # e.g., "tolkien", "greek", "cyberpunk"
-    tags: List[str] = None  # For filtering
-
-@dataclass
-class FamilyNameEntry:
-    name: str
-    category: NameCategory
-    style: str  # "creature", "occupational", "fantasy", "botanical", "terrain"
-```
-
-### Category Databases (Target Counts)
-| Category | First Names | Family Names | Total Unique Combinations |
-|----------|-------------|--------------|---------------------------|
-| Fantasy | 100+ | 50+ | 5,000+ |
-| Sci-Fi | 100+ | 50+ | 5,000+ |
-| Roman | 50+ | 30+ | 1,500+ |
-| Gaming | 100+ | 50+ | 5,000+ |
-| Creative | 50+ | 30+ | 1,500+ |
-| Classic | 60 | 100 | 6,000 (existing) |
-| **Total** | **460+** | **310+** | **24,000+** |
-
-## E. Enhanced Generation Algorithm
-
-### NameGenerator Class (Enhanced)
-```python
-class NameGenerator:
-    def __init__(
-        self,
-        categories: List[NameCategory] = None,  # None = all categories
-        anti_repetition_threshold: int = 100,   # Names before reuse
-        category_weights: Dict[NameCategory, float] = None,
-        use_whimsical_names: bool = True
-    ):
-        self.categories = categories or list(NameCategory)
-        self.anti_repetition = AntiRepetitionTracker(threshold)
-        self.category_weights = category_weights or self._default_weights()
-    
-    def generate_name(
-        self,
-        agent_type: str,
-        family_name: str = None,
-        preferred_category: NameCategory = None
-    ) -> str:
-        """Generate a unique name with anti-repetition."""
-        ...
-    
-    def _select_category(self) -> NameCategory:
-        """Select category using weights, avoiding recent categories."""
-        ...
+User Interaction → ViewStateManager → Store current state
+                                   ↓
+Data Refresh → DataRefreshQueue → Check if safe to update
+                                ↓
+Safe Update → TimelineRenderer → Apply data + Restore view state
+                                ↓
+Result → User sees updated data without view disruption
 ```
 
-### Anti-Repetition Tracker
-```python
-class AntiRepetitionTracker:
-    def __init__(self, threshold: int = 100, persist: bool = True):
-        self.threshold = threshold
-        self.recent_names: deque = deque(maxlen=threshold)
-        self.recent_families: deque = deque(maxlen=threshold // 4)
-        self.recent_categories: deque = deque(maxlen=10)
-        self.persist = persist  # Save/load from disk for cross-session tracking
-    
-    def is_available(self, name: str) -> bool:
-        return name not in self.recent_names
-    
-    def record_use(self, name: str, category: NameCategory):
-        self.recent_names.append(name)
-        self.recent_categories.append(category)
-    
-    def save_state(self):
-        """Persist tracking state to ~/.ensemble/naming_state.json"""
-        ...
-    
-    def load_state(self):
-        """Load persisted tracking state"""
-        ...
+## File/Directory Structure
+
+```
+src/
+├── components/
+│   ├── timeline/
+│   │   ├── Timeline.jsx (main component)
+│   │   ├── TimelineItem.jsx (memoized item component)
+│   │   └── __tests__/
+│   └── common/
+├── hooks/
+│   ├── useViewState.js (scroll position management)
+│   ├── useDataRefresh.js (safe data update management)
+│   └── useTimelineRenderer.js (rendering coordination)
+├── utils/
+│   ├── viewStateManager.js (view state persistence)
+│   ├── scrollUtils.js (scroll position utilities)
+│   └── dataUpdateQueue.js (data update coordination)
+├── services/
+│   └── timelineDataService.js (data fetching - existing)
+└── constants/
+    └── timelineConstants.js (configuration)
 ```
 
-## F. API Design
+## Data Model
 
-### Public Functions (Backward Compatible)
-```python
-# Existing API (unchanged)
-def generate_agent_name(agent_type: str, parent_id: str = None, 
-                        use_whimsical: bool = True, family_name: str = None) -> str
-
-def generate_family_name() -> str
-
-# New API (additions)
-def generate_agent_name_from_category(
-    agent_type: str,
-    category: NameCategory,
-    family_name: str = None
-) -> str
-
-def get_available_categories() -> List[NameCategory]
-
-def configure_naming(
-    categories: List[NameCategory] = None,
-    weights: Dict[NameCategory, float] = None,
-    anti_repetition_threshold: int = 100
-) -> None
-```
-
-## G. Name Sources and Examples
-
-### Fantasy/Mythology
-- **Tolkien-style**: Shadowmere, Lightweaver, Starkeeper, Moonblade
-- **Greek-adapted**: Olympius, Titanwing, Zepher, Apollight
-- **Norse-adapted**: Thorwind, Lokimist, Freyashine, Odindream
-
-### Science Fiction
-- **Space-themed**: Nebulox, Quasarwind, Stardrift, Cosmweaver
-- **Cyberpunk**: Neonflux, Bytestorm, Circuitblaze, Dataweave
-- **Classic sci-fi**: Chronoshift, Voidwalker, Stellarforge
-
-### Roman Politics (Whimsical)
-- **Titles**: Consul Sparkle, Tribune Giggles, Centurion Whisper
-- **Names adapted**: Maximus Bubbles, Aurelius Twinkle, Cassius Breeze
-
-### Gaming
-- **RPG-style**: Bladesinger, Spellweaver, Questkeeper, Loremaster
-- **Adventure**: Pixelbound, Questline, Levelup, Respawn
-
-### Creative
-- **Animation**: Toonglow, Sketchwind, Frameleap
-- **Comics**: Panelstorm, Inkblaze, Speechbubble
-- **Literature**: Quillwhisper, Bookwind, Pageturn
-
-## H. Configuration System
-
-### Default Configuration
-```json
+### ViewState Structure
+```javascript
 {
-  "naming": {
-    "enabled_categories": ["fantasy", "scifi", "roman", "gaming", "creative", "classic"],
-    "category_weights": {
-      "fantasy": 1.0,
-      "scifi": 1.0,
-      "roman": 0.5,
-      "gaming": 1.0,
-      "creative": 0.5,
-      "classic": 1.0
-    },
-    "anti_repetition": {
-      "threshold": 100,
-      "persist_across_sessions": true
-    },
-    "family_name_mixing": true,
-    "compound_names_enabled": false
-  }
+  scrollTop: number,
+  scrollLeft: number,
+  focusedElementId: string | null,
+  visibleRange: { start: number, end: number },
+  isUserScrolling: boolean,
+  lastUserInteraction: timestamp
 }
 ```
 
-## I. Testing Strategy
+### Data Update Queue
+```javascript
+{
+  updates: Array<DataUpdate>,
+  isPending: boolean,
+  lastProcessed: timestamp,
+  queuedAt: timestamp
+}
+```
 
-1. **Unit Tests**
-   - Name generation correctness
-   - Category selection
-   - Anti-repetition verification
-   - Backward compatibility
+## Implementation Strategy
 
-2. **Variety Testing**
-   - Generate 1000 names, verify no duplicates
-   - Category distribution analysis
-   - Family name variety
+### Phase 1: View State Tracking
+1. Implement `useViewState` hook to track scroll position
+2. Add scroll position persistence during component updates
+3. Test that position is maintained during manual re-renders
 
-3. **Content Validation**
-   - All names family-friendly
-   - Pronounceability check
-   - No copyrighted content
+### Phase 2: Data Update Decoupling
+1. Implement `DataRefreshQueue` to buffer incoming updates
+2. Modify existing data refresh to use the queue
+3. Ensure updates only apply when view state is stable
 
-4. **Performance Testing**
-   - Generation speed < 10ms
-   - Memory usage acceptable
-   - Persistence I/O minimal
+### Phase 3: Integration & Testing
+1. Integrate view state with data update queue
+2. Add performance monitoring
+3. Comprehensive testing with real data refresh scenarios
 
-## J. Migration Plan
+## Key Implementation Details
 
-1. **Phase 1**: Add new name categories alongside existing data
-2. **Phase 2**: Update generator to use new category system
-3. **Phase 3**: Add anti-repetition tracking
-4. **Phase 4**: Full integration with existing codebase
+### Scroll Position Preservation
+```javascript
+const useViewState = () => {
+  const [viewState, setViewState] = useState(initialViewState);
+  const scrollRef = useRef();
+  
+  // Preserve scroll position during updates
+  useLayoutEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = viewState.scrollTop;
+    }
+  });
+  
+  return { viewState, scrollRef, updateViewState };
+};
+```
 
-## K. Risks and Mitigations
+### Safe Data Update
+```javascript
+const useDataRefresh = (data, onUpdate) => {
+  const { viewState } = useViewState();
+  const queueRef = useRef([]);
+  
+  useEffect(() => {
+    // Only update when user is not actively scrolling
+    if (!viewState.isUserScrolling) {
+      processQueuedUpdates();
+    }
+  }, [viewState.isUserScrolling, data]);
+};
+```
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Backward compatibility break | High | Maintain all existing function signatures |
-| Performance degradation | Medium | Lazy loading of categories, caching |
-| Inappropriate content | High | Manual review of all names, automated filtering |
-| Memory bloat | Low | Lazy loading, efficient data structures |
+## Testing Strategy
 
-## L. Success Metrics
+### Unit Testing
+- **ViewState management**: Test scroll position tracking and restoration
+- **Data queue**: Test update buffering and safe processing
+- **Scroll utilities**: Test scroll detection and position calculations
 
-1. **Variety**: 460+ unique first names, 310+ family names
-2. **No Repetition**: 100+ generations without repeating within same category
-3. **Performance**: < 10ms generation time
-4. **Coverage**: 6 categories with balanced representation
-5. **Backward Compatibility**: All existing tests pass
+### Integration Testing
+- **Data refresh scenarios**: Test real data updates don't disrupt view
+- **User interaction**: Test scrolling during data updates
+- **Performance**: Test with large datasets and frequent updates
+
+### User Acceptance Testing
+- **No unexpected scrolling**: Verify zero unwanted view changes
+- **Data freshness**: Confirm data still updates properly
+- **Performance**: Ensure no noticeable slowdown
+
+## Deployment Strategy
+
+### Incremental Rollout
+1. **Feature flag**: Deploy behind a feature flag for controlled testing
+2. **A/B testing**: Compare user experience metrics
+3. **Gradual rollout**: Increase percentage of users over time
+
+### Rollback Plan
+- Keep existing implementation available
+- Quick toggle via feature flag
+- Monitoring alerts for performance degradation
+
+## Alternatives Considered
+
+### 1. Complete Timeline Redesign
+**Rejected**: Out of scope, too disruptive to existing functionality
+
+### 2. Pause Data Refresh During Scrolling
+**Rejected**: Could cause data staleness, doesn't meet real-time requirement
+
+### 3. Server-Side View State Management
+**Rejected**: Adds complexity, latency, and server load
+
+### 4. Third-Party Timeline Library
+**Rejected**: Would require major refactoring, integration risks
+
+## Risks and Mitigations
+
+### Risk 1: Performance Overhead
+**Mitigation**: Use debounced tracking, minimal state storage, performance monitoring
+
+### Risk 2: Race Conditions
+**Mitigation**: Proper state synchronization, update queuing, comprehensive testing
+
+### Risk 3: Complex State Management
+**Mitigation**: Clear separation of concerns, well-documented interfaces, gradual implementation
+
+### Risk 4: Browser Compatibility
+**Mitigation**: Polyfills for Intersection Observer, fallback implementations
+
+## Open Questions
+
+### 1. Virtual Scrolling
+**Question**: Does the timeline currently use virtual scrolling?
+**Impact**: May need to adapt scroll position tracking accordingly
+
+### 2. Data Update Frequency
+**Question**: How frequently does data refresh occur?
+**Impact**: May need to adjust queue processing strategy
+
+### 3. Timeline Item Identification
+**Question**: Do timeline items have stable IDs?
+**Impact**: Affects how we track focused elements across updates
+
+## Success Metrics
+
+### Technical Metrics
+- **Zero unintended scrolling events** during data refresh
+- **< 5ms additional latency** for data updates
+- **< 1% increase** in memory usage
+- **100% test coverage** for new components
+
+### User Experience Metrics
+- **User satisfaction surveys** before/after implementation
+- **Time spent on timeline page** (should increase)
+- **User support tickets** related to timeline UX (should decrease)
+
+### Performance Metrics
+- **Scroll performance** (maintain 60fps)
+- **Data update latency** (no increase)
+- **Memory usage** (minimal increase)
+
+## Implementation Timeline
+
+### Week 1: Foundation
+- Implement `useViewState` hook
+- Add scroll position utilities
+- Unit tests for core utilities
+
+### Week 2: Data Management
+- Implement `DataRefreshQueue`
+- Integrate with existing data service
+- Integration tests
+
+### Week 3: Integration
+- Connect view state with data updates
+- Performance optimization
+- Comprehensive testing
+
+### Week 4: Deployment
+- Feature flag implementation
+- User acceptance testing
+- Production rollout
+
+## Conclusion
+
+This architecture addresses the timeline focus issue through careful separation of data refresh from view management. The solution is minimal, focused, and preserves existing functionality while fixing the user experience problem. The incremental implementation approach ensures low risk and high confidence in the solution.
