@@ -1,124 +1,115 @@
-# Frontend Tasks - Milestone 1: Core Activity Tracking Fix
+# Frontend Tasks - Loser Board Feature
 
-## Overview
-This milestone focuses on fixing the backend tracking system for the Activity Tracking UI. Since the frontend components already work correctly (they properly consume API data), this milestone contains **zero frontend tasks**. All work is backend infrastructure to ensure the APIs return correct data.
+## Component Tasks
 
-## Analysis Summary
+### 1. Achievement Dashboard Base Component
+- **Name**: Achievement Dashboard Setup
+- **Description**: Create base React component for Loser Board dashboard
+- **Acceptance Criteria**: 
+  - Renders basic layout
+  - Responsive design
+  - Placeholder for failure statistics
+- **Dependencies**: None
+- **Complexity**: Simple
 
-### Current Frontend State: ✅ WORKING
-- **Activity Dashboard** - Correctly displays data from `/api/activity/files` and `/api/activity/timeline`
-- **File List Components** - Properly renders file information when data exists
-- **Timeline View** - Shows agent counts, file counts, commit counts when provided by API
-- **API Integration** - Fetch calls work correctly, error handling in place
+### 2. Failure Statistics Component
+- **Name**: Failure Stats Renderer
+- **Description**: Create component to display failure statistics
+- **Acceptance Criteria**:
+  - Show total failures
+  - Display failure categories
+  - Render rarity distribution
+- **Dependencies**: 
+  - Achievement Dashboard Base
+- **Complexity**: Medium
 
-### Backend Issues: ❌ BROKEN
-- WriteFileTool doesn't record file generation to ActivityTracker
-- Request count increment methods never called
-- Activity APIs return empty/zero data despite active agent work
+### 3. Dis-Achievements List Component
+- **Name**: Dis-Achievements Catalog
+- **Description**: Create scrollable list of possible dis-achievements
+- **Acceptance Criteria**:
+  - Display dis-achievement cards
+  - Show icon, name, description
+  - Color-code by rarity
+- **Dependencies**: 
+  - Achievement Dashboard Base
+- **Complexity**: Medium
 
-## Frontend Task Assessment
+### 4. Recent Failures Component
+- **Name**: Recent Failures Stream
+- **Description**: Real-time stream of recent agent failures
+- **Acceptance Criteria**:
+  - Fetch and display recent failures
+  - Auto-update every 30 seconds
+  - Compact, scrollable list
+- **Dependencies**:
+  - Achievement Dashboard Base
+  - API Service
+- **Complexity**: Complex
 
-After analyzing the architecture and requirements documents, **no frontend tasks are required** for this milestone because:
+### 5. API Integration Service
+- **Name**: Achievements API Client
+- **Description**: Create service for fetching achievement data
+- **Acceptance Criteria**:
+  - Implement all achievement-related endpoints
+  - Error handling
+  - Caching mechanism
+- **Dependencies**: None
+- **Complexity**: Medium
 
-1. **UI Components Already Work**: The frontend correctly consumes and displays activity data
-2. **API Integration Is Correct**: Fetch calls to `/api/activity/files` and `/api/activity/timeline` work properly
-3. **Problem Is Data Source**: The issue is that backend services don't populate the ActivityTracker
-4. **No UI Changes Needed**: Display logic doesn't need modification
+### 6. Context State Management
+- **Name**: Achievements Context
+- **Description**: Create React context for managing achievement state
+- **Acceptance Criteria**:
+  - Store achievement data
+  - Provide methods for updating achievements
+  - Handle loading and error states
+- **Dependencies**: None
+- **Complexity**: Simple
 
-## Backend Tasks Required (For Reference)
+### 7. Routing Integration
+- **Name**: Loser Board Route
+- **Description**: Add route for Loser Board feature
+- **Acceptance Criteria**:
+  - Create `/achievements` route
+  - Lazy load achievement components
+  - Smooth navigation
+- **Dependencies**: 
+  - Achievement Dashboard Base
+  - Routing Configuration
+- **Complexity**: Simple
 
-While frontend has no tasks, the backend work needed is:
+## Testing Tasks
 
-### Task B1: Fix WriteFileTool Activity Recording
-**Component**: Backend Tool System
-**Description**: Modify WriteFileTool to accept tracking context and record file generation
-**Priority**: HIGH - Core functionality fix
+### 8. Component Unit Tests
+- **Name**: Achievement Components Test Suite
+- **Description**: Write comprehensive unit tests
+- **Acceptance Criteria**:
+  - 90%+ test coverage
+  - Test rendering scenarios
+  - Mock API responses
+- **Dependencies**: All Component Tasks
+- **Complexity**: Medium
 
-### Task B2: Auto-Increment Request Counters  
-**Component**: ActivityTracker Service
-**Description**: Add increment calls to agent_started, file_generated, git_commit methods
-**Priority**: MEDIUM - Timeline accuracy
+## Performance and Optimization
 
-### Task B3: Integration Testing
-**Component**: API Endpoints
-**Description**: Verify activity APIs return correct data after fixes
-**Priority**: HIGH - Validation
+### 9. Performance Optimization
+- **Name**: Dashboard Performance Tuning
+- **Description**: Implement performance improvements
+- **Acceptance Criteria**:
+  - Lazy loading of components
+  - Memoization of heavy computations
+  - Minimal re-renders
+- **Dependencies**: All Previous Tasks
+- **Complexity**: Complex
 
-## Frontend Validation Tasks
+## Deployment Preparation
 
-Once backend fixes are complete, these validation steps ensure frontend works:
-
-### Task V1: Verify Activity Dashboard Updates
-**Type**: Manual Testing
-**Steps**:
-1. Run agent workflow that creates files
-2. Check Activity Dashboard shows files in real-time
-3. Verify file metadata (agent name, timestamp, file type) displays correctly
-
-**Acceptance Criteria**: 
-- Dashboard shows newly created files
-- File cards display correct agent attribution
-- Timestamps are accurate
-
-### Task V2: Verify Timeline Counts
-**Type**: Manual Testing  
-**Steps**:
-1. Execute multiple agent operations
-2. Check Timeline view shows non-zero counts
-3. Verify counts increment as agents work
-
-**Acceptance Criteria**:
-- Agent count > 0 for active requests
-- File count > 0 when files created
-- Commit count > 0 when commits made
-
-### Task V3: Verify API Response Format
-**Type**: Technical Testing
-**Steps**:
-1. Call `/api/activity/files` directly
-2. Call `/api/activity/timeline` directly  
-3. Verify response matches frontend expectations
-
-**Acceptance Criteria**:
-- Files API returns array with required fields
-- Timeline API returns counts object
-- No breaking changes to API contracts
-
-## Dependencies
-
-### Frontend Dependencies: NONE
-- All frontend components are ready and functional
-- No code changes needed in React components
-- No styling updates required
-- No new API endpoints to integrate
-
-### Backend Dependencies: CRITICAL
-- WriteFileTool must record to ActivityTracker
-- Request increment methods must be called
-- Activity tracking infrastructure must work end-to-end
-
-## Complexity Assessment
-
-**Frontend Complexity**: ZERO - No work required
-**Validation Complexity**: SIMPLE - Basic testing to confirm fixes work
-
-## Next Steps After Milestone 1
-
-Once backend fixes are complete and validated:
-1. Frontend will automatically display correct activity data
-2. No frontend deployment needed
-3. Activity Dashboard will show real agent work
-4. Timeline will display accurate counts
-
-## Notes
-
-- This milestone demonstrates the value of proper architecture - frontend was built correctly to consume activity APIs
-- Problem isolation was successful - issue identified as backend data source only
-- Frontend team can focus on future features while backend team fixes tracking
-- No user experience impact once fixes deployed - UI will simply start showing data
-
----
-
-**Task Count**: 0 frontend development tasks, 3 validation tasks
-**Estimated Frontend Effort**: 0 development hours, 2 testing hours
-**Ready for Implementation**: ✅ (All work is backend TDD implementation)
+### 10. Feature Flag Setup
+- **Name**: Achievements Feature Flag
+- **Description**: Implement feature flag for gradual rollout
+- **Acceptance Criteria**:
+  - Configurable feature flag
+  - Easy enable/disable mechanism
+  - Logging for rollout tracking
+- **Dependencies**: Routing Integration
+- **Complexity**: Simple

@@ -1,39 +1,70 @@
-# TDD Model Validation Framework - Backend Tasks (Milestone 1)
+# Backend Tasks - Core Implementation: Enhance WriteFileTool and ActivityTracker
 
-## Core Components
-1. Model Comparison Manager
-   - Design API interaction interface
-   - Implement model registration mechanism
-   - Create comparative analysis executor
+## Task List
 
-2. Performance Metrics Collector
-   - Track model success rates
-   - Collect execution timings
-   - Generate statistical summaries
+### 1. WriteFileTool Context Enhancement
+- **Description**: Add optional tracking context to WriteFileTool
+- **Acceptance Criteria**:
+  - Supports optional agent_id, agent_name, request_id
+  - Maintains existing file writing functionality
+  - Zero overhead when tracking context is not provided
+- **Dependencies**: None
+- **Complexity**: Medium
 
-3. Validation Executor
-   - Design test scenario runner
-   - Support async test execution
-   - Implement result aggregation
+### 2. ActivityTracker File Event Recording
+- **Description**: Implement file generation event tracking in ActivityTracker
+- **Acceptance Criteria**:
+  - Can record file generation events with full context
+  - Automatically increment request counts
+  - Log file generation details
+- **Dependencies**: Task 1 (WriteFileTool Context)
+- **Complexity**: Medium
 
-4. Configuration Management
-   - Create dynamic configuration loader
-   - Support model-specific settings
-   - Enable easy extensibility
+### 3. Context Propagation Mechanism
+- **Description**: Create lightweight context propagation utility
+- **Acceptance Criteria**:
+  - Support optional context initialization
+  - Allow context to be passed through tool interfaces
+  - No performance impact when unused
+- **Dependencies**: None
+- **Complexity**: Simple
 
-5. Results Reporting
-   - Generate comprehensive test reports
-   - Support multiple output formats
-   - Visualize performance comparisons
+### 4. Unit Testing - WriteFileTool
+- **Description**: Comprehensive unit tests for enhanced WriteFileTool
+- **Acceptance Criteria**:
+  - Test file writing with and without tracking context
+  - Verify no changes to existing functionality
+  - 90%+ code coverage
+- **Dependencies**: Tasks 1, 3
+- **Complexity**: Medium
 
-## Implementation Strategy
-- Use Python 3.9+ with type hints
-- Leverage asyncio for concurrent processing
-- Implement robust error handling
-- Create comprehensive logging
+### 5. Unit Testing - ActivityTracker
+- **Description**: Unit tests for enhanced ActivityTracker
+- **Acceptance Criteria**:
+  - Verify file event recording
+  - Test request count increments
+  - Validate context-based logging
+  - 90%+ code coverage
+- **Dependencies**: Tasks 1, 2
+- **Complexity**: Medium
 
-## Milestone 1 Deliverables
-- Functional prototype of validation framework
-- Initial test scenarios for Claude-3-5-Haiku vs Claude-Sonnet
-- Performance tracking infrastructure
-- Extensible architecture
+### 6. Integration Testing
+- **Description**: End-to-end integration tests
+- **Acceptance Criteria**:
+  - Verify entire tracking workflow
+  - Confirm no breaking changes
+  - Performance overhead < 1ms per operation
+- **Dependencies**: All previous tasks
+- **Complexity**: Complex
+
+## Implementation Notes
+- Maintain Python 3.9+ compatibility
+- Use decorator/wrapper pattern
+- Zero external dependencies
+- Graceful degradation when tracking fails
+
+## Success Criteria
+- Backward compatible
+- Optional tracking
+- < 1ms performance overhead
+- 90%+ test coverage

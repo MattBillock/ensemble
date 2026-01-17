@@ -246,7 +246,7 @@ This agent benefits most from these improvement types:
 - **validation**: Ensuring architecture covers all requirements before completion
 
 ## Model Preference
-haiku
+sonnet
 
 ## Max Iterations
 7

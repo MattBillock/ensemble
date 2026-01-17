@@ -259,6 +259,14 @@ Milestone → Coordinators (break down) → TDD Coordinator (execute) → Verify
 - Major blockers or scope changes
 - Quality issues unresolvable
 
+
+**Performance Insight (Auto-Applied):**
+Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
+
+
+**Performance Insight (Auto-Applied):**
+Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
+
 ## Best Practices (What TO Do)
 
 **Milestone Planning:**
