@@ -1,59 +1,54 @@
-# Agent Families Implementation Milestone Plan
+# Milestone Plan: Design Phase Pause Fix Implementation
 
-## Overall Project Goal
-Implement a family-based naming and achievement system for agent groups to provide visual cohesion and collective tracking across the ensemble.
+## Milestone 1: Core State Management and Detection
+### Objective
+Implement core mechanisms to detect and pause agents returning `needs_user_input`
 
-## Milestone Structure
+### Deliverables
+- Modify `_execute_agent_background` to handle new status
+- Update agent status tracking logic
+- Implement initial state tracking for awaiting user input
+- Create basic unit tests for status detection
 
-### Milestone 1: Family Name Generation Core
-**Objective**: Implement robust family name generation and inheritance mechanism
-**Deliverables**:
-- Family name generation system
-- Inheritance mechanism for agent hierarchies
-- Initial unit tests for name generation
-- Performance validation for name generation
+### Acceptance Criteria
+- ✓ Agents with `needs_user_input` marked as `awaiting_user_input`
+- ✓ Original agent context preserved
+- ✓ Unit tests pass for status detection
+- ✓ No regression in normal agent execution
 
-**Acceptance Criteria**:
-- Generate unique, whimsical family names 
-- Propagate family names across agent hierarchies
-- Name generation time < 1ms
-- 90%+ test coverage for name generation logic
+## Milestone 2: Question-Answer Flow Implementation
+### Objective
+Develop robust question-answer handling and agent continuation mechanism
 
-### Milestone 2: Activity Tracking & Achievements
-**Objective**: Create family-level activity tracking and achievement system
-**Deliverables**:
-- Activity aggregation mechanism
-- Three initial achievement types:
-  1. Collective Task Completion
-  2. Efficiency Badge
-  3. Collaboration Star
-- Persistence and query interface for achievements
-- Comprehensive unit tests
+### Deliverables
+- Create `continue_agent_with_answer` method
+- Enhance `answer_question` endpoint
+- Implement context restoration for agent continuation
+- Develop comprehensive integration tests
 
-**Acceptance Criteria**:
-- Track family-level metrics
-- Implement 3 defined achievement types
-- Tracking operation overhead < 5ms
-- Queryable achievement interface
-- 90%+ test coverage for tracking logic
+### Acceptance Criteria
+- ✓ Answers matched to correct waiting agents
+- ✓ Agent spawned with full original and answer context
+- ✓ Asynchronous answer processing
+- ✓ Integration tests validate full flow
 
-### Milestone 3: API and Frontend Integration
-**Objective**: Seamlessly integrate family system into existing infrastructure
-**Deliverables**:
-- REST API endpoints for family information
-- Updated React components to display family relationships
-- Integration tests
-- Performance and compatibility validation
+## Milestone 3: Final Validation and Refinement
+### Objective
+Comprehensive testing, error handling, and edge case management
 
-**Acceptance Criteria**:
-- Expose family data through REST endpoints
-- Update UI to show family names and achievements
-- Maintain existing performance standards
-- Backwards compatibility preserved
-- 90%+ test coverage for integration components
+### Deliverables
+- Complete end-to-end testing
+- Implement robust error handling
+- Performance and stability optimization
+- Documentation and final review
 
-## Cross-Cutting Requirements
-- Maintain < 5ms performance overhead
-- 90%+ test coverage across all components
-- No breaking changes to existing systems
-- Graceful handling of legacy agent data
+### Acceptance Criteria
+- ✓ All tests pass (unit and integration)
+- ✓ Graceful error handling
+- ✓ No performance degradation
+- ✓ Clear documentation of new flow
+
+## Dependencies
+- Milestone 1 must complete before Milestone 2
+- Milestone 2 must complete before Milestone 3
+- Consistent coordination with Executive Director agent
