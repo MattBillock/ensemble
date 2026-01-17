@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Badge } from 'react-bootstrap';
+import { generateWhimsicalName, getAgentEmoji } from '../utils/whimsicalNames';
 
 const STAGE_ICONS = {
   'requirements': '📋',
@@ -8,17 +9,19 @@ const STAGE_ICONS = {
   'implementation': '💻',
   'testing': '🧪',
   'complete': '✅',
+  'running': '⚙️',
   'unknown': '❓'
 };
 
 const STAGE_COLORS = {
-  'requirements': 'bg-purple-500/30 text-purple-200',
-  'architecture': 'bg-blue-500/30 text-blue-200',
-  'planning': 'bg-yellow-500/30 text-yellow-200',
-  'implementation': 'bg-orange-500/30 text-orange-200',
-  'testing': 'bg-cyan-500/30 text-cyan-200',
-  'complete': 'bg-green-500/30 text-green-200',
-  'unknown': 'bg-gray-500/30 text-gray-300'
+  'requirements': { bg: 'rgba(168, 85, 247, 0.3)', color: '#c4b5fd' },
+  'architecture': { bg: 'rgba(59, 130, 246, 0.3)', color: '#93c5fd' },
+  'planning': { bg: 'rgba(234, 179, 8, 0.3)', color: '#fde047' },
+  'implementation': { bg: 'rgba(249, 115, 22, 0.3)', color: '#fdba74' },
+  'testing': { bg: 'rgba(6, 182, 212, 0.3)', color: '#67e8f9' },
+  'complete': { bg: 'rgba(34, 197, 94, 0.3)', color: '#86efac' },
+  'running': { bg: 'rgba(234, 179, 8, 0.3)', color: '#fde047' },
+  'unknown': { bg: 'rgba(107, 114, 128, 0.3)', color: '#d1d5db' }
 };
 
 const AgentHierarchyTree = ({ hierarchy = {} }) => {
@@ -109,18 +112,20 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
           {!hasChildren && <span style={{ width: '12px' }} />}
 
           <span style={{ fontSize: '16px' }}>
-            {getStatusIcon(node.status)}
+            {getAgentEmoji(node.agent_type)}
           </span>
 
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <strong style={{ fontSize: '13px' }}>{node.agent_id}</strong>
+              <strong style={{ fontSize: '13px' }} title={`${node.agent_name} (${agentId})`}>
+                {generateWhimsicalName(agentId)}
+              </strong>
               <Badge bg={getStatusBadge(node.status)} style={{ fontSize: '10px' }}>
-                {node.status}
+                {getStatusIcon(node.status)} {node.status}
               </Badge>
             </div>
             <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-              {node.agent_name} • {node.agent_type}
+              {node.agent_type}
             </div>
           </div>
 
@@ -180,7 +185,7 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
   const renderProjectGroup = (project) => {
     const isExpanded = expandedProjects.has(project.projectId);
     const stageIcon = STAGE_ICONS[project.stage] || STAGE_ICONS.unknown;
-    const stageColor = STAGE_COLORS[project.stage] || STAGE_COLORS.unknown;
+    const stageStyle = STAGE_COLORS[project.stage] || STAGE_COLORS.unknown;
     const totalAgents = project.stats.running + project.stats.completed + project.stats.failed + project.stats.awaiting + project.stats.stalled + project.stats.recovered;
 
     return (
@@ -200,17 +205,24 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
           onMouseLeave={(e) => e.currentTarget.style.borderColor = '#3a3f52'}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '12px', color: '#6b7280', width: '12px' }}>
+            <span style={{ fontSize: '12px', color: '#9ca3af', width: '16px', userSelect: 'none' }}>
               {isExpanded ? '▼' : '▶'}
             </span>
-            <span style={{ fontSize: '18px' }}>{stageIcon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <strong style={{ fontSize: '14px', color: '#fff' }}>
-                  {project.projectName.length > 40 ? project.projectName.slice(0, 40) + '...' : project.projectName}
+            <span style={{ fontSize: '18px' }}>📁</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <strong style={{ fontSize: '14px', color: '#f7fafc' }}>
+                  {project.projectName.length > 50 ? project.projectName.slice(0, 50) + '...' : project.projectName}
                 </strong>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${stageColor}`}>
-                  {project.stage}
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  backgroundColor: stageStyle.bg,
+                  color: stageStyle.color
+                }}>
+                  {stageIcon} {project.stage}
                 </span>
               </div>
               <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>

@@ -1322,3 +1322,230 @@ export const disableYoloMode = async () => {
     throw error;
   }
 };
+
+// ==================== Swarm Pause/Resume API ====================
+
+/**
+ * Get the current swarm pause status
+ */
+export const getSwarmPauseStatus = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/pause-status`);
+    if (!response.ok) throw new Error('Failed to fetch swarm pause status');
+    return await response.json();
+  } catch (error) {
+    console.error('Get swarm pause status error:', error);
+    return { paused: false, running_agents: 0 };
+  }
+};
+
+/**
+ * Pause the entire agent swarm
+ * Running agents will stop at their next checkpoint
+ * @param {string} [reason] - Optional reason for pausing
+ */
+export const pauseSwarm = async (reason = null) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/pause`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    if (!response.ok) throw new Error('Failed to pause swarm');
+    return await response.json();
+  } catch (error) {
+    console.error('Pause swarm error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resume the agent swarm after a pause
+ */
+export const resumeSwarm = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/resume`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Failed to resume swarm');
+    return await response.json();
+  } catch (error) {
+    console.error('Resume swarm error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Toggle the swarm pause state
+ * @param {string} [reason] - Optional reason if pausing
+ */
+export const toggleSwarmPause = async (reason = null) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/toggle-pause`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    if (!response.ok) throw new Error('Failed to toggle swarm pause');
+    return await response.json();
+  } catch (error) {
+    console.error('Toggle swarm pause error:', error);
+    throw error;
+  }
+};
+
+// ========== Agent Cleanup API ==========
+
+/**
+ * Preview agents that would be cleaned up
+ * @param {boolean} includeCompleted - Include completed agents
+ * @param {boolean} includeRunning - Include running agents
+ * @param {boolean} includeFailed - Include failed agents
+ */
+export const previewCleanup = async (includeCompleted = true, includeRunning = false, includeFailed = true) => {
+  try {
+    const params = new URLSearchParams({
+      include_completed: includeCompleted,
+      include_running: includeRunning,
+      include_failed: includeFailed
+    });
+    const response = await fetch(`${API_BASE_URL}/api/swarm/cleanup/preview?${params}`);
+    if (!response.ok) throw new Error('Failed to preview cleanup');
+    return await response.json();
+  } catch (error) {
+    console.error('Preview cleanup error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clear agents by status from the UI
+ * @param {string[]} statuses - Statuses to clear (e.g., ['completed', 'failed'])
+ * @param {boolean} preserveRunning - Always preserve running agents (default true)
+ */
+export const clearAgentStates = async (statuses = ['completed'], preserveRunning = true) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/swarm/cleanup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        statuses: statuses,
+        preserve_running: preserveRunning
+      })
+    });
+    if (!response.ok) throw new Error('Failed to clear agents');
+    return await response.json();
+  } catch (error) {
+    console.error('Clear agents error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clear only completed agents (convenience wrapper)
+ */
+export const clearCompletedAgents = async () => {
+  return clearAgentStates(['completed'], true);
+};
+
+/**
+ * Clear completed and failed agents
+ */
+export const clearFinishedAgents = async () => {
+  return clearAgentStates(['completed', 'failed', 'error', 'forever_failed'], true);
+};
+
+// ========== Agent Definition Management API ==========
+
+/**
+ * List all agent definitions by category
+ */
+export const getAgentDefinitions = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-definitions`);
+    if (!response.ok) throw new Error('Failed to fetch agent definitions');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent definitions error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a specific agent definition
+ */
+export const getAgentDefinition = async (category, filename) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-definitions/${category}/${filename}`);
+    if (!response.ok) throw new Error('Failed to fetch agent definition');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent definition error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an agent definition
+ */
+export const updateAgentDefinition = async (category, filename, content) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-definitions/${category}/${filename}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    if (!response.ok) throw new Error('Failed to update agent definition');
+    return await response.json();
+  } catch (error) {
+    console.error('Update agent definition error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Restore an agent definition from backup
+ */
+export const restoreAgentDefinition = async (category, filename) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-definitions/${category}/${filename}/restore`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Failed to restore agent definition');
+    return await response.json();
+  } catch (error) {
+    console.error('Restore agent definition error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the agent definition template
+ */
+export const getAgentTemplate = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-definitions/template`);
+    if (!response.ok) throw new Error('Failed to fetch agent template');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent template error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clear all activities from the activity tracker
+ * Note: This clears the in-memory activities, not persisted data
+ */
+export const clearActivities = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/activity/clear`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Failed to clear activities');
+    return await response.json();
+  } catch (error) {
+    console.error('Clear activities error:', error);
+    throw error;
+  }
+};

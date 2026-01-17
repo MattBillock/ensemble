@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { Container, Row, Col, Card, Form, Button, Badge, Spinner, Alert, ButtonGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Badge, Spinner, Alert, ButtonGroup, Dropdown } from 'react-bootstrap';
 import {
   generateSolution,
   getApplicationStatus,
@@ -10,8 +10,12 @@ import {
   answerQuestion,
   getGeneratedFiles,
   getYoloMode,
-  setYoloMode
+  setYoloMode,
+  clearAgentStates,
+  getSwarmPauseStatus,
+  toggleSwarmPause
 } from './services/api';
+import { generateWhimsicalName, getAgentEmoji } from './utils/whimsicalNames';
 
 // Core components loaded immediately (used in main view)
 import ActivityFeed from './components/ActivityFeed';
@@ -56,8 +60,12 @@ function App() {
   const [appStatus, setAppStatus] = useState({ status: 'connecting', active_agents: 0 });
 
   // Polling configuration
-  const [pollInterval, setPollInterval] = useState(1000); // 1 second default
-  const [isPaused, setIsPaused] = useState(false);
+  const [pollInterval, setPollInterval] = useState(5000); // 5 seconds default to reduce server load
+  const [isUIUpdatesPaused, setIsUIUpdatesPaused] = useState(false); // UI updates pause (local)
+
+  // Swarm pause (server-side - pauses entire agent swarm)
+  const [isSwarmPaused, setIsSwarmPaused] = useState(false);
+  const [swarmPauseReason, setSwarmPauseReason] = useState(null);
 
   // YOLO Mode (fully autonomous, no reviews)
   const [yoloMode, setYoloModeState] = useState(false);
@@ -78,7 +86,7 @@ function App() {
 
   // Fetch all activity data
   const fetchActivityData = async () => {
-    if (isPaused) return;
+    if (isUIUpdatesPaused) return;
 
     try {
       const [activitiesRes, hierarchyRes, statesRes, questionsRes, filesRes, statusRes] = await Promise.all([
@@ -101,17 +109,22 @@ function App() {
     }
   };
 
-  // Fetch initial YOLO mode status
+  // Fetch initial YOLO mode and swarm pause status
   useEffect(() => {
-    const fetchYoloStatus = async () => {
+    const fetchInitialStatus = async () => {
       try {
-        const result = await getYoloMode();
-        setYoloModeState(result.enabled || false);
+        const [yoloResult, pauseResult] = await Promise.all([
+          getYoloMode(),
+          getSwarmPauseStatus()
+        ]);
+        setYoloModeState(yoloResult.enabled || false);
+        setIsSwarmPaused(pauseResult.paused || false);
+        setSwarmPauseReason(pauseResult.reason || null);
       } catch (err) {
-        console.error('Failed to fetch YOLO mode status:', err);
+        console.error('Failed to fetch initial status:', err);
       }
     };
-    fetchYoloStatus();
+    fetchInitialStatus();
   }, []);
 
   // Toggle YOLO mode
@@ -125,24 +138,61 @@ function App() {
     }
   };
 
+  // Toggle Swarm Pause (pauses entire agent system)
+  const handleSwarmPauseToggle = async () => {
+    try {
+      const result = await toggleSwarmPause(isSwarmPaused ? null : 'User requested pause');
+      setIsSwarmPaused(result.paused);
+      setSwarmPauseReason(result.reason || result.previous_reason || null);
+      // Immediately refresh to show updated status
+      await fetchActivityData();
+    } catch (err) {
+      console.error('Failed to toggle swarm pause:', err);
+      setError('Failed to toggle swarm pause');
+    }
+  };
+
+  // Cleanup/clear agents by status type
+  const handleClearByStatus = async (statusType) => {
+    const statusMap = {
+      completed: { statuses: ['completed'], label: 'completed agents' },
+      failed: { statuses: ['failed', 'error', 'forever_failed'], label: 'failed agents' },
+      stalled: { statuses: ['stalled', 'recovered'], label: 'stalled/recovered agents' },
+      all_finished: { statuses: ['completed', 'failed', 'error', 'forever_failed', 'stalled', 'superseded'], label: 'all finished agents' }
+    };
+
+    const config = statusMap[statusType];
+    if (!config) return;
+
+    try {
+      await clearAgentStates(config.statuses, true);
+      await fetchActivityData();
+    } catch (err) {
+      console.error(`Failed to clear ${config.label}:`, err);
+      setError(`Failed to clear ${config.label}`);
+    }
+  };
+
   // Set up polling
   useEffect(() => {
     // Initial fetch
     fetchActivityData();
 
-    // Set up polling
+    // Set up polling (only if not paused and interval > 0)
     if (pollTimerRef.current) {
       clearInterval(pollTimerRef.current);
     }
 
-    pollTimerRef.current = setInterval(fetchActivityData, pollInterval);
+    if (!isUIUpdatesPaused && pollInterval > 0) {
+      pollTimerRef.current = setInterval(fetchActivityData, pollInterval);
+    }
 
     return () => {
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
       }
     };
-  }, [pollInterval, isPaused]);
+  }, [pollInterval, isUIUpdatesPaused]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,6 +202,8 @@ function App() {
     try {
       const response = await generateSolution(problemInput, budgetTier);
       console.log('Solution generation started:', response);
+      // Immediately refresh UI to show the new task
+      await fetchActivityData();
     } catch (err) {
       setError('Failed to start solution generation');
       console.error(err);
@@ -167,10 +219,13 @@ function App() {
     setQuestions(questionsRes.questions || {});
   };
 
+  // Compute agent counts from agentStates
   const runningAgents = Object.values(agentStates).filter(s => s.status === 'running').length;
   const completedAgents = Object.values(agentStates).filter(s => s.status === 'completed').length;
-  const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed' || s.status === 'forever_failed').length;
+  const failedAgents = Object.values(agentStates).filter(s => s.status === 'failed' || s.status === 'forever_failed' || s.status === 'error').length;
   const foreverFailedAgents = Object.values(agentStates).filter(s => s.status === 'forever_failed').length;
+  const recoveredAgents = Object.values(agentStates).filter(s => s.status === 'recovered' || s.status === 'stalled').length;
+  const totalAgentsInState = Object.keys(agentStates).length;
 
   // Filter agents based on hideCompleted
   const filteredAgentStates = Object.entries(agentStates).filter(([_, state]) => {
@@ -181,6 +236,13 @@ function App() {
   // Filter activities based on activity filter
   const filteredActivities = activities.filter(activity => {
     if (activityFilter === 'all') return true;
+    // Handle special filter cases that need partial matching
+    if (activityFilter === 'tool_use') {
+      return activity.activity_type.startsWith('tool_use');
+    }
+    if (activityFilter === 'error') {
+      return activity.activity_type.includes('failed') || activity.activity_type.includes('error');
+    }
     return activity.activity_type === activityFilter;
   });
 
@@ -209,10 +271,14 @@ function App() {
                   <Badge bg={appStatus.status === 'running' ? 'success' : 'secondary'}>
                     {appStatus.status === 'running' ? 'Online' : 'Connecting...'}
                   </Badge>
-                  <Badge bg="warning" text="dark">{runningAgents} Running</Badge>
-                  <Badge bg="success">{completedAgents} Completed</Badge>
+                  {runningAgents > 0 && <Badge bg="warning" text="dark">{runningAgents} Running</Badge>}
+                  {completedAgents > 0 && <Badge bg="success">{completedAgents} Completed</Badge>}
+                  {recoveredAgents > 0 && <Badge bg="info">{recoveredAgents} Recovered</Badge>}
                   {failedAgents > 0 && <Badge bg="danger">{failedAgents} Failed</Badge>}
                   {foreverFailedAgents > 0 && <Badge bg="dark" style={{ border: '1px solid #dc3545' }}>☠️ {foreverFailedAgents} Terminated</Badge>}
+                  {totalAgentsInState > 0 && (runningAgents + completedAgents + failedAgents + recoveredAgents === 0) && (
+                    <Badge bg="secondary">{totalAgentsInState} Total</Badge>
+                  )}
                 </div>
 
                 {/* View Switcher and Poll interval control */}
@@ -280,33 +346,49 @@ function App() {
                     </Button>
                   </ButtonGroup>
 
-                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>Update Interval:</span>
+                  <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', marginRight: '4px' }}>Refresh:</span>
                   <ButtonGroup size="sm">
                     <Button
-                      variant={pollInterval === 500 ? 'primary' : 'outline-secondary'}
-                      onClick={() => setPollInterval(500)}
-                    >
-                      500ms
-                    </Button>
-                    <Button
-                      variant={pollInterval === 1000 ? 'primary' : 'outline-secondary'}
-                      onClick={() => setPollInterval(1000)}
-                    >
-                      1s
-                    </Button>
-                    <Button
-                      variant={pollInterval === 2000 ? 'primary' : 'outline-secondary'}
-                      onClick={() => setPollInterval(2000)}
+                      variant={pollInterval === 2000 && !isUIUpdatesPaused ? 'primary' : 'outline-light'}
+                      onClick={() => { setIsUIUpdatesPaused(false); setPollInterval(2000); }}
+                      style={{ minWidth: '36px' }}
                     >
                       2s
                     </Button>
+                    <Button
+                      variant={pollInterval === 5000 && !isUIUpdatesPaused ? 'primary' : 'outline-light'}
+                      onClick={() => { setIsUIUpdatesPaused(false); setPollInterval(5000); }}
+                      style={{ minWidth: '36px' }}
+                    >
+                      5s
+                    </Button>
+                    <Button
+                      variant={pollInterval === 10000 && !isUIUpdatesPaused ? 'primary' : 'outline-light'}
+                      onClick={() => { setIsUIUpdatesPaused(false); setPollInterval(10000); }}
+                      style={{ minWidth: '36px' }}
+                    >
+                      10s
+                    </Button>
+                    <Button
+                      variant={isUIUpdatesPaused ? 'warning' : 'outline-light'}
+                      onClick={() => setIsUIUpdatesPaused(!isUIUpdatesPaused)}
+                      title="Pause UI updates (agents keep running)"
+                      style={{ minWidth: '36px' }}
+                    >
+                      {isUIUpdatesPaused ? '▶' : '⏸'}
+                    </Button>
                   </ButtonGroup>
                   <Button
-                    variant={isPaused ? 'warning' : 'outline-secondary'}
+                    variant={isSwarmPaused ? 'danger' : 'outline-warning'}
                     size="sm"
-                    onClick={() => setIsPaused(!isPaused)}
+                    onClick={handleSwarmPauseToggle}
+                    style={{
+                      fontWeight: isSwarmPaused ? 'bold' : 'normal',
+                      minWidth: '120px'
+                    }}
+                    title={isSwarmPaused ? `Paused: ${swarmPauseReason || 'No reason'}` : 'Pause all agent activity'}
                   >
-                    {isPaused ? '▶ Resume' : '⏸ Pause'}
+                    {isSwarmPaused ? '▶️ Resume Swarm' : '⏸️ Pause Swarm'}
                   </Button>
                   <Button
                     variant={yoloMode ? 'danger' : 'outline-danger'}
@@ -320,6 +402,38 @@ function App() {
                   >
                     {yoloMode ? '🔥 YOLO ON' : '💀 YOLO'}
                   </Button>
+                  <Dropdown>
+                    <Dropdown.Toggle variant="outline-secondary" size="sm" id="clear-dropdown">
+                      🧹 Clear
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                      <Dropdown.Item
+                        onClick={() => handleClearByStatus('completed')}
+                        style={{ color: '#10b981' }}
+                      >
+                        ✅ Clear Completed
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => handleClearByStatus('failed')}
+                        style={{ color: '#ef4444' }}
+                      >
+                        ❌ Clear Failed
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => handleClearByStatus('stalled')}
+                        style={{ color: '#f59e0b' }}
+                      >
+                        ⏸️ Clear Stalled/Recovered
+                      </Dropdown.Item>
+                      <Dropdown.Divider style={{ borderColor: '#3a3f52' }} />
+                      <Dropdown.Item
+                        onClick={() => handleClearByStatus('all_finished')}
+                        style={{ color: '#9ca3af' }}
+                      >
+                        🗑️ Clear All Finished
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
                 </div>
               </div>
             </Col>
@@ -455,7 +569,7 @@ function App() {
                     </span>
                     <span style={{ fontSize: '14px' }}>Agent Hierarchy</span>
                     <Badge bg="info" className="ms-2" style={{ fontSize: '10px' }}>
-                      {Object.keys(hierarchy).length} agents
+                      {totalAgentsInState} agents
                     </Badge>
                   </div>
                 </div>
@@ -482,7 +596,8 @@ function App() {
                       </Badge>
                     </h6>
                     <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                      {isPaused ? '⏸ Paused' : `🔄 Updates every ${pollInterval}ms`}
+                      {isUIUpdatesPaused ? '⏸ UI Paused' : `🔄 Updates every ${pollInterval / 1000}s`}
+                      {isSwarmPaused && <span style={{ color: '#ef4444', marginLeft: '8px' }}>⚠️ Swarm Paused</span>}
                     </span>
                   </div>
                   {/* Activity Filter */}
@@ -526,15 +641,29 @@ function App() {
                       {sectionsCollapsed.agents ? '▶' : '▼'}
                     </span>
                     <span style={{ fontSize: '14px' }}>Agent Tasks</span>
-                    <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '10px' }}>
-                      {runningAgents} active
-                    </Badge>
-                    <Badge bg="success" className="ms-1" style={{ fontSize: '10px' }}>
-                      {completedAgents} done
-                    </Badge>
+                    {runningAgents > 0 && (
+                      <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '10px' }}>
+                        {runningAgents} active
+                      </Badge>
+                    )}
+                    {completedAgents > 0 && (
+                      <Badge bg="success" className="ms-1" style={{ fontSize: '10px' }}>
+                        {completedAgents} done
+                      </Badge>
+                    )}
+                    {recoveredAgents > 0 && (
+                      <Badge bg="info" className="ms-1" style={{ fontSize: '10px' }}>
+                        {recoveredAgents} recovered
+                      </Badge>
+                    )}
                     {failedAgents > 0 && (
                       <Badge bg="danger" className="ms-1" style={{ fontSize: '10px' }}>
                         {failedAgents} failed
+                      </Badge>
+                    )}
+                    {filteredAgentStates.length > 0 && runningAgents === 0 && completedAgents === 0 && recoveredAgents === 0 && failedAgents === 0 && (
+                      <Badge bg="secondary" className="ms-2" style={{ fontSize: '10px' }}>
+                        {filteredAgentStates.length} total
                       </Badge>
                     )}
                   </div>
@@ -575,7 +704,10 @@ function App() {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '13px' }}>{agentId}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '14px' }}>{getAgentEmoji(state.agent_type)}</span>
+                          <strong style={{ fontSize: '13px' }} title={agentId}>{generateWhimsicalName(agentId)}</strong>
+                        </div>
                         <Badge
                           bg={
                             state.status === 'running' ? 'warning' :

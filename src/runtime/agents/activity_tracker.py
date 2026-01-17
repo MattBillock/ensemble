@@ -801,6 +801,76 @@ class AgentActivityTracker:
 
         logger.info(f"Cleared request {request_id}: {len(agents_to_remove)} agents removed")
 
+    def clear_all(self, include_activities: bool = True, include_agents: bool = True):
+        """Clear all tracked data for a fresh start.
+
+        Args:
+            include_activities: Clear all activities
+            include_agents: Clear agent hierarchy and states
+        """
+        cleared = {
+            "activities": 0,
+            "agents": 0,
+            "questions": 0,
+            "requests": 0
+        }
+
+        if include_activities:
+            cleared["activities"] = len(self.activities)
+            self.activities = []
+
+        if include_agents:
+            cleared["agents"] = len(self.agent_hierarchy)
+            self.agent_hierarchy = {}
+            self.agent_states = {}
+            cleared["questions"] = len(self.pending_questions)
+            self.pending_questions = {}
+            cleared["requests"] = len(self.requests)
+            self.requests = {}
+
+        # Save the cleared state
+        self._save_state()
+
+        logger.info(f"Cleared all data: {cleared}")
+        return cleared
+
+    def clear_agents_by_status(self, statuses: List[str]) -> Dict[str, int]:
+        """Clear agents matching the given statuses.
+
+        Args:
+            statuses: List of status strings to clear (e.g., ['completed', 'failed'])
+
+        Returns:
+            Dict with count of cleared items
+        """
+        cleared = {
+            "agents": 0,
+            "hierarchy": 0
+        }
+
+        # Find agents to remove by status
+        agents_to_remove = []
+        for agent_id, state in list(self.agent_states.items()):
+            if state.get("status") in statuses:
+                agents_to_remove.append(agent_id)
+
+        # Remove from agent_states
+        for agent_id in agents_to_remove:
+            if agent_id in self.agent_states:
+                del self.agent_states[agent_id]
+                cleared["agents"] += 1
+
+            # Also remove from hierarchy
+            if agent_id in self.agent_hierarchy:
+                del self.agent_hierarchy[agent_id]
+                cleared["hierarchy"] += 1
+
+        # Save state
+        self._save_state()
+
+        logger.info(f"Cleared {cleared['agents']} agents with statuses {statuses}")
+        return cleared
+
     # ========== Request Tracking for Timeline View ==========
 
     def record_request_started(

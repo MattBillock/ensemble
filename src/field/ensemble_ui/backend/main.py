@@ -118,6 +118,10 @@ class AgentOrchestrator:
         # YOLO Mode - when enabled, skip all review phases and run fully autonomous
         self.yolo_mode = False
 
+        # Swarm Pause - when enabled, agents will pause at next checkpoint
+        self.swarm_paused = False
+        self.pause_reason = None
+
         self.logger = RequestLogger(logger, {})
         self.logger.info(f"🔧 Project root: {self.project_root}", extra={'request_id': 'init', 'agent_id': 'system'})
         self.logger.info(f"🔧 Leadership path: {self.project_root / 'leadership'}", extra={'request_id': 'init', 'agent_id': 'system'})
@@ -1319,6 +1323,14 @@ async def answer_question(question_id: str, answer: dict, background_tasks: Back
 
     return {"success": True, "question_id": question_id}
 
+@app.post("/api/activity/clear")
+async def clear_activities():
+    """Clear all activities and reset the tracker"""
+    from src.runtime.agents.runtime import AgentRuntime
+    tracker = AgentRuntime.get_activity_tracker()
+    result = tracker.clear_all(include_activities=True, include_agents=True)
+    return {"success": True, "cleared": result}
+
 @app.get("/api/activity/files")
 async def get_generated_files(
     agent_id: str = None,
@@ -1385,48 +1397,113 @@ async def get_git_repo_info():
 
 @app.get("/api/projects/summary")
 async def get_projects_summary():
-    """Get summary of all projects grouped by project_id."""
-    projects = {}
+    """Get summary of all projects grouped by request_id from persistent storage."""
+    from src.runtime.agents.runtime import AgentRuntime
 
-    for agent_id, agent_info in orchestrator.active_agents.items():
-        project_id = agent_info.get("project_id", agent_info.get("request_id", "default"))
-        if project_id not in projects:
-            projects[project_id] = {
-                "project_id": project_id,
-                "project_name": agent_info.get("problem", "")[:50],
+    projects = {}
+    activity_tracker = AgentRuntime.get_activity_tracker()
+
+    # Get all agent states from activity tracker (persistent)
+    agent_states = getattr(activity_tracker, 'agent_states', {})
+
+    for agent_id, state in agent_states.items():
+        if not isinstance(state, dict):
+            continue
+
+        request_id = state.get("request_id", "unknown")
+        if not request_id or request_id == "unknown":
+            continue
+
+        if request_id not in projects:
+            projects[request_id] = {
+                "project_id": request_id,
+                "project_name": "",
                 "total_agents": 0,
                 "active_agents": 0,
                 "completed_agents": 0,
                 "failed_agents": 0,
                 "awaiting_input": 0,
                 "current_stage": "unknown",
-                "created_at": agent_info.get("created_at"),
+                "created_at": state.get("started_at"),
+                "agents": []
             }
 
-        projects[project_id]["total_agents"] += 1
-        status = agent_info.get("status", "unknown")
-        if status == "running":
-            projects[project_id]["active_agents"] += 1
-        elif status == "completed":
-            projects[project_id]["completed_agents"] += 1
-        elif status in ("error", "forever_failed"):
-            projects[project_id]["failed_agents"] += 1
-        elif status == "awaiting_user_input":
-            projects[project_id]["awaiting_input"] += 1
+        projects[request_id]["total_agents"] += 1
+        status = state.get("status", "unknown")
 
-        # Update stage from top-level agent (executive_director)
-        if agent_info.get("type") == "executive_director":
-            projects[project_id]["current_stage"] = agent_info.get("current_stage", "unknown")
-            projects[project_id]["project_name"] = agent_info.get("problem", "")[:50]
+        if status == "running":
+            projects[request_id]["active_agents"] += 1
+        elif status == "completed":
+            projects[request_id]["completed_agents"] += 1
+        elif status in ("failed", "error", "forever_failed"):
+            projects[request_id]["failed_agents"] += 1
+        elif status in ("awaiting_user_input", "needs_review"):
+            projects[request_id]["awaiting_input"] += 1
+
+        # Track agent info
+        projects[request_id]["agents"].append({
+            "agent_id": agent_id,
+            "agent_type": state.get("agent_type", "unknown"),
+            "status": status
+        })
+
+        # Get project name from executive_director or first agent with a task
+        agent_type = state.get("agent_type", "")
+        if "executive" in agent_type.lower() or "director" in agent_type.lower():
+            task = state.get("current_task", "")
+            if task and not projects[request_id]["project_name"]:
+                projects[request_id]["project_name"] = task[:80]
+
+        # Fallback: use current_task from any agent if no name yet
+        if not projects[request_id]["project_name"]:
+            task = state.get("current_task", "")
+            if task:
+                projects[request_id]["project_name"] = task[:80]
+
+    # Also check orchestrator.active_agents for any running tasks not yet in activity_tracker
+    for agent_id, agent_info in orchestrator.active_agents.items():
+        request_id = agent_info.get("request_id", "default")
+        if request_id not in projects:
+            projects[request_id] = {
+                "project_id": request_id,
+                "project_name": agent_info.get("problem", "")[:80] or "Active Task",
+                "total_agents": 1,
+                "active_agents": 1,
+                "completed_agents": 0,
+                "failed_agents": 0,
+                "awaiting_input": 0,
+                "current_stage": agent_info.get("current_stage", "running"),
+                "created_at": agent_info.get("created_at"),
+                "agents": []
+            }
 
     # Calculate stage distribution
     stage_counts = {}
     for p in projects.values():
-        stage = p.get("current_stage", "unknown")
+        # Determine stage based on agent counts
+        if p["active_agents"] > 0:
+            stage = "running"
+        elif p["failed_agents"] > 0 and p["completed_agents"] == 0:
+            stage = "failed"
+        elif p["awaiting_input"] > 0:
+            stage = "awaiting_input"
+        elif p["completed_agents"] == p["total_agents"]:
+            stage = "completed"
+        else:
+            stage = "unknown"
+
+        p["current_stage"] = stage
         stage_counts[stage] = stage_counts.get(stage, 0) + 1
 
+    # Sort by created_at (newest first)
+    sorted_projects = sorted(
+        projects.values(),
+        key=lambda x: x.get("created_at") or "",
+        reverse=True
+    )
+
     return {
-        "projects": list(projects.values()),
+        "projects": sorted_projects,
         "summary": {
             "total_projects": len(projects),
             "active_projects": sum(1 for p in projects.values() if p["active_agents"] > 0),
@@ -2306,7 +2383,7 @@ async def approve_all_pending_reviews(background_tasks: BackgroundTasks):
 
             try:
                 # Mark as in_progress
-                swarm.update_pending_review_status(review_id, 'in_progress')
+                swarm.update_pending_review(review_id, status='in_progress')
 
                 # Read the file content to create a proper problem description
                 problem_desc = f"Implement the requirements defined in: {file_path}"
@@ -2893,6 +2970,94 @@ async def disable_yolo_mode():
     logger.info("YOLO Mode DISABLED - Human review required")
     return {"enabled": False, "message": "YOLO Mode deactivated. Back to safety."}
 
+
+# ========== Swarm Pause/Resume Endpoints ==========
+
+class SwarmPauseRequest(BaseModel):
+    reason: Optional[str] = None
+
+
+@app.get("/api/swarm/pause-status")
+async def get_swarm_pause_status():
+    """Get current swarm pause status."""
+    from src.runtime.agents.runtime import AgentRuntime
+    activity_tracker = AgentRuntime.get_activity_tracker()
+
+    # Count running agents
+    running_count = 0
+    agent_states = getattr(activity_tracker, 'agent_states', {})
+    for state in agent_states.values():
+        if isinstance(state, dict) and state.get('status') == 'running':
+            running_count += 1
+
+    return {
+        "paused": orchestrator.swarm_paused,
+        "reason": orchestrator.pause_reason,
+        "running_agents": running_count,
+        "message": "Swarm is paused. Agents will stop at next checkpoint." if orchestrator.swarm_paused else "Swarm is running normally."
+    }
+
+
+@app.post("/api/swarm/pause")
+async def pause_swarm(request: SwarmPauseRequest = None):
+    """
+    Pause the entire agent swarm.
+
+    Running agents will complete their current operation and then pause.
+    This is useful for:
+    - Token exhaustion situations
+    - Emergency stops
+    - Resource management
+    """
+    orchestrator.swarm_paused = True
+    orchestrator.pause_reason = request.reason if request else "User requested pause"
+
+    logger.warning(f"⏸️ SWARM PAUSED: {orchestrator.pause_reason}")
+
+    # Broadcast pause status to websocket clients
+    try:
+        await orchestrator.broadcast_status()
+    except Exception as e:
+        logger.warning(f"Could not broadcast pause status: {e}")
+
+    return {
+        "paused": True,
+        "reason": orchestrator.pause_reason,
+        "message": "Swarm paused. Running agents will stop at next checkpoint."
+    }
+
+
+@app.post("/api/swarm/resume")
+async def resume_swarm():
+    """Resume the agent swarm after a pause."""
+    orchestrator.swarm_paused = False
+    previous_reason = orchestrator.pause_reason
+    orchestrator.pause_reason = None
+
+    logger.info("▶️ SWARM RESUMED")
+
+    # Broadcast resume status
+    try:
+        await orchestrator.broadcast_status()
+    except Exception as e:
+        logger.warning(f"Could not broadcast resume status: {e}")
+
+    return {
+        "paused": False,
+        "previous_reason": previous_reason,
+        "message": "Swarm resumed. Agents can continue processing."
+    }
+
+
+@app.post("/api/swarm/toggle-pause")
+async def toggle_swarm_pause(request: SwarmPauseRequest = None):
+    """Toggle the swarm pause state."""
+    if orchestrator.swarm_paused:
+        return await resume_swarm()
+    else:
+        return await pause_swarm(request)
+
+
 # ========== System Polish Endpoints ==========
 
 class SystemPolishRequest(BaseModel):
@@ -3122,60 +3287,68 @@ async def cleanup_agents(request: AgentCleanupRequest):
     """
     try:
         from src.runtime.agents.swarm_state import get_swarm_state
-        swarm_state = get_swarm_state()
+        from src.runtime.agents.runtime import AgentRuntime
 
-        with swarm_state._get_connection() as conn:
-            conn.row_factory = None
+        # Determine statuses to clear
+        statuses_to_clear = request.statuses or []
+        if request.preserve_running and 'running' in statuses_to_clear:
+            statuses_to_clear = [s for s in statuses_to_clear if s != 'running']
 
-            # Build query for agents to delete
-            conditions = []
-            params = []
+        deleted = {"agents": 0, "activity_tracker": 0}
 
-            if request.statuses:
-                placeholders = ','.join('?' * len(request.statuses))
-                conditions.append(f"status IN ({placeholders})")
-                params.extend(request.statuses)
+        # Clear from activity tracker (this is what the UI reads from)
+        activity_tracker = AgentRuntime.get_activity_tracker()
+        if statuses_to_clear:
+            tracker_result = activity_tracker.clear_agents_by_status(statuses_to_clear)
+            deleted["activity_tracker"] = tracker_result.get("agents", 0)
 
-            if request.preserve_running:
-                conditions.append("status != 'running'")
+        # Also clear from swarm_state database
+        try:
+            swarm_state = get_swarm_state()
 
-            if request.max_age_hours:
-                conditions.append(f"created_at < datetime('now', '-{request.max_age_hours} hours')")
+            with swarm_state._get_connection() as conn:
+                conn.row_factory = None
 
-            if not conditions:
-                conditions.append("status != 'running'")  # Default: clean non-running
+                # Build query for agents to delete
+                conditions = []
+                params = []
 
-            where_clause = " AND ".join(conditions)
+                if request.statuses:
+                    placeholders = ','.join('?' * len(request.statuses))
+                    conditions.append(f"status IN ({placeholders})")
+                    params.extend(request.statuses)
 
-            # Get agent IDs to delete
-            cursor = conn.execute(f"SELECT agent_id FROM agents WHERE {where_clause}", params)
-            agent_ids = [row[0] for row in cursor.fetchall()]
+                if request.preserve_running:
+                    conditions.append("status != 'running'")
 
-            if not agent_ids:
-                return {"success": True, "deleted": {"agents": 0}, "message": "No agents matched cleanup criteria"}
+                if request.max_age_hours:
+                    conditions.append(f"created_at < datetime('now', '-{request.max_age_hours} hours')")
 
-            agent_placeholders = ','.join('?' * len(agent_ids))
+                if not conditions:
+                    conditions.append("status != 'running'")  # Default: clean non-running
 
-            # Delete related data
-            deleted = {}
-            cursor = conn.execute(f"DELETE FROM agent_messages WHERE agent_id IN ({agent_placeholders})", agent_ids)
-            deleted["messages"] = cursor.rowcount
+                where_clause = " AND ".join(conditions)
 
-            cursor = conn.execute(f"DELETE FROM tool_executions WHERE agent_id IN ({agent_placeholders})", agent_ids)
-            deleted["tool_executions"] = cursor.rowcount
+                # Get agent IDs to delete
+                cursor = conn.execute(f"SELECT agent_id FROM agents WHERE {where_clause}", params)
+                agent_ids = [row[0] for row in cursor.fetchall()]
 
-            cursor = conn.execute(f"DELETE FROM events WHERE agent_id IN ({agent_placeholders})", agent_ids)
-            deleted["events"] = cursor.rowcount
+                if agent_ids:
+                    agent_placeholders = ','.join('?' * len(agent_ids))
 
-            cursor = conn.execute(f"DELETE FROM recovery_queue WHERE agent_id IN ({agent_placeholders})", agent_ids)
-            deleted["recovery_queue"] = cursor.rowcount
+                    # Delete related data
+                    conn.execute(f"DELETE FROM agent_messages WHERE agent_id IN ({agent_placeholders})", agent_ids)
+                    conn.execute(f"DELETE FROM tool_executions WHERE agent_id IN ({agent_placeholders})", agent_ids)
+                    conn.execute(f"DELETE FROM events WHERE agent_id IN ({agent_placeholders})", agent_ids)
+                    conn.execute(f"DELETE FROM recovery_queue WHERE agent_id IN ({agent_placeholders})", agent_ids)
+                    cursor = conn.execute(f"DELETE FROM agents WHERE agent_id IN ({agent_placeholders})", agent_ids)
+                    deleted["agents"] = cursor.rowcount
+                    conn.commit()
+        except Exception as db_err:
+            # Log but don't fail - activity tracker cleanup is the primary goal
+            logger.warning(f"Swarm state DB cleanup failed (non-critical): {db_err}")
 
-            cursor = conn.execute(f"DELETE FROM agents WHERE agent_id IN ({agent_placeholders})", agent_ids)
-            deleted["agents"] = cursor.rowcount
-
-            conn.commit()
-
-            return {"success": True, "deleted": deleted}
+        return {"success": True, "deleted": deleted}
 
     except Exception as e:
         logger.error(f"Error cleaning up agents: {e}")
@@ -3223,6 +3396,375 @@ async def preview_cleanup(
 
     except Exception as e:
         logger.error(f"Error previewing cleanup: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== Agent Definition Management API ==========
+
+AGENT_DIRS = {
+    "leadership": "leadership",
+    "coordinators": "coordinators",
+    "developers": "developers",
+    "testers": "testers",
+    "designers": "designers"
+}
+
+
+@app.get("/api/agent-definitions")
+async def list_agent_definitions():
+    """List all agent definition files organized by category."""
+    try:
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        agents_by_category = {}
+
+        for category, dirname in AGENT_DIRS.items():
+            agent_dir = project_root / dirname
+            agents = []
+
+            if agent_dir.exists():
+                for md_file in sorted(agent_dir.glob("*.md")):
+                    # Skip non-agent files
+                    if md_file.name.startswith(("_", "AGENT_TEMPLATE", "README")):
+                        continue
+
+                    # Parse basic info from file
+                    content = md_file.read_text(encoding='utf-8')
+                    lines = content.split('\n')
+
+                    # Extract name from first header
+                    name = md_file.stem.replace("_", " ").title()
+                    for line in lines:
+                        if line.startswith("# "):
+                            name = line[2:].strip()
+                            break
+
+                    # Extract purpose (first paragraph after ## Purpose)
+                    purpose = ""
+                    in_purpose = False
+                    for line in lines:
+                        if line.startswith("## Purpose"):
+                            in_purpose = True
+                            continue
+                        if in_purpose:
+                            if line.startswith("##"):
+                                break
+                            if line.strip():
+                                purpose = line.strip()
+                                break
+
+                    agents.append({
+                        "filename": md_file.name,
+                        "name": name,
+                        "purpose": purpose[:200] + "..." if len(purpose) > 200 else purpose,
+                        "category": category,
+                        "path": str(md_file.relative_to(project_root)),
+                        "size_bytes": md_file.stat().st_size,
+                        "modified_at": datetime.fromtimestamp(md_file.stat().st_mtime).isoformat()
+                    })
+
+            agents_by_category[category] = agents
+
+        # Calculate totals
+        total_agents = sum(len(agents) for agents in agents_by_category.values())
+
+        return {
+            "categories": agents_by_category,
+            "total_agents": total_agents,
+            "category_counts": {k: len(v) for k, v in agents_by_category.items()}
+        }
+    except Exception as e:
+        logger.error(f"Error listing agent definitions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agent-definitions/{category}/{filename}")
+async def get_agent_definition(category: str, filename: str):
+    """Get a specific agent definition file content."""
+    try:
+        if category not in AGENT_DIRS:
+            raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        file_path = project_root / AGENT_DIRS[category] / filename
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Agent definition not found")
+
+        if not filename.endswith('.md'):
+            raise HTTPException(status_code=400, detail="Only markdown files allowed")
+
+        content = file_path.read_text(encoding='utf-8')
+
+        # Parse sections
+        sections = {}
+        current_section = "header"
+        current_content = []
+
+        for line in content.split('\n'):
+            if line.startswith("## "):
+                if current_content:
+                    sections[current_section] = '\n'.join(current_content).strip()
+                current_section = line[3:].strip().lower().replace(" ", "_")
+                current_content = []
+            else:
+                current_content.append(line)
+
+        if current_content:
+            sections[current_section] = '\n'.join(current_content).strip()
+
+        return {
+            "filename": filename,
+            "category": category,
+            "path": str(file_path.relative_to(project_root)),
+            "content": content,
+            "sections": sections,
+            "size_bytes": file_path.stat().st_size,
+            "modified_at": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reading agent definition: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class AgentDefinitionUpdate(BaseModel):
+    content: str
+
+
+@app.put("/api/agent-definitions/{category}/{filename}")
+async def update_agent_definition(category: str, filename: str, update: AgentDefinitionUpdate):
+    """Update an agent definition file."""
+    try:
+        if category not in AGENT_DIRS:
+            raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        file_path = project_root / AGENT_DIRS[category] / filename
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Agent definition not found")
+
+        if not filename.endswith('.md'):
+            raise HTTPException(status_code=400, detail="Only markdown files allowed")
+
+        # Create backup
+        backup_path = file_path.with_suffix('.md.backup')
+        backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
+
+        # Write new content
+        file_path.write_text(update.content, encoding='utf-8')
+
+        logger.info(f"Updated agent definition: {category}/{filename}")
+
+        return {
+            "success": True,
+            "filename": filename,
+            "category": category,
+            "backup_created": str(backup_path.relative_to(project_root)),
+            "size_bytes": file_path.stat().st_size,
+            "modified_at": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating agent definition: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agent-definitions/{category}/{filename}/restore")
+async def restore_agent_definition(category: str, filename: str):
+    """Restore an agent definition from backup."""
+    try:
+        if category not in AGENT_DIRS:
+            raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        file_path = project_root / AGENT_DIRS[category] / filename
+        backup_path = file_path.with_suffix('.md.backup')
+
+        if not backup_path.exists():
+            raise HTTPException(status_code=404, detail="No backup found")
+
+        # Restore from backup
+        file_path.write_text(backup_path.read_text(encoding='utf-8'), encoding='utf-8')
+
+        logger.info(f"Restored agent definition from backup: {category}/{filename}")
+
+        return {
+            "success": True,
+            "filename": filename,
+            "category": category,
+            "restored_from": str(backup_path.relative_to(project_root))
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error restoring agent definition: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agent-definitions/template")
+async def get_agent_template():
+    """Get the agent definition template."""
+    try:
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        template_path = project_root / "leadership" / "AGENT_TEMPLATE.md"
+
+        if not template_path.exists():
+            raise HTTPException(status_code=404, detail="Template not found")
+
+        return {
+            "content": template_path.read_text(encoding='utf-8'),
+            "path": str(template_path.relative_to(project_root))
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reading agent template: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== Session Recovery API Endpoints ==========
+
+@app.get("/api/sessions")
+async def get_sessions(
+    status: str = Query(None, description="Filter by status"),
+    limit: int = Query(100, description="Maximum sessions to return"),
+    include_agents: bool = Query(False, description="Include agent data")
+):
+    """Get all swarm sessions, optionally filtered by status."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        sessions = persistence.get_sessions(
+            status=status,
+            limit=limit,
+            include_agents=include_agents
+        )
+        return {"sessions": sessions, "count": len(sessions)}
+    except Exception as e:
+        logger.error(f"Error getting sessions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sessions/incomplete")
+async def get_incomplete_sessions():
+    """Get all incomplete sessions for recovery."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        sessions = persistence.get_incomplete_sessions()
+        return {"sessions": sessions, "count": len(sessions)}
+    except Exception as e:
+        logger.error(f"Error getting incomplete sessions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sessions/{session_id}")
+async def get_session(session_id: str):
+    """Get a specific session with all its agents."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        session = persistence.get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        session['agents'] = persistence.get_agents_for_session(session_id)
+        return session
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/sessions/{session_id}/resume")
+async def resume_session(session_id: str, background_tasks: BackgroundTasks):
+    """Resume a recovered session."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        session = persistence.get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        if session['status'] not in ('recovered', 'failed', 'paused'):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot resume session with status '{session['status']}'"
+            )
+
+        # Resume by spawning a new executive director with continuation context
+        continuation_prompt = f"""RESUMING INTERRUPTED SESSION
+
+## Original Task
+{session['prompt']}
+
+## Context
+This session was interrupted and is being resumed. Review the work completed so far and continue from where it left off. Do not restart from the beginning - continue the existing work.
+
+## Instructions
+1. Assess what has been completed
+2. Identify remaining work
+3. Continue implementation"""
+
+        # Spawn new agent to continue
+        agent_id, result = await orchestrator.spawn_executive_director(
+            problem_description=continuation_prompt,
+            budget_tier=session.get('budget_tier', 'balanced'),
+            auto_continue=True
+        )
+
+        # Update session status
+        persistence.update_session(session_id, status='running')
+
+        return {
+            "success": True,
+            "session_id": session_id,
+            "new_agent_id": agent_id,
+            "message": "Session resumed with new agent"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resuming session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/sessions/{session_id}/abandon")
+async def abandon_session(session_id: str):
+    """Mark a session as abandoned."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        session = persistence.get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        persistence.update_session(session_id, status='abandoned')
+        return {"success": True, "session_id": session_id, "status": "abandoned"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error abandoning session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a session and all its agents."""
+    try:
+        from src.runtime.agents.persistence import get_persistence
+        persistence = get_persistence()
+        success = persistence.delete_session(session_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"success": True, "session_id": session_id, "deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting session {session_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

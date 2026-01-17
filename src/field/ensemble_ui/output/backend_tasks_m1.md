@@ -1,148 +1,238 @@
-# Backend Tasks - Achievement Audit and Cleanup
+# Whimsical Name Enhancement - Backend Tasks (Milestone 1)
 
-## Overview
-This milestone focuses on implementing the Achievement System infrastructure with emphasis on audit capabilities and data cleanup mechanisms. Based on the architecture, we'll build the core services needed to manage achievements, perform audits, and maintain system health.
+## Milestone 1: Expand Name Database
 
-## Task Breakdown
+### Overview
+Create comprehensive name databases from specified creative domains. All names must be original (not copyrighted), family-friendly, whimsical, and pronounceable.
 
-### 1. Database Schema Implementation
-**Description**: Design and implement PostgreSQL database schema for achievements and categories
-**Acceptance Criteria**:
-- SQLAlchemy models for Achievement and AchievementCategory entities
-- Database migration scripts for schema creation
-- Foreign key relationships properly established
-- Indexes on commonly queried fields (name, category, rarity_level)
-- UUID primary keys implemented
-**Dependencies**: None
-**Complexity**: Medium
+---
 
-### 2. Achievement Repository Service - Core CRUD
-**Description**: Implement basic CRUD operations for achievement management
-**Acceptance Criteria**:
-- FastAPI endpoints for GET, POST, PUT, DELETE operations on /achievements
-- Input validation using Pydantic models
-- Proper HTTP status codes and error handling
-- OpenAPI documentation auto-generated
-- Basic authentication middleware (JWT token validation)
-**Dependencies**: Database Schema Implementation
-**Complexity**: Medium
+## Task 1.1: Create Fantasy/Mythology Names Module
+**File**: `src/runtime/agents/naming/categories/fantasy.py`
 
-### 3. Achievement Deduplication Logic
-**Description**: Implement sophisticated duplicate detection and merging capabilities
-**Acceptance Criteria**:
-- Algorithm to detect potential duplicates based on name similarity and criteria overlap
-- Safe merge operation with data preservation
-- Configurable similarity thresholds
-- Audit trail for all deduplication actions
-- Rollback capability for merge operations
-**Dependencies**: Achievement Repository Service - Core CRUD
-**Complexity**: Complex
+**Requirements**:
+- Create 100+ unique fantasy first names
+- Create 50+ fantasy-themed family names
+- Organize by subcategory (tolkien_style, greek_adapted, norse_adapted, general_fantasy)
 
-### 4. Achievement Audit Service Implementation
-**Description**: Build comprehensive audit service for system-wide achievement analysis
-**Acceptance Criteria**:
-- GET /audit endpoint returning system health metrics
-- Duplicate detection reporting
-- Rarity distribution analysis
-- Category balance reporting
-- Performance metrics (query times, cache hit rates)
-- Exportable audit reports in JSON/CSV format
-**Dependencies**: Achievement Deduplication Logic
-**Complexity**: Complex
+**Name Guidelines**:
+- Tolkien-style: compound words with magical/nature elements (e.g., Starweaver, Moonwhisper, Shadowmere)
+- Greek-adapted: classical sounds made whimsical (e.g., Olympius, Apollight, Zepher)
+- Norse-adapted: strong sounds with soft endings (e.g., Thorwind, Freyashine, Lokimist)
 
-### 5. Category Management Service
-**Description**: Implement category CRUD operations with thematic consistency validation
-**Acceptance Criteria**:
-- GET/POST endpoints for /categories
-- Category creation with theme validation
-- Category-level metadata management
-- Achievement count tracking per category
-- Category deletion with achievement reassignment handling
-**Dependencies**: Database Schema Implementation
-**Complexity**: Medium
+**Example Structure**:
+```python
+FANTASY_FIRST_NAMES = {
+    "tolkien_style": ["Starweaver", "Moonwhisper", "Shadowmere", ...],
+    "greek_adapted": ["Olympius", "Apollight", "Zepher", ...],
+    "norse_adapted": ["Thorwind", "Freyashine", "Lokimist", ...],
+    "general_fantasy": ["Mysticfall", "Enchantra", "Spellbound", ...]
+}
 
-### 6. Redis Caching Layer
-**Description**: Implement Redis caching for high-performance achievement lookups
-**Acceptance Criteria**:
-- Cache frequently accessed achievements and categories
-- Cache invalidation strategy for data updates
-- Cache warming on application startup
-- Redis connection pooling and error handling
-- Cache hit/miss metrics tracking
-**Dependencies**: Achievement Repository Service - Core CRUD
-**Complexity**: Medium
+FANTASY_FAMILY_NAMES = [
+    "Dragonheart", "Elfwood", "Wizardly", "Fairydust", ...
+]
+```
 
-### 7. Rarity Balancing Service
-**Description**: Implement statistical analysis and rarity adjustment mechanisms
-**Acceptance Criteria**:
-- Algorithm to analyze current rarity distribution
-- Automatic suggestions for rarity rebalancing
-- Safe rarity level updates with audit trail
-- Statistical integrity validation
-- Batch rarity update operations
-**Dependencies**: Achievement Audit Service Implementation
-**Complexity**: Complex
+---
 
-### 8. Authentication and Authorization System
-**Description**: Implement JWT-based authentication with role-based access control
-**Acceptance Criteria**:
-- JWT token generation and validation
-- bcrypt password hashing
-- Role-based permissions (admin, user, readonly)
-- Token refresh mechanism
-- Rate limiting on authentication endpoints
-**Dependencies**: None
-**Complexity**: Medium
+## Task 1.2: Create Science Fiction Names Module
+**File**: `src/runtime/agents/naming/categories/scifi.py`
 
-### 9. Data Migration and Backup Service
-**Description**: Implement safe data migration tools with backup/rollback capabilities
-**Acceptance Criteria**:
-- Pre-migration backup creation
-- Safe achievement consolidation procedures
-- Rollback mechanism for failed migrations
-- Data integrity validation post-migration
-- Migration progress tracking and logging
-**Dependencies**: Achievement Audit Service Implementation
-**Complexity**: Complex
+**Requirements**:
+- Create 100+ unique sci-fi first names
+- Create 50+ sci-fi themed family names
+- Organize by subcategory (space, cyberpunk, classic_scifi)
 
-### 10. API Documentation and Testing
-**Description**: Comprehensive API documentation and test suite implementation
-**Acceptance Criteria**:
-- Complete OpenAPI/Swagger documentation
-- Unit tests with 90%+ code coverage using pytest
-- Integration tests for all critical workflows
-- Performance tests for audit operations
-- Test data fixtures and factories
-**Dependencies**: All previous tasks
-**Complexity**: Medium
+**Name Guidelines**:
+- Space-themed: cosmic, stellar elements (e.g., Nebulox, Stardrift, Cosmweaver)
+- Cyberpunk: tech + energy words (e.g., Neonflux, Circuitblaze, Dataweave)
+- Classic sci-fi: time/dimension concepts (e.g., Chronoshift, Voidwalker, Stellarforge)
 
-## Priority Order
-1. Database Schema Implementation
-2. Authentication and Authorization System
-3. Achievement Repository Service - Core CRUD
-4. Category Management Service
-5. Redis Caching Layer
-6. Achievement Deduplication Logic
-7. Achievement Audit Service Implementation
-8. Rarity Balancing Service
-9. Data Migration and Backup Service
-10. API Documentation and Testing
+**Example Structure**:
+```python
+SCIFI_FIRST_NAMES = {
+    "space": ["Nebulox", "Stardrift", "Quasarwind", ...],
+    "cyberpunk": ["Neonflux", "Circuitblaze", "Dataweave", ...],
+    "classic_scifi": ["Chronoshift", "Voidwalker", "Stellarforge", ...]
+}
 
-## Critical Path Tasks
-- Database Schema Implementation → Achievement Repository Service → Achievement Audit Service
-- Authentication System (parallel track, needed by all services)
-- Achievement Deduplication Logic (prerequisite for audit service)
+SCIFI_FAMILY_NAMES = [
+    "Starbound", "Nebulon", "Quantumleap", "Warpfield", ...
+]
+```
 
-## Technical Notes
-- All services will use FastAPI with async/await patterns
-- SQLAlchemy with asyncpg for database operations
-- Redis for caching with redis-py async client
-- Pydantic for request/response validation
-- pytest with pytest-asyncio for testing
-- Alembic for database migrations
+---
 
-## Risk Mitigation
-- Data loss prevention: All destructive operations require explicit confirmation
-- Performance monitoring: Redis caching and database query optimization
-- Rollback capabilities: Every major operation must be reversible
-- Comprehensive logging: All audit and modification actions logged
+## Task 1.3: Create Roman Politics Names Module (Whimsical)
+**File**: `src/runtime/agents/naming/categories/roman.py`
+
+**Requirements**:
+- Create 50+ unique Roman-inspired first names (made whimsical)
+- Create 30+ Roman-themed family names (playful versions)
+- Key: Take serious Roman titles/names and add whimsy
+
+**Name Guidelines**:
+- Titles made playful: Consul → Consul Sparkle, Tribune → Tribune Giggles
+- Names adapted: Maximus → Maximus Bubbles, Aurelius → Aurelius Twinkle
+- Military terms softened: Centurion → Centurion Whisper, Legatus → Legatus Breeze
+
+**Example Structure**:
+```python
+ROMAN_FIRST_NAMES = [
+    "Consul", "Tribune", "Centurion", "Legatus", "Praetor",
+    "Maximus", "Aurelius", "Cassius", "Bruticus", "Octavian", ...
+]
+
+# These are the whimsical suffixes/modifiers
+ROMAN_WHIMSY_MODIFIERS = [
+    "Sparkle", "Giggles", "Bubbles", "Twinkle", "Breeze",
+    "Whisper", "Sunshine", "Starlight", "Dewdrop", ...
+]
+
+ROMAN_FAMILY_NAMES = [
+    "Glorius", "Magnificus", "Splendidus", "Jovialis", ...
+]
+```
+
+---
+
+## Task 1.4: Create Gaming Names Module
+**File**: `src/runtime/agents/naming/categories/gaming.py`
+
+**Requirements**:
+- Create 100+ unique gaming-inspired first names
+- Create 50+ gaming-themed family names
+- Organize by subcategory (rpg, adventure, puzzle, general_gaming)
+
+**Name Guidelines**:
+- RPG-style: class/skill based (e.g., Bladesinger, Spellweaver, Loremaster)
+- Adventure: action/quest themed (e.g., Questkeeper, Trailblazer, Pathfinder)
+- Puzzle: logic/pattern based (e.g., Puzzlewing, Codebreaker, Riddlesmith)
+
+**Example Structure**:
+```python
+GAMING_FIRST_NAMES = {
+    "rpg": ["Bladesinger", "Spellweaver", "Loremaster", ...],
+    "adventure": ["Questkeeper", "Trailblazer", "Levelup", ...],
+    "puzzle": ["Puzzlewing", "Codebreaker", "Riddlesmith", ...],
+    "general_gaming": ["Respawnix", "Saveslot", "Highscore", ...]
+}
+
+GAMING_FAMILY_NAMES = [
+    "Powerup", "Checkpoint", "Bonusstage", "Multiball", ...
+]
+```
+
+---
+
+## Task 1.5: Create Creative Names Module
+**File**: `src/runtime/agents/naming/categories/creative.py`
+
+**Requirements**:
+- Create 50+ unique creative-inspired first names
+- Create 30+ creative-themed family names
+- Organize by subcategory (animation, comics, literature)
+
+**Name Guidelines**:
+- Animation: movement/visual (e.g., Toonglow, Frameleap, Sketchwind)
+- Comics: panel/art (e.g., Panelstorm, Inkblaze, Speechbubble)
+- Literature: book/writing (e.g., Quillwhisper, Pageturn, Bookwind)
+
+**Example Structure**:
+```python
+CREATIVE_FIRST_NAMES = {
+    "animation": ["Toonglow", "Frameleap", "Sketchwind", ...],
+    "comics": ["Panelstorm", "Inkblaze", "Speechbubble", ...],
+    "literature": ["Quillwhisper", "Pageturn", "Bookwind", ...]
+}
+
+CREATIVE_FAMILY_NAMES = [
+    "Storyline", "Plottwist", "Narrative", "Epilogue", ...
+]
+```
+
+---
+
+## Task 1.6: Create Expanded Family Names Module
+**File**: `src/runtime/agents/naming/family_names.py`
+
+**Requirements**:
+- Consolidate all family names from category modules
+- Add additional general-purpose family names
+- Total 310+ unique family names
+- Organize by style (creature, occupational, fantasy, botanical, terrain, cosmic, tech)
+
+**Structure**:
+```python
+from .categories import fantasy, scifi, roman, gaming, creative
+
+ALL_FAMILY_NAMES = {
+    "creature": [...],      # Nature creatures (existing + new)
+    "occupational": [...],  # Job-based names (existing + new)
+    "fantasy": [...],       # From fantasy module
+    "botanical": [...],     # Plant-based (existing + new)
+    "terrain": [...],       # Landscape (existing + new)
+    "cosmic": [...],        # From scifi module
+    "tech": [...],          # From scifi/gaming modules
+}
+
+def get_all_family_names() -> List[str]:
+    """Return flattened list of all family names."""
+    
+def get_family_names_by_style(style: str) -> List[str]:
+    """Return family names for a specific style."""
+```
+
+---
+
+## Task 1.7: Create Categories Package Init
+**File**: `src/runtime/agents/naming/categories/__init__.py`
+
+**Requirements**:
+- Export all category modules
+- Provide unified access to name data
+- Include category enum
+
+**Structure**:
+```python
+from enum import Enum
+from typing import Dict, List
+
+class NameCategory(Enum):
+    FANTASY = "fantasy"
+    SCIFI = "scifi"
+    ROMAN = "roman"
+    GAMING = "gaming"
+    CREATIVE = "creative"
+    CLASSIC = "classic"
+
+def get_first_names(category: NameCategory) -> List[str]:
+    """Get all first names for a category."""
+    
+def get_family_names(category: NameCategory) -> List[str]:
+    """Get all family names for a category."""
+    
+def get_all_first_names() -> Dict[NameCategory, List[str]]:
+    """Get all first names organized by category."""
+```
+
+---
+
+## Acceptance Criteria for Milestone 1
+
+1. [ ] All category modules created with required number of names
+2. [ ] All names are original (no copyrighted characters)
+3. [ ] All names are family-friendly and appropriate
+4. [ ] All names are pronounceable (no random letter combinations)
+5. [ ] Names are organized by category and subcategory
+6. [ ] Package structure allows easy import and access
+7. [ ] Documentation includes examples and guidelines
+
+## Quality Checklist for Each Name
+- [ ] Not a copyrighted character name
+- [ ] Family-friendly (no offensive meanings in any language)
+- [ ] Pronounceable in English
+- [ ] Whimsical/fun sounding
+- [ ] Memorable and distinctive
+- [ ] Fits the category theme

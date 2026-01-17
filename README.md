@@ -17,6 +17,8 @@ This release includes:
 
 Ensemble uses specialized AI agents organized into a clear hierarchy with distinct responsibilities. Agents coordinate through a structured workflow to deliver high-quality code following TDD principles.
 
+**For detailed agent documentation, see [Agent Hierarchy Guide](docs/current/AGENT_HIERARCHY.md)**
+
 ### Agent Hierarchy
 
 **Leadership** - Strategic vision and coordination
@@ -201,6 +203,8 @@ ensemble/
 │
 ├── Documentation
 │   ├── docs/                    # Technical documentation
+│   │   └── current/
+│   │       └── AGENT_HIERARCHY.md  # Agent spawning and supervision guide
 │   └── CLAUDE.md               # Project conventions
 │
 ├── Data Directories

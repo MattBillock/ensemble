@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, ProgressBar, Button, Spinner, Table } from 'react-bootstrap';
 
+const API_BASE_URL = 'http://localhost:8001';
+
 /**
  * Projects Dashboard - View and manage projects across the ensemble system
  */
@@ -18,7 +20,7 @@ function ProjectsDashboard() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('/api/projects/summary');
+      const response = await fetch(`${API_BASE_URL}/api/projects/summary`);
       const data = await response.json();
       setProjects(data.projects || []);
       setSummary(data.summary || {});

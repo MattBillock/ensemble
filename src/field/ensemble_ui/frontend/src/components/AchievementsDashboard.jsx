@@ -5,6 +5,7 @@ import {
   getRecentAchievements,
   getAchievementStats
 } from '../services/api';
+import { generateWhimsicalName } from '../utils/whimsicalNames';
 
 // Ska facts for rotation
 const SKA_FACTS = [
@@ -244,12 +245,25 @@ function AchievementsDashboard() {
                 Unlocked
               </h6>
               <h3 className="mb-0">{unlockedCount} / {achievements.length}</h3>
-              <ProgressBar
-                now={achievements.length > 0 ? (unlockedCount / achievements.length) * 100 : 0}
-                className="mt-2"
-                variant="light"
-                style={{ height: '6px' }}
-              />
+              <div
+                style={{
+                  marginTop: '8px',
+                  height: '6px',
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  borderRadius: '3px',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    width: `${achievements.length > 0 ? (unlockedCount / achievements.length) * 100 : 0}%`,
+                    height: '100%',
+                    backgroundColor: 'white',
+                    borderRadius: '3px',
+                    transition: 'width 0.3s ease'
+                  }}
+                />
+              </div>
             </Card.Body>
           </Card>
         </Col>
@@ -288,8 +302,8 @@ function AchievementsDashboard() {
       <Row className="mb-4">
         {/* Recent Achievements */}
         <Col md={4}>
-          <Card>
-            <Card.Header>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
               <strong>🎉 Recent Unlocks</strong>
             </Card.Header>
             <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -304,7 +318,7 @@ function AchievementsDashboard() {
                     style={{
                       padding: '10px',
                       marginBottom: '8px',
-                      backgroundColor: '#f8f9fa',
+                      backgroundColor: '#1a1d29',
                       borderRadius: '8px',
                       borderLeft: `4px solid ${getRarityColor(a.rarity)}`
                     }}
@@ -312,10 +326,14 @@ function AchievementsDashboard() {
                     <div style={{ fontSize: '1.5rem', display: 'inline-block', marginRight: '8px' }}>
                       {a.icon}
                     </div>
-                    <strong>{a.name}</strong>
+                    <strong style={{ color: '#f7fafc' }}>{a.name}</strong>
                     <br />
-                    <small className="text-muted">
-                      {a.agent_name} - {new Date(a.awarded_at).toLocaleDateString()}
+                    <small style={{ color: '#9ca3af' }}>
+                      {generateWhimsicalName(a.agent_name)} ({a.agent_name.split('/').pop()?.replace('.md', '')})
+                    </small>
+                    <br />
+                    <small style={{ color: '#6b7280' }}>
+                      {new Date(a.awarded_at).toLocaleDateString()}
                     </small>
                   </div>
                 ))
@@ -326,51 +344,141 @@ function AchievementsDashboard() {
 
         {/* Stats by Category */}
         <Col md={4}>
-          <Card>
-            <Card.Header>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
               <strong>📊 By Category</strong>
             </Card.Header>
-            <Card.Body>
-              {Object.entries(stats?.by_category || {}).map(([cat, count]) => (
+            <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {Object.entries(stats?.by_category || {}).sort((a, b) => b[1] - a[1]).map(([cat, count]) => (
                 <div key={cat} className="mb-2">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     {getCategoryBadge(cat)}
-                    <span>{count}</span>
+                    <span style={{ color: '#e2e8f0' }}>{count}</span>
                   </div>
-                  <ProgressBar
-                    now={(count / Math.max(stats?.total_achievements_awarded || 1, 1)) * 100}
-                    variant="info"
-                    style={{ height: '6px' }}
-                  />
+                  <div style={{ height: '6px', backgroundColor: '#3a3f52', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(count / Math.max(stats?.total_achievements_awarded || 1, 1)) * 100}%`,
+                      height: '100%',
+                      backgroundColor: '#3b82f6',
+                      borderRadius: '3px'
+                    }} />
+                  </div>
                 </div>
               ))}
             </Card.Body>
           </Card>
         </Col>
 
-        {/* Top Agents */}
+        {/* Top Agent Types */}
         <Col md={4}>
-          <Card>
-            <Card.Header>
-              <strong>⭐ Top Achievers</strong>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
+              <strong>⭐ Top Agent Types</strong>
             </Card.Header>
-            <Card.Body>
+            <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {(stats?.top_agents || []).length === 0 ? (
                 <p className="text-muted text-center py-4">No data yet</p>
               ) : (
-                <Table hover size="sm" className="mb-0">
+                <Table size="sm" className="mb-0" variant="dark">
                   <thead>
                     <tr>
-                      <th>Agent</th>
-                      <th className="text-end">Achievements</th>
+                      <th style={{ color: '#9ca3af' }}>Agent Type</th>
+                      <th className="text-end" style={{ color: '#9ca3af' }}>Count</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(stats?.top_agents || []).map((agent, idx) => (
+                    {(stats?.top_agents || []).slice(0, 10).map((agent, idx) => (
                       <tr key={idx}>
-                        <td><code>{agent.agent}</code></td>
+                        <td style={{ color: '#e2e8f0' }}>{agent.agent.split('/').pop()?.replace('.md', '') || agent.agent}</td>
                         <td className="text-end">
                           <Badge bg="primary">{agent.count}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Agent Leaderboard */}
+      <Row className="mb-4">
+        <Col md={6}>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
+              <strong>🏆 Agent Leaderboard - Most Achievements</strong>
+            </Card.Header>
+            <Card.Body style={{ maxHeight: '350px', overflowY: 'auto' }}>
+              {(stats?.individual_agents_by_count || []).length === 0 ? (
+                <p className="text-muted text-center py-4">No individual agent data yet</p>
+              ) : (
+                <Table size="sm" className="mb-0" variant="dark">
+                  <thead>
+                    <tr>
+                      <th style={{ color: '#9ca3af', width: '40px' }}>#</th>
+                      <th style={{ color: '#9ca3af' }}>Agent</th>
+                      <th style={{ color: '#9ca3af' }}>Type</th>
+                      <th className="text-end" style={{ color: '#9ca3af' }}>Achievements</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(stats?.individual_agents_by_count || []).slice(0, 15).map((agent, idx) => (
+                      <tr key={idx}>
+                        <td style={{ color: idx < 3 ? '#f59e0b' : '#6b7280', fontWeight: idx < 3 ? 'bold' : 'normal' }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                        </td>
+                        <td style={{ color: '#10b981', fontWeight: '500' }}>
+                          {generateWhimsicalName(agent.agent_id || agent.agent)}
+                        </td>
+                        <td style={{ color: '#9ca3af', fontSize: '12px' }}>
+                          {(agent.agent_type || agent.agent || '').split('/').pop()?.replace('.md', '')}
+                        </td>
+                        <td className="text-end">
+                          <Badge bg="success">{agent.count}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={6}>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
+              <strong>💎 Agent Leaderboard - Highest Score</strong>
+            </Card.Header>
+            <Card.Body style={{ maxHeight: '350px', overflowY: 'auto' }}>
+              {(stats?.individual_agents_by_score || []).length === 0 ? (
+                <p className="text-muted text-center py-4">No individual agent data yet</p>
+              ) : (
+                <Table size="sm" className="mb-0" variant="dark">
+                  <thead>
+                    <tr>
+                      <th style={{ color: '#9ca3af', width: '40px' }}>#</th>
+                      <th style={{ color: '#9ca3af' }}>Agent</th>
+                      <th style={{ color: '#9ca3af' }}>Type</th>
+                      <th className="text-end" style={{ color: '#9ca3af' }}>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(stats?.individual_agents_by_score || []).slice(0, 15).map((agent, idx) => (
+                      <tr key={idx}>
+                        <td style={{ color: idx < 3 ? '#f59e0b' : '#6b7280', fontWeight: idx < 3 ? 'bold' : 'normal' }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                        </td>
+                        <td style={{ color: '#a855f7', fontWeight: '500' }}>
+                          {generateWhimsicalName(agent.agent_id || agent.agent)}
+                        </td>
+                        <td style={{ color: '#9ca3af', fontSize: '12px' }}>
+                          {(agent.agent_type || agent.agent || '').split('/').pop()?.replace('.md', '')}
+                        </td>
+                        <td className="text-end">
+                          <Badge bg="warning" text="dark">{agent.score || agent.points}</Badge>
                         </td>
                       </tr>
                     ))}
