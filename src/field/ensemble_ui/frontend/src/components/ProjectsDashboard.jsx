@@ -35,9 +35,11 @@ function ProjectsDashboard({ onViewTimeline }) {
     }
   };
 
+  // Status badge reflects AGENT activity, not project completion
+  // Projects are only complete when milestones/tasks are verified
   const getStatusBadge = (project) => {
     if (project.active_agents > 0) {
-      return <Badge bg="primary">Active</Badge>;
+      return <Badge bg="primary">Running</Badge>;
     }
     if (project.failed_agents > 0 && project.completed_agents === 0) {
       return <Badge bg="danger">Failed</Badge>;
@@ -45,25 +47,37 @@ function ProjectsDashboard({ onViewTimeline }) {
     if (project.awaiting_input > 0) {
       return <Badge bg="warning">Awaiting Input</Badge>;
     }
-    if (project.completed_agents > 0) {
-      return <Badge bg="success">Completed</Badge>;
+    if (project.completed_agents > 0 && project.completed_agents === project.total_agents) {
+      // All agents done, but project may need verification
+      return <Badge bg="info">Agents Done</Badge>;
     }
-    return <Badge bg="secondary">Unknown</Badge>;
+    if (project.completed_agents > 0) {
+      return <Badge bg="secondary">Partial</Badge>;
+    }
+    return <Badge bg="secondary">Idle</Badge>;
   };
 
   const getStageBadge = (stage) => {
-    const stageColors = {
-      requirements: 'info',
-      architecture: 'primary',
-      planning: 'secondary',
-      implementation: 'warning',
-      testing: 'info',
-      complete: 'success',
-      unknown: 'secondary'
+    // Stage names and colors
+    const stageConfig = {
+      running: { color: 'primary', label: 'Running' },
+      agents_done: { color: 'info', label: 'Agents Done' },
+      failed: { color: 'danger', label: 'Failed' },
+      awaiting_input: { color: 'warning', label: 'Awaiting Input' },
+      idle: { color: 'secondary', label: 'Idle' },
+      requirements: { color: 'info', label: 'Requirements' },
+      architecture: { color: 'primary', label: 'Architecture' },
+      planning: { color: 'secondary', label: 'Planning' },
+      implementation: { color: 'warning', label: 'Implementation' },
+      testing: { color: 'info', label: 'Testing' },
+      complete: { color: 'success', label: 'Verified Complete' },
+      completed: { color: 'info', label: 'Agents Done' }, // Legacy support
+      unknown: { color: 'secondary', label: 'Unknown' }
     };
+    const config = stageConfig[stage] || { color: 'secondary', label: stage };
     return (
-      <Badge bg={stageColors[stage] || 'secondary'}>
-        {stage.charAt(0).toUpperCase() + stage.slice(1)}
+      <Badge bg={config.color}>
+        {config.label}
       </Badge>
     );
   };

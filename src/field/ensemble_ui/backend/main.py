@@ -1320,7 +1320,7 @@ async def get_agent_definition(agent_tier: str, agent_name: str):
         "content": content
     }
 
-@app.post("/api/agents/{agent_id}/message")
+@app.post("/api/agents/{agent_id:path}/message")
 async def send_message_to_agent(agent_id: str, message: AgentMessage):
     """Send a message to a running agent"""
     request_id = str(uuid.uuid4())[:8]
@@ -1391,7 +1391,7 @@ async def get_all_agent_states():
     states = tracker.get_all_agent_states()
     return {"agent_states": states}
 
-@app.get("/api/activity/states/{agent_id}")
+@app.get("/api/activity/states/{agent_id:path}")
 async def get_agent_state(agent_id: str):
     """Get current state of a specific agent"""
     from src.runtime.agents.runtime import AgentRuntime
@@ -1613,21 +1613,27 @@ async def get_projects_summary():
             }
 
     # Calculate stage distribution
+    # IMPORTANT: Stage reflects agent status, NOT project/milestone completion
+    # Projects are only truly "complete" when all milestones and tasks are done
     stage_counts = {}
     for p in projects.values():
-        # Determine stage based on agent counts
+        # Determine stage based on agent activity (not project completion!)
         if p["active_agents"] > 0:
             stage = "running"
         elif p["failed_agents"] > 0 and p["completed_agents"] == 0:
             stage = "failed"
         elif p["awaiting_input"] > 0:
             stage = "awaiting_input"
-        elif p["completed_agents"] == p["total_agents"]:
-            stage = "completed"
+        elif p["completed_agents"] == p["total_agents"] and p["total_agents"] > 0:
+            # All agents finished, but this doesn't mean project is complete
+            # Project completion requires milestone/task verification
+            stage = "agents_done"
         else:
-            stage = "unknown"
+            stage = "idle"
 
         p["current_stage"] = stage
+        # Also track milestone completion status (to be implemented)
+        p["milestone_status"] = "unknown"  # TODO: Check actual milestone files
         stage_counts[stage] = stage_counts.get(stage, 0) + 1
 
     # Sort by created_at (newest first)
@@ -2282,7 +2288,7 @@ async def get_swarm_agents(session_id: str = None, status: str = None, limit: in
         logger.error(f"Error getting swarm agents: {e}")
         return {"error": str(e), "agents": []}
 
-@app.get("/api/swarm/agents/{agent_id}")
+@app.get("/api/swarm/agents/{agent_id:path}")
 async def get_swarm_agent(agent_id: str):
     """Get detailed information about a specific agent."""
     try:
@@ -2665,6 +2671,95 @@ async def approve_all_pending_reviews(background_tasks: BackgroundTasks):
         return {"success": False, "error": str(e), "approved": 0}
 
 
+@app.post("/api/pending-reviews/reconcile")
+async def reconcile_pending_review_statuses():
+    """
+    Reconcile pending review statuses with actual agent states.
+
+    Reviews marked as 'in_progress' but with no running agent will be
+    updated to 'completed' or 'stalled' based on agent completion status.
+    """
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        from src.runtime.agents.runtime import AgentRuntime
+
+        swarm = get_swarm_state()
+        activity_tracker = AgentRuntime.get_activity_tracker()
+
+        # Get all in_progress reviews
+        in_progress = swarm.get_pending_reviews(status='in_progress')
+        logger.info(f"Reconcile: Found {len(in_progress) if in_progress else 0} in_progress reviews")
+
+        if not in_progress:
+            return {"success": True, "message": "No in_progress reviews to reconcile", "updated": 0}
+
+        # Get current running agents
+        running_agents = set()
+        all_states = activity_tracker.get_all_agent_states()
+        for agent_id, state in all_states.items():
+            if isinstance(state, dict) and state.get('status') == 'running':
+                running_agents.add(agent_id)
+
+        updated_count = 0
+        results = []
+
+        for review in in_progress:
+            review_id = review.get('id')
+            execution_result = review.get('execution_result', {})
+            agent_id = None
+
+            # Extract agent_id from execution_result
+            if isinstance(execution_result, dict):
+                agent_id = execution_result.get('agent_id')
+            elif isinstance(execution_result, str):
+                try:
+                    import json
+                    result_data = json.loads(execution_result)
+                    agent_id = result_data.get('agent_id')
+                except:
+                    pass
+
+            # Check if agent is still running
+            is_running = agent_id in running_agents if agent_id else False
+
+            if not is_running:
+                # Check if agent completed successfully or failed
+                agent_state = all_states.get(agent_id, {}) if agent_id else {}
+                agent_status = agent_state.get('status', 'unknown') if isinstance(agent_state, dict) else 'unknown'
+
+                # Determine new status
+                if agent_status == 'completed':
+                    new_status = 'completed'
+                elif agent_status in ('failed', 'error', 'forever_failed'):
+                    new_status = 'failed'
+                else:
+                    # No agent found or unknown - mark as stalled
+                    new_status = 'stalled'
+
+                swarm.update_pending_review(review_id, status=new_status)
+                updated_count += 1
+                results.append({
+                    'review_id': review_id,
+                    'agent_id': agent_id,
+                    'old_status': 'in_progress',
+                    'new_status': new_status
+                })
+
+        return {
+            "success": True,
+            "message": f"Reconciled {updated_count} of {len(in_progress)} in_progress reviews",
+            "updated": updated_count,
+            "total_checked": len(in_progress),
+            "results": results
+        }
+
+    except Exception as e:
+        logger.error(f"Error reconciling reviews: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": str(e), "updated": 0}
+
+
 @app.get("/api/agent-improvement-reports")
 async def get_agent_improvement_reports(limit: int = 50):
     """Get reports of agents that need improvement."""
@@ -2818,7 +2913,7 @@ async def get_recovery_queue():
         logger.error(f"Error getting recovery queue: {e}")
         return {"error": str(e), "queue": []}
 
-@app.post("/api/recovery/trigger/{agent_id}")
+@app.post("/api/recovery/trigger/{agent_id:path}")
 async def trigger_agent_recovery(agent_id: str, strategy: str = "retry"):
     """Manually trigger recovery for a specific agent."""
     try:

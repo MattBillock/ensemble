@@ -1154,6 +1154,19 @@ export const scanForPendingReviews = async () => {
   }
 };
 
+export const reconcilePendingReviews = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pending-reviews/reconcile`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to reconcile reviews');
+    return await response.json();
+  } catch (error) {
+    console.error('Reconcile reviews error:', error);
+    throw error;
+  }
+};
+
 export const getAgentImprovementReports = async (limit = 50) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/agent-improvement-reports?limit=${limit}`);
