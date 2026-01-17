@@ -176,6 +176,19 @@ class AgentMetricsTracker:
         Returns:
             Execution record ID
         """
+        # Validate agent_name is not empty
+        if not agent_name or not agent_name.strip():
+            logger.warning(f"Empty agent_name provided for agent_id={agent_id}, using fallback")
+            # Try to extract name from agent_id (e.g., "leadership/tdd_coordinator_123" -> "Tdd Coordinator")
+            if "/" in agent_id:
+                name_part = agent_id.split("/")[-1]
+                # Remove trailing underscore + numbers
+                import re
+                name_part = re.sub(r'_\d+$', '', name_part)
+                agent_name = name_part.replace("_", " ").title()
+            else:
+                agent_name = agent_id.split("_")[0].title() if "_" in agent_id else agent_id
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""

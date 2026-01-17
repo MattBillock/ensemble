@@ -106,6 +106,13 @@ class AgentDefinition:
 
         # Extract the name from the first H1 heading
         name = cls._extract_heading(content, 1)
+        if not name:
+            # Fallback to filename if no H1 heading found
+            name = file_path.stem.replace("_", " ").title()
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Agent definition {file_path} missing H1 heading, using filename: {name}"
+            )
 
         # Extract sections
         purpose = cls._extract_section_text(content, "Purpose")
