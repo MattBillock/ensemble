@@ -37,6 +37,7 @@ const PendingReviewDashboard = lazy(() => import('./components/PendingReviewDash
 const AgentStats = lazy(() => import('./components/AgentStats'));
 const AgentStatsDashboard = lazy(() => import('./components/AgentStatsDashboard'));
 const ProjectsDashboard = lazy(() => import('./components/ProjectsDashboard'));
+const CompletedWorkDashboard = lazy(() => import('./components/CompletedWorkDashboard'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -47,7 +48,7 @@ const LoadingFallback = () => (
 );
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', 'recovery', 'review', 'agents', 'agentstats', or 'projects'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', 'recovery', 'review', 'agents', 'agentstats', 'projects', or 'completed'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -381,6 +382,12 @@ function App() {
                     >
                       📁 Projects
                     </Button>
+                    <Button
+                      variant={currentView === 'completed' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('completed')}
+                    >
+                      ✅ Completed Work
+                    </Button>
                   </ButtonGroup>
 
                   <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', marginRight: '4px' }}>Refresh:</span>
@@ -516,6 +523,10 @@ function App() {
       ) : currentView === 'projects' ? (
         <Suspense fallback={<LoadingFallback />}>
           <ProjectsDashboard onViewTimeline={handleViewTimeline} />
+        </Suspense>
+      ) : currentView === 'completed' ? (
+        <Suspense fallback={<LoadingFallback />}>
+          <CompletedWorkDashboard />
         </Suspense>
       ) : (
         <>

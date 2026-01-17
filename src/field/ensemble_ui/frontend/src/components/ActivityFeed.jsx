@@ -292,10 +292,13 @@ const ActivityFeed = ({ activities = [] }) => {
               >
                 <span style={{ fontSize: '18px' }}>{icon}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <strong style={{ fontSize: '13px' }} title={`${activity.agent_name} (${activity.agent_id})`}>
                       {generateWhimsicalName(activity.agent_id)}
                     </strong>
+                    <Badge bg="secondary" style={{ fontSize: '10px' }}>
+                      {activity.agent_name}
+                    </Badge>
                     <Badge bg={color} style={{ fontSize: '10px' }}>
                       {activity.activity_type.replace(/_/g, ' ')}
                     </Badge>

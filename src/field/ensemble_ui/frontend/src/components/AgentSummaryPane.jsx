@@ -1,4 +1,5 @@
 import React from 'react';
+import { Badge } from 'react-bootstrap';
 import { generateWhimsicalName, getAgentEmoji } from '../utils/whimsicalNames';
 import {
   formatDuration,
@@ -80,7 +81,12 @@ function AgentSummaryPane({ agentStatus }) {
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{getAgentEmoji(agentInfo.type)}</span>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-white">{generateWhimsicalName(agentId)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">{generateWhimsicalName(agentId)}</span>
+                        <Badge bg="secondary" style={{ fontSize: '9px', fontWeight: 'normal' }}>
+                          {agentInfo.type}
+                        </Badge>
+                      </div>
                       <span className="text-xs text-gray-500">{agentId}</span>
                     </div>
                     {agentInfo.status === 'running' && (

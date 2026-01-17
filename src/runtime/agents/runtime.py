@@ -363,15 +363,31 @@ class AgentRuntime:
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(input_data)
 
-        # Select model - use dynamic router if enabled, otherwise static selection
-        if self.use_dynamic_model_selection and self.budget_tier != "full_firepower":
-            model = self._select_model_dynamic(input_data)
-        else:
-            model = ModelSelector.select_model(
-                budget_tier=self.budget_tier,
-                task_complexity=self.definition.task_complexity,
-                agent_name=self.definition.name
-            )
+        # Select model - first check agent's explicit model_preference, then fallback to dynamic/static
+        model = None
+
+        # Check if agent definition has an explicit model preference (not the default)
+        if self.definition.model_preference and self.definition.model_preference.lower() not in ["default", "haiku"]:
+            model_map = {
+                "opus": "claude-opus-4-5-20251101",
+                "sonnet": "claude-sonnet-4-5-20250929",
+                "haiku": "claude-3-5-haiku-20241022"
+            }
+            pref = self.definition.model_preference.lower()
+            if pref in model_map:
+                model = model_map[pref]
+                logger.info(f"Using agent's model_preference override: {pref} -> {model}")
+
+        # Fallback to dynamic/static selection if no preference override
+        if model is None:
+            if self.use_dynamic_model_selection and self.budget_tier != "full_firepower":
+                model = self._select_model_dynamic(input_data)
+            else:
+                model = ModelSelector.select_model(
+                    budget_tier=self.budget_tier,
+                    task_complexity=self.definition.task_complexity,
+                    agent_name=self.definition.name
+                )
 
         # Store model for metrics
         self.model_used = model

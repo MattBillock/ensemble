@@ -925,6 +925,126 @@ async def get_completed_report_content(report_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class SpawnFromReportRequest(BaseModel):
+    """Request to spawn a new task from a completed report."""
+    problem_description: str
+    budget_tier: str = "balanced"
+    auto_continue: bool = True
+    fully_autonomous: bool = False
+
+
+@app.post("/api/completed-reports/{report_id}/spawn")
+async def spawn_task_from_report(
+    report_id: str,
+    request: SpawnFromReportRequest,
+    background_tasks: BackgroundTasks
+):
+    """
+    Spawn a new Executive Director task using context from a completed report.
+
+    This enables users to start follow-up work based on completed reports,
+    maintaining lineage between tasks.
+    """
+    try:
+        # Get the source report
+        completed_dir = orchestrator.project_root / "src" / "field" / "ensemble_ui" / "output" / "completed"
+        file_path = completed_dir / f"{report_id}.md"
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Report not found")
+
+        report_content = file_path.read_text(encoding="utf-8")
+        report_title = report_content.split("\n")[0].replace("#", "").strip() if report_content else report_id
+
+        # Generate request ID
+        new_request_id = f"report_spawn_{uuid.uuid4().hex[:8]}"
+
+        # Build enhanced problem description with report context
+        enhanced_problem = f"""Follow-up task from completed report: "{report_title}"
+
+**User Request:**
+{request.problem_description}
+
+**Source Report Context:**
+The following is a summary from the completed report that this task builds upon:
+
+{report_content[:3000]}
+{"..." if len(report_content) > 3000 else ""}
+"""
+
+        # Record lineage before starting the task
+        from src.runtime.agents import AgentRuntime
+        activity_tracker = AgentRuntime.get_activity_tracker()
+
+        activity_tracker.record_request_started(
+            request_id=new_request_id,
+            prompt=request.problem_description,
+            budget_tier=request.budget_tier
+        )
+
+        activity_tracker.record_task_spawned_from_report(
+            report_id=report_id,
+            report_title=report_title,
+            new_request_id=new_request_id,
+            problem_description=request.problem_description
+        )
+
+        # Start the agent in background
+        problem_request = ProblemRequest(
+            problem=enhanced_problem,
+            budget_tier=request.budget_tier,
+            auto_continue=request.auto_continue,
+            fully_autonomous=request.fully_autonomous
+        )
+
+        background_tasks.add_task(
+            orchestrator.run_executive_director,
+            enhanced_problem,
+            request.budget_tier,
+            new_request_id,
+            request.auto_continue,
+            request.fully_autonomous
+        )
+
+        return {
+            "success": True,
+            "request_id": new_request_id,
+            "message": f"Started new task from report '{report_title}'",
+            "lineage": {
+                "source_type": "completed_report",
+                "source_id": report_id,
+                "source_title": report_title
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error spawning task from report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/completed-reports/{report_id}/spawned-tasks")
+async def get_spawned_tasks_for_report(report_id: str):
+    """
+    Get all tasks that were spawned from a specific completed report.
+    """
+    try:
+        from src.runtime.agents import AgentRuntime
+        activity_tracker = AgentRuntime.get_activity_tracker()
+
+        spawned_tasks = activity_tracker.get_tasks_spawned_from_report(report_id)
+
+        return {
+            "report_id": report_id,
+            "spawned_tasks": spawned_tasks,
+            "count": len(spawned_tasks)
+        }
+    except Exception as e:
+        logger.error(f"Error getting spawned tasks for report {report_id}: {e}")
+        return {"error": str(e), "spawned_tasks": [], "count": 0}
+
+
 @app.websocket("/ws/agent-status")
 async def agent_status_ws(websocket: WebSocket):
     """WebSocket endpoint for real-time agent status updates (legacy)"""

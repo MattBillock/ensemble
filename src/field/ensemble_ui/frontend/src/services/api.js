@@ -1257,6 +1257,50 @@ export const getCompletedReportContent = async (reportId) => {
   }
 };
 
+/**
+ * Spawn a new task from a completed report
+ * @param {string} reportId - ID of the source report
+ * @param {Object} options - Spawn options
+ * @param {string} options.problemDescription - Description of the follow-up task
+ * @param {string} [options.budgetTier='balanced'] - Budget tier for the task
+ * @param {boolean} [options.autoContinue=true] - Whether to auto-continue through milestones
+ * @param {boolean} [options.fullyAutonomous=false] - Whether to bypass all confirmations
+ */
+export const spawnTaskFromReport = async (reportId, options) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/completed-reports/${encodeURIComponent(reportId)}/spawn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        problem_description: options.problemDescription,
+        budget_tier: options.budgetTier || 'balanced',
+        auto_continue: options.autoContinue !== false,
+        fully_autonomous: options.fullyAutonomous || false
+      })
+    });
+    if (!response.ok) throw new Error('Failed to spawn task from report');
+    return await response.json();
+  } catch (error) {
+    console.error('Spawn task from report error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get tasks that were spawned from a specific report
+ * @param {string} reportId - ID of the report to get spawned tasks for
+ */
+export const getSpawnedTasksForReport = async (reportId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/completed-reports/${encodeURIComponent(reportId)}/spawned-tasks`);
+    if (!response.ok) throw new Error('Failed to fetch spawned tasks');
+    return await response.json();
+  } catch (error) {
+    console.error('Get spawned tasks error:', error);
+    return { spawned_tasks: [], count: 0 };
+  }
+};
+
 // ==================== Metrics API ====================
 
 /**

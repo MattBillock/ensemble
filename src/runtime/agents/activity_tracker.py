@@ -32,6 +32,7 @@ class ActivityType(str, Enum):
     FILE_GENERATED = "file_generated"
     OUTPUT_CREATED = "output_created"
     GIT_COMMIT = "git_commit"
+    TASK_SPAWNED_FROM_REPORT = "task_spawned_from_report"
 
 
 @dataclass
@@ -1083,3 +1084,89 @@ class AgentActivityTracker:
                 "commit_count": len(commit_activities)
             }
         }
+
+    # ========== Lineage Tracking for Spawned Tasks ==========
+
+    def record_task_spawned_from_report(
+        self,
+        report_id: str,
+        report_title: str,
+        new_request_id: str,
+        problem_description: str,
+        spawned_by: str = "user"
+    ):
+        """
+        Record that a new task was spawned from a completed report.
+
+        This creates a lineage link between completed work and follow-up tasks,
+        allowing users to track the evolution of work across sessions.
+
+        Args:
+            report_id: ID of the source report (filename without extension)
+            report_title: Title of the source report
+            new_request_id: Request ID of the newly spawned task
+            problem_description: Description provided for the new task
+            spawned_by: Who initiated the spawn (e.g., "user", "system")
+        """
+        activity = Activity(
+            activity_type=ActivityType.TASK_SPAWNED_FROM_REPORT,
+            agent_id="system",
+            agent_name="Task Lineage",
+            timestamp=datetime.now().isoformat(),
+            request_id=new_request_id,
+            data={
+                "source_report_id": report_id,
+                "source_report_title": report_title,
+                "new_request_id": new_request_id,
+                "problem_description": problem_description[:500] if problem_description else "",
+                "spawned_by": spawned_by
+            }
+        )
+
+        # Also store lineage in requests if the request exists
+        if new_request_id in self.requests:
+            self.requests[new_request_id]["lineage"] = {
+                "source_type": "completed_report",
+                "source_id": report_id,
+                "source_title": report_title,
+                "spawned_at": activity.timestamp
+            }
+
+        self._emit_activity(activity)
+        logger.info(f"Recorded lineage: report {report_id} -> request {new_request_id}")
+
+    def get_tasks_spawned_from_report(self, report_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all tasks that were spawned from a specific report.
+
+        Args:
+            report_id: ID of the source report
+
+        Returns:
+            List of request dicts that were spawned from this report
+        """
+        spawned_tasks = []
+
+        for request_id, request in self.requests.items():
+            lineage = request.get("lineage", {})
+            if (lineage.get("source_type") == "completed_report" and
+                lineage.get("source_id") == report_id):
+                spawned_tasks.append(request)
+
+        # Sort by creation time (most recent first)
+        spawned_tasks.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        return spawned_tasks
+
+    def get_report_lineage(self, request_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the lineage information for a request (what report it came from).
+
+        Args:
+            request_id: Request to get lineage for
+
+        Returns:
+            Lineage dict if request was spawned from a report, None otherwise
+        """
+        if request_id in self.requests:
+            return self.requests[request_id].get("lineage")
+        return None

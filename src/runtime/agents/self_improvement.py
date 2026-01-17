@@ -337,17 +337,28 @@ class RecommendationEngine:
         for rec_data in model_analysis.get("recommendations", []):
             dedup_key = f"{rec_data['agent']}_model_upgrade"
             if dedup_key not in existing_keys:
+                # Determine if this is an upgrade or just optimization
+                recommend_model = rec_data.get('recommend_model', 'unknown')
+                avoid_model = rec_data.get('avoid_model', 'unknown')
+                improvement = rec_data.get('improvement', 'improved performance')
+
+                # Determine capability tier description
+                tier_desc = "higher capability tier" if "opus" in recommend_model.lower() or "sonnet" in recommend_model.lower() else "optimal model tier"
+
                 recommendations.append(Recommendation(
                     id=f"model_{rec_data['agent']}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
                     agent_name=rec_data['agent'],
                     recommendation_type=RecommendationType.MODEL_UPGRADE,
                     priority=RecommendationPriority.MEDIUM,
-                    title=f"Model optimization for {rec_data['agent']}",
-                    description=f"Consider using {rec_data['recommend_model']} instead of {rec_data['avoid_model']}. Expected improvement: {rec_data['improvement']}",
+                    title=f"Model tier optimization for {rec_data['agent']}",
+                    description=f"Analysis shows this agent performs better with a {tier_desc}. "
+                               f"Expected improvement: {improvement}. "
+                               f"Adjusting model tier to better match task complexity.",
                     evidence=rec_data,
                     suggested_changes={
-                        "preferred_model": rec_data['recommend_model'],
-                        "avoid_model": rec_data['avoid_model']
+                        "target_tier": recommend_model,
+                        "current_tier": avoid_model,
+                        "reason": "Performance data indicates better results with adjusted model capability"
                     }
                 ))
                 existing_keys.add(dedup_key)
@@ -383,21 +394,22 @@ class RecommendationEngine:
                 agent_name=issue.agent_name,
                 recommendation_type=RecommendationType.DEFINITION_MAJOR,
                 priority=RecommendationPriority.CRITICAL,
-                title=f"CRITICAL: {issue.agent_name} has {issue.evidence['success_rate']}% success rate",
-                description=f"Agent {issue.agent_name} is failing {100-issue.evidence['success_rate']:.1f}% of the time. "
-                           f"Common errors: {issue.evidence.get('error_types', 'unknown')}. "
-                           f"Immediate review of agent definition required.",
+                title=f"CRITICAL: {issue.agent_name} needs capability upgrade ({issue.evidence['success_rate']}% success)",
+                description=f"Agent {issue.agent_name} is struggling with its assigned tasks, failing "
+                           f"{100-issue.evidence['success_rate']:.1f}% of the time. "
+                           f"This agent needs enhanced reasoning capabilities to handle its workload effectively. "
+                           f"Common issues: {issue.evidence.get('error_types', 'unknown')}.",
                 evidence=issue.evidence,
                 suggested_changes={
-                    "action": "review_definition",
+                    "action": "enhance_agent_capabilities",
                     "check_points": [
-                        "Are instructions clear and unambiguous?",
-                        "Is the model appropriate for task complexity?",
-                        "Are input/output formats correct?",
-                        "Are tool permissions sufficient?",
-                        "Is max_iterations high enough?"
+                        "Agent may need stronger reasoning - upgrading model tier",
+                        "Review if instructions are clear and unambiguous",
+                        "Verify input/output formats are correct",
+                        "Check if tool permissions are sufficient",
+                        "Confirm max_iterations allows enough processing time"
                     ],
-                    "consider_model_upgrade": True
+                    "upgrade_model_tier": True
                 }
             )
 
@@ -407,16 +419,16 @@ class RecommendationEngine:
                 agent_name=issue.agent_name,
                 recommendation_type=RecommendationType.DEFINITION_TWEAK,
                 priority=RecommendationPriority.HIGH,
-                title=f"Warning: {issue.agent_name} underperforming ({issue.evidence['success_rate']}% success)",
-                description=f"Agent {issue.agent_name} has a success rate below 75%. "
-                           f"Consider reviewing recent failures and adjusting definition.",
+                title=f"Performance improvement needed: {issue.agent_name} ({issue.evidence['success_rate']}% success)",
+                description=f"Agent {issue.agent_name} is underperforming with a success rate below target. "
+                           f"May benefit from enhanced capabilities or refined instructions.",
                 evidence=issue.evidence,
                 suggested_changes={
-                    "action": "review_recent_failures",
+                    "action": "improve_agent_effectiveness",
                     "potential_fixes": [
-                        "Add more specific instructions",
-                        "Increase max_iterations",
-                        "Consider model upgrade for complex tasks"
+                        "Refine instructions for clarity",
+                        "Allow more processing iterations",
+                        "Consider upgrading model capability tier"
                     ]
                 }
             )
@@ -427,14 +439,15 @@ class RecommendationEngine:
                 agent_name=issue.agent_name,
                 recommendation_type=RecommendationType.MODEL_DOWNGRADE,
                 priority=RecommendationPriority.LOW,
-                title=f"Cost optimization: {issue.agent_name} consistently succeeds",
-                description=f"Agent {issue.agent_name} has {issue.evidence['success_rate']}% success rate. "
-                           f"Consider using a cheaper/faster model to reduce costs.",
+                title=f"Cost optimization opportunity: {issue.agent_name} performing excellently",
+                description=f"Agent {issue.agent_name} achieves {issue.evidence['success_rate']}% success rate. "
+                           f"This consistent high performance indicates the agent may work well with a more "
+                           f"cost-efficient model tier while maintaining quality.",
                 evidence=issue.evidence,
                 suggested_changes={
-                    "action": "consider_model_downgrade",
+                    "action": "optimize_cost_efficiency",
                     "current_performance": issue.evidence['success_rate'],
-                    "note": "Only if cost savings are meaningful"
+                    "note": "Reducing model tier for cost savings while maintaining quality"
                 }
             )
 
@@ -778,14 +791,14 @@ class SelfImprovementLoop:
 
             # Apply changes based on recommendation type
             if rec_type == "model_upgrade":
-                new_model = changes.get("new_model", "sonnet")
+                new_model = changes.get("target_tier", changes.get("new_model", "sonnet"))
                 content = self._update_model_preference(content, new_model)
-                applied_changes.append(f"Updated model to {new_model}")
+                applied_changes.append(f"Upgraded model capability tier to {new_model} for enhanced reasoning")
 
             elif rec_type == "model_downgrade":
                 new_model = changes.get("new_model", "haiku")
                 content = self._update_model_preference(content, new_model)
-                applied_changes.append(f"Downgraded model to {new_model}")
+                applied_changes.append(f"Optimized to cost-efficient model tier ({new_model}) - agent performs well at this level")
 
             elif rec_type == "iteration_increase":
                 new_iterations = changes.get("new_max_iterations", 15)
@@ -804,22 +817,22 @@ class SelfImprovementLoop:
                 error_types = evidence.get("error_types", "")
                 avg_iterations = evidence.get("avg_iterations", 0)
 
-                # If critical failure, upgrade model
+                # If critical failure, upgrade to highest capability tier
                 if success_rate < 50:
                     content = self._update_model_preference(content, "opus")
-                    applied_changes.append("Upgraded model to opus due to critical failure rate")
+                    applied_changes.append("Enhanced reasoning capability (upgraded to high-tier model) due to complex task requirements")
 
-                # If moderate failure, try sonnet
+                # If moderate failure, upgrade to mid-tier
                 elif success_rate < 75:
                     # Check current model first
                     if "haiku" in content.lower():
                         content = self._update_model_preference(content, "sonnet")
-                        applied_changes.append("Upgraded model from haiku to sonnet")
+                        applied_changes.append("Improved reasoning capability (upgraded to mid-tier model) for better task handling")
 
                 # If running out of iterations, increase them
                 if avg_iterations and avg_iterations > 8:
                     content = self._update_max_iterations(content, 20)
-                    applied_changes.append("Increased max iterations to 20 (was hitting limits)")
+                    applied_changes.append("Extended processing capacity to 20 iterations (agent was hitting limits)")
 
                 # Add specific error handling based on error types
                 if error_types:

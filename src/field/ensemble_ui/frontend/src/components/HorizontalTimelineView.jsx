@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Badge, Card, Button, Collapse } from 'react-bootstrap';
+import { generateWhimsicalName } from '../utils/whimsicalNames';
 
 /**
  * Horizontal Timeline View Component
@@ -240,15 +241,29 @@ function HorizontalTimelineView({ initialRequestId = null }) {
                agent.status === 'failed' ? '✗' : '?'}
             </text>
 
-            {/* Agent name label */}
+            {/* Agent name label (whimsical) */}
             <text
               y="28"
               textAnchor="middle"
               fontSize="10"
               fill="#e4e6eb"
             >
-              {agent.agent_name.length > 15
-                ? agent.agent_name.substring(0, 12) + '...'
+              {(() => {
+                const whimsicalName = generateWhimsicalName(agent.agent_id);
+                return whimsicalName.length > 15
+                  ? whimsicalName.substring(0, 12) + '...'
+                  : whimsicalName;
+              })()}
+            </text>
+            {/* Agent type label */}
+            <text
+              y="40"
+              textAnchor="middle"
+              fontSize="8"
+              fill="#9ca3af"
+            >
+              {agent.agent_name.length > 18
+                ? agent.agent_name.substring(0, 15) + '...'
                 : agent.agent_name}
             </text>
           </g>
@@ -497,14 +512,21 @@ function HorizontalTimelineView({ initialRequestId = null }) {
             {/* Agent info */}
             <div style={{ marginBottom: '16px' }}>
               <h6 style={{ color: '#e4e6eb', marginBottom: '8px' }}>
-                {selectedAgent.agent_name}
+                {generateWhimsicalName(selectedAgent.agent_id)}
               </h6>
-              <Badge bg={getStatusBg(selectedAgent.status)}>
-                {selectedAgent.status}
-              </Badge>
-              <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '11px' }}>
-                {selectedAgent.agent_type}
-              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                <Badge bg="secondary" style={{ fontSize: '10px' }}>
+                  {selectedAgent.agent_name}
+                </Badge>
+                <Badge bg={getStatusBg(selectedAgent.status)}>
+                  {selectedAgent.status}
+                </Badge>
+                {selectedAgent.agent_type && (
+                  <span style={{ color: '#6b7280', fontSize: '11px' }}>
+                    {selectedAgent.agent_type}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Progress */}
