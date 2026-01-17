@@ -226,7 +226,7 @@ See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Develo
 - **NOT for**: standard testing practices, common coverage goals, typical test frameworks
 
 ## Model Preference
-haiku
+sonnet
 
 ## Max Iterations
 10
