@@ -424,38 +424,6 @@ Add note (milestone: complete) → Verify completion → Report success with pro
 - NEVER ignore errors from spawned agents - escalate or handle explicitly
 - Do NOT continue if Development Manager reports a blocking issue
 
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Executive Director has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
 ## Self-Improvement Directive
 
 **CRITICAL**: You MUST analyze your performance and that of your spawned agents in EVERY execution. This is MANDATORY, not optional.
