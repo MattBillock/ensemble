@@ -262,7 +262,7 @@ class AgentRuntime:
             swarm_state.register_agent(
                 agent_id=self.agent_id,
                 session_id=self.session_id,
-                agent_type=self.definition.category,
+                agent_type=self.definition.definition_path or self.definition.category,
                 agent_name=self.definition.name,
                 request_id=self.request_id,
                 parent_agent_id=self.parent_agent_id,
@@ -580,6 +580,13 @@ class AgentRuntime:
                 is_still_working = status == "in_progress"
                 phase_not_complete = phase and phase.lower() not in ["complete", "completed", "done", "success"]
 
+                # EXPLICIT completion check: require BOTH status="success" AND phase="complete"
+                # This prevents false completion when agent reports progress without finishing
+                is_explicitly_complete = (
+                    status.lower() == "success" and
+                    phase.lower() in ["complete", "completed", "done"]
+                )
+
                 if needs_clarification or needs_user_input:
                     # Agent needs user input - record question and wait (unless fully_autonomous)
                     question = response_data.get("user_question") or response_data.get("clarification_question", "")
@@ -626,9 +633,14 @@ class AgentRuntime:
                     else:
                         logger.warning("Agent indicated needs_clarification/needs_user_input but didn't provide question")
                         # Continue anyway if no question provided
-                elif is_still_working or phase_not_complete:
-                    # Agent reported progress but stopped without using tools
-                    logger.info(f"Agent reported status='{status}', phase='{phase}'")
+                elif is_explicitly_complete:
+                    # Agent explicitly reported success with phase=complete - allow exit
+                    logger.info(f"Agent explicitly completed: status='{status}', phase='{phase}'")
+                    break
+                elif is_still_working or phase_not_complete or not is_explicitly_complete:
+                    # Agent reported progress but hasn't explicitly completed
+                    # This includes: status="success" with wrong phase, empty phase, etc.
+                    logger.info(f"Agent reported status='{status}', phase='{phase}' - not explicitly complete, continuing")
 
                     if not self.auto_continue and not self.fully_autonomous:
                         # Pause for approval - return with milestone status
@@ -692,10 +704,8 @@ class AgentRuntime:
                         api_kwargs["messages"] = messages
 
                     continue
-                else:
-                    # Agent completed successfully
-                    logger.info("Agent completed successfully")
-                    break
+                # Note: No else branch needed - explicit completion check is now in the elif above
+                # The elif covers all non-complete cases since it includes "not is_explicitly_complete"
 
             if self.iteration_count >= self.definition.max_iterations:
                 logger.warning(f"Agent reached max iterations ({self.definition.max_iterations})")
@@ -783,11 +793,21 @@ class AgentRuntime:
             return
 
         # Check for required fields
-        for field, description in expected_schema.items():
-            # Fields without "optional" in description are required
-            if "optional" not in description.lower():
-                if field not in input_data:
-                    raise ValueError(f"Missing required input field: {field}")
+        for field, field_spec in expected_schema.items():
+            # Handle both simple format ("field": "string") and JSON schema format ("field": {"type": "..."})
+            if isinstance(field_spec, dict):
+                # JSON schema format - check for optional in description
+                description = field_spec.get("description", "")
+                is_optional = "optional" in description.lower() if description else False
+            elif isinstance(field_spec, str):
+                # Simple format - check for optional in the string
+                is_optional = "optional" in field_spec.lower()
+            else:
+                # Unknown format, assume required
+                is_optional = False
+
+            if not is_optional and field not in input_data:
+                raise ValueError(f"Missing required input field: {field}")
 
     def _build_system_prompt(self) -> str:
         """Build the system prompt from agent definition."""

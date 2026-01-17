@@ -233,11 +233,27 @@ function CompletedWorkDashboard() {
                           h1: ({ children }) => <h1 style={{ color: '#e4e6eb', borderBottom: '1px solid #3a3f52', paddingBottom: '8px' }}>{children}</h1>,
                           h2: ({ children }) => <h2 style={{ color: '#e4e6eb', marginTop: '24px' }}>{children}</h2>,
                           h3: ({ children }) => <h3 style={{ color: '#e4e6eb', marginTop: '20px' }}>{children}</h3>,
-                          code: ({ inline, children }) => (
-                            inline
-                              ? <code style={{ backgroundColor: '#3a3f52', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>{children}</code>
-                              : <pre style={{ backgroundColor: '#1a1d29', padding: '12px', borderRadius: '4px', overflow: 'auto', border: '1px solid #3a3f52' }}><code style={{ fontSize: '13px' }}>{children}</code></pre>
+                          // Handle pre elements (code blocks) separately
+                          pre: ({ children }) => (
+                            <pre style={{ backgroundColor: '#1a1d29', padding: '12px', borderRadius: '4px', overflow: 'auto', border: '1px solid #3a3f52', margin: '12px 0' }}>{children}</pre>
                           ),
+                          // Only handle inline code styles - pre wraps code blocks
+                          code: ({ inline, className, children }) => (
+                            <code style={{
+                              backgroundColor: inline ? '#3a3f52' : 'transparent',
+                              padding: inline ? '2px 6px' : 0,
+                              borderRadius: inline ? '4px' : 0,
+                              fontSize: '13px'
+                            }}>{children}</code>
+                          ),
+                          // Prevent p tags from wrapping pre elements
+                          p: ({ children }) => {
+                            // Check if children contains a pre element (code block)
+                            const hasPreChild = React.Children.toArray(children).some(
+                              child => child?.type?.name === 'pre' || child?.type === 'pre'
+                            );
+                            return hasPreChild ? <>{children}</> : <p style={{ marginBottom: '12px' }}>{children}</p>;
+                          },
                           ul: ({ children }) => <ul style={{ marginLeft: '20px' }}>{children}</ul>,
                           ol: ({ children }) => <ol style={{ marginLeft: '20px' }}>{children}</ol>,
                           li: ({ children }) => <li style={{ marginBottom: '4px' }}>{children}</li>,

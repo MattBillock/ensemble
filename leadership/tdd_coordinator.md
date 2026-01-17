@@ -62,6 +62,12 @@ You have access to the following tools:
   - Parameters: message (string), files (array, optional)
   - Returns: {success: boolean, commit_hash: string}
 
+- **write_file**: Write content to a markdown file (documentation only)
+  - Parameters: file_path (string, must end in .md), content (string)
+  - Returns: {success: boolean, file_path: string}
+  - **RESTRICTION**: Can ONLY write .md files (task breakdowns, test plans, documentation)
+  - Cannot write: .py, .js, .jsx, .ts, .tsx, .css, or any code files
+
 ## Spawn Permissions
 See [Agent Hierarchy](/Users/mattbillock/Development/ai_exploration/ensemble/docs/AGENT_HIERARCHY.md) for complete hierarchy.
 
@@ -329,6 +335,9 @@ false
 
 ## Can Write Tests
 false
+
+## Can Write Markdown
+true
 
 ## Task Complexity
 strategic

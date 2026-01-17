@@ -358,7 +358,7 @@ This agent benefits most from these improvement types:
 - **validation**: Verifying each milestone meets requirements before proceeding
 
 ## Model Preference
-sonnet
+claude-sonnet-4-5-20250929-sonnet-4-5-20250929-sonnet-4-5-20250929-sonnet-4-5-20250929
 
 ## Max Iterations
 100

@@ -1,114 +1,88 @@
-# Timeline Focus Preservation Fix - Milestone Plan
+# Smart Task Decomposition Engine - Milestone Plan
 
 ## Project Overview
-Fix the HorizontalTimelineView component to preserve user scroll position and view focus during data refresh operations. This is a focused frontend optimization project requiring careful state management and performance optimization.
+Implement a comprehensive Task Decomposition Engine that transforms complex user requests into optimized, parallel execution plans with resource estimation and continuous learning.
 
-## Milestone 1: Core Implementation and Testing (Primary Focus)
-**Objective**: Implement complete scroll preservation solution with full testing coverage
-**Duration**: 5-7 days
-**Dependencies**: None
+## Milestone 1: Core Decomposition Engine Implementation
+**Objective**: Build the foundational decomposition engine with all core methods
+**Duration**: 3-5 days
+**Deliverables**:
+- TaskDecompositionEngine class with all core methods
+- Dependency graph generation using NetworkX
+- Resource estimation system
+- Execution schedule generator
 
-### Deliverables:
-1. **Custom Hooks Implementation**
-   - `useViewState` hook for scroll position tracking/restoration
-   - `useDataRefresh` hook for controlled data updates
-   - Full unit test coverage for both hooks
+**Acceptance Criteria**:
+- `analyze_task()` method correctly identifies task components
+- `decompose_task()` breaks complex tasks into subtasks
+- `generate_dependency_graph()` creates valid NetworkX graphs
+- `estimate_resources()` provides accurate time/complexity estimates
+- `optimize_allocation()` optimizes resource distribution
+- `generate_execution_schedule()` creates parallel execution waves
+- Unit tests with 85%+ coverage
 
-2. **Component Architecture**
-   - `TimelineContainer` wrapper component
-   - `MemoizedTimelineItems` optimized components
-   - Integration with existing HorizontalTimelineView
-   - Performance optimization using React.memo, useMemo, useCallback
+**Dependencies**: None (foundation milestone)
 
-3. **Testing Suite**
-   - Unit tests for all custom hooks and components
-   - Integration tests for complete user interaction flows
-   - Cross-browser compatibility tests
-   - Performance benchmarking tests
-
-4. **Documentation**
-   - Implementation documentation
-   - Performance analysis (before/after)
-   - Integration guide for existing codebase
-
-### Acceptance Criteria:
-- [ ] User scroll position preserved 100% during data refresh
-- [ ] No measurable performance degradation (<5ms overhead)
-- [ ] 90% unit test coverage, 100% integration test coverage
-- [ ] Works consistently in Chrome, Firefox, Safari, Edge
-- [ ] No breaking changes to existing HorizontalTimelineView API
-- [ ] Memory usage remains stable (no leaks)
-
-### Implementation Tasks:
-1. Custom hooks creation and testing (frontend)
-2. Memoized component development (frontend)
-3. Container integration implementation (frontend)
-4. Performance monitoring setup (frontend)
-5. Cross-browser compatibility testing (frontend)
-
-## Milestone 2: Production Ready and Optimization (If Needed)
-**Objective**: Production deployment readiness and final optimizations
+## Milestone 2: Backend API Implementation
+**Objective**: Create FastAPI endpoints for task decomposition
 **Duration**: 2-3 days
-**Dependencies**: Milestone 1 complete
+**Deliverables**:
+- POST /api/decompose endpoint
+- POST /api/approve-plan endpoint
+- GET /api/decomposition-history endpoint
+- Request/response schemas with Pydantic
+- Persistent storage for decomposition history
 
-### Deliverables:
-1. **Production Preparation**
-   - Feature flag implementation for safe rollback
-   - Error handling and graceful degradation
-   - Performance monitoring integration
-   - Production build optimization
+**Acceptance Criteria**:
+- All endpoints functional and return proper JSON
+- Input validation with meaningful error messages
+- History persistence across server restarts
+- API documentation via FastAPI auto-docs
+- Integration tests for all endpoints
 
-2. **Final Testing**
-   - End-to-end user acceptance testing
-   - Load testing with large datasets
-   - Mobile device testing
-   - Accessibility validation
+**Dependencies**: Milestone 1 (requires core engine)
 
-3. **Documentation Completion**
-   - User guide updates
-   - Maintenance documentation
-   - Rollback procedures
-   - Performance monitoring guide
+## Milestone 3: Frontend Visualization
+**Objective**: Build React components for task visualization
+**Duration**: 3-4 days
+**Deliverables**:
+- TaskDecompositionViewer.jsx component
+- Mermaid.js dependency graph rendering
+- Resource estimates display
+- Execution wave visualization
+- Approve/Reject/Modify action buttons
 
-### Acceptance Criteria:
-- [ ] Feature flag controls enabled/disabled state
-- [ ] Graceful fallback if scroll preservation fails
-- [ ] Production monitoring shows stable performance
-- [ ] Mobile devices maintain same functionality
-- [ ] Accessibility features preserved
-- [ ] Complete rollback plan documented
+**Acceptance Criteria**:
+- Interactive Mermaid graphs render correctly
+- Resource estimates clearly displayed
+- Execution waves show parallel task groups
+- User actions trigger appropriate API calls
+- Responsive design works on different screen sizes
 
-## Technical Approach
+**Dependencies**: Milestone 2 (requires API endpoints)
 
-### Frontend Implementation Strategy:
-1. **Custom Hook Architecture**: Modular, testable hooks for specific functionality
-2. **Component Wrapper Pattern**: Non-invasive integration with existing components
-3. **Performance Optimization**: Strategic use of React optimization patterns
-4. **Test-Driven Development**: Tests written before implementation
-5. **Cross-browser Testing**: Validated across target browser matrix
+## Milestone 4: Integration & Testing
+**Objective**: Full system integration and comprehensive testing
+**Duration**: 2-3 days
+**Deliverables**:
+- End-to-end integration
+- Comprehensive test suite
+- Performance optimization
+- Documentation
 
-### Risk Mitigation:
-- **Progressive Enhancement**: Core functionality preserved if optimization fails
-- **Feature Flags**: Safe rollback mechanism
-- **Monitoring**: Performance and error tracking
-- **Backward Compatibility**: Zero breaking changes to existing API
+**Acceptance Criteria**:
+- Full workflow from input to visualization works
+- All components properly integrated
+- Performance meets requirements
+- Complete technical documentation
+- User guide created
 
-### Success Metrics:
-- **View Stability**: 100% scroll position preservation
-- **Performance**: <5ms overhead per refresh operation
-- **Compatibility**: Consistent behavior across all supported browsers
-- **Test Coverage**: 90% unit, 100% integration test coverage
-- **User Experience**: Zero user-reported view disruption issues
+**Dependencies**: Milestones 1-3
 
-## Project Timeline
-- **Week 1**: Milestone 1 implementation and testing
-- **Week 2**: Milestone 2 production readiness (if needed)
-
-## Dependencies and Assumptions:
-- React 18+ with hooks support available
-- HorizontalTimelineView component uses standard React patterns
-- Current data refresh pattern is via useEffect/props changes
-- Standard browser scroll APIs available
-- Existing test infrastructure in place
-
-This milestone plan focuses on delivering a high-quality, well-tested solution that preserves user experience while maintaining code quality and performance standards.
+## Total Project Duration: 10-15 days
+## Critical Success Factors:
+- Accurate task decomposition logic
+- Efficient dependency graph generation
+- Clear and useful visualizations
+- Reliable API responses
+- Comprehensive test coverage

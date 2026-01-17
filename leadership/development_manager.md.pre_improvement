@@ -259,34 +259,6 @@ Milestone → Coordinators (break down) → TDD Coordinator (execute) → Verify
 - Major blockers or scope changes
 - Quality issues unresolvable
 
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
-
-**Performance Insight (Auto-Applied):**
-Agent Development Manager has a success rate below 75%. Consider reviewing recent failures and adjusting definition.
-
 ## Best Practices (What TO Do)
 
 **Milestone Planning:**
@@ -386,7 +358,7 @@ This agent benefits most from these improvement types:
 - **validation**: Verifying each milestone meets requirements before proceeding
 
 ## Model Preference
-sonnet
+claude-sonnet-4-5-20250929-sonnet-4-5-20250929-sonnet-4-5-20250929
 
 ## Max Iterations
 100

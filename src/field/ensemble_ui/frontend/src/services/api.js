@@ -476,7 +476,9 @@ export const getPendingQuestions = async () => {
 
 export const answerQuestion = async (questionId, answer) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/activity/questions/${questionId}/answer`, {
+    // URL encode the question ID since it may contain slashes
+    const encodedId = encodeURIComponent(questionId);
+    const response = await fetch(`${API_BASE_URL}/api/activity/questions/${encodedId}/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ answer }),
@@ -840,6 +842,33 @@ export const triggerRecovery = async (agentId, strategy = 'retry') => {
     return await response.json();
   } catch (error) {
     console.error('Trigger recovery error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Properly restart an agent job in-place.
+ * This resets iteration to 0 and re-executes the agent with the same input.
+ * Unlike triggerRecovery which creates new agents, this restarts the existing agent.
+ */
+export const restartAgent = async (agentId, options = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (options.clearMessages !== undefined) {
+      params.append('clear_messages', options.clearMessages);
+    }
+    if (options.newMaxIterations !== undefined) {
+      params.append('new_max_iterations', options.newMaxIterations);
+    }
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/restart${queryString}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to restart agent');
+    return await response.json();
+  } catch (error) {
+    console.error('Restart agent error:', error);
     throw error;
   }
 };

@@ -65,6 +65,7 @@ from src.runtime.agents import AgentDefinition, AgentRuntime
 from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
 from src.runtime.agents.github_integration import GitHubIntegration
 from src.runtime.agents.title_generator import TitleGenerator
+from src.runtime.agents.log_monitor import get_log_monitor, init_log_monitor
 
 load_dotenv()
 
@@ -701,10 +702,17 @@ app.add_middleware(
 
 orchestrator = AgentOrchestrator()
 
-# Start recovery orchestrator on app startup
+# Start recovery orchestrator and log monitor on app startup
 @app.on_event("startup")
 async def startup_event():
     """Initialize background services on startup."""
+    # Initialize log monitor first to capture any startup errors
+    try:
+        log_monitor = init_log_monitor()
+        logger.info("Log monitor initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize log monitor: {e}")
+
     try:
         from src.runtime.agents.swarm_recovery import get_recovery_orchestrator
         api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -973,7 +981,7 @@ The following is a summary from the completed report that this task builds upon:
 """
 
         # Record lineage before starting the task
-        from src.runtime.agents import AgentRuntime
+        from src.runtime.agents.runtime import AgentRuntime
         activity_tracker = AgentRuntime.get_activity_tracker()
 
         activity_tracker.record_request_started(
@@ -989,27 +997,23 @@ The following is a summary from the completed report that this task builds upon:
             problem_description=request.problem_description
         )
 
-        # Start the agent in background
-        problem_request = ProblemRequest(
-            problem=enhanced_problem,
+        # Use YOLO mode if enabled globally or if explicitly set in request
+        use_autonomous = request.fully_autonomous or orchestrator.yolo_mode
+
+        # Spawn Executive Director with problem description and budget tier
+        agent_id, result = await orchestrator.spawn_executive_director(
+            enhanced_problem,
             budget_tier=request.budget_tier,
             auto_continue=request.auto_continue,
-            fully_autonomous=request.fully_autonomous
-        )
-
-        background_tasks.add_task(
-            orchestrator.run_executive_director,
-            enhanced_problem,
-            request.budget_tier,
-            new_request_id,
-            request.auto_continue,
-            request.fully_autonomous
+            fully_autonomous=use_autonomous
         )
 
         return {
             "success": True,
             "request_id": new_request_id,
+            "agent_id": agent_id,
             "message": f"Started new task from report '{report_title}'",
+            "result": result,
             "lineage": {
                 "source_type": "completed_report",
                 "source_id": report_id,
@@ -1030,7 +1034,7 @@ async def get_spawned_tasks_for_report(report_id: str):
     Get all tasks that were spawned from a specific completed report.
     """
     try:
-        from src.runtime.agents import AgentRuntime
+        from src.runtime.agents.runtime import AgentRuntime
         activity_tracker = AgentRuntime.get_activity_tracker()
 
         spawned_tasks = activity_tracker.get_tasks_spawned_from_report(report_id)
@@ -1409,7 +1413,7 @@ async def get_pending_questions():
     questions = tracker.get_pending_questions()
     return {"questions": questions}
 
-@app.post("/api/activity/questions/{question_id}/answer")
+@app.post("/api/activity/questions/{question_id:path}/answer")
 async def answer_question(question_id: str, answer: dict, background_tasks: BackgroundTasks):
     """Answer a pending question and trigger agent continuation"""
     from src.runtime.agents.runtime import AgentRuntime
@@ -1612,29 +1616,78 @@ async def get_projects_summary():
                 "agents": []
             }
 
-    # Calculate stage distribution
-    # IMPORTANT: Stage reflects agent status, NOT project/milestone completion
-    # Projects are only truly "complete" when all milestones and tasks are done
+    # Get pending reviews and deliverable info for all projects
+    from src.runtime.agents.swarm_state import get_swarm_state
+    swarm_state = get_swarm_state()
+
+    # Build a map of pending reviews per request_id
+    pending_reviews_map = {}
+    completed_reviews_map = {}
+    try:
+        # Get pending reviews
+        pending_reviews = swarm_state.get_pending_reviews(status="pending")
+        for review in pending_reviews:
+            req_id = review.get("request_id")
+            if req_id:
+                if req_id not in pending_reviews_map:
+                    pending_reviews_map[req_id] = []
+                pending_reviews_map[req_id].append(review)
+
+        # Get approved/implemented reviews (completed deliverables)
+        approved_reviews = swarm_state.get_pending_reviews(status="approved")
+        implemented_reviews = swarm_state.get_pending_reviews(status="implemented")
+        for review in approved_reviews + implemented_reviews:
+            req_id = review.get("request_id")
+            if req_id:
+                if req_id not in completed_reviews_map:
+                    completed_reviews_map[req_id] = []
+                completed_reviews_map[req_id].append(review)
+    except Exception as e:
+        logger.warning(f"Failed to get review data for projects: {e}")
+
+    # Calculate stage distribution based on DELIVERABLE status, not just agents
     stage_counts = {}
     for p in projects.values():
-        # Determine stage based on agent activity (not project completion!)
-        if p["active_agents"] > 0:
-            stage = "running"
-        elif p["failed_agents"] > 0 and p["completed_agents"] == 0:
-            stage = "failed"
-        elif p["awaiting_input"] > 0:
-            stage = "awaiting_input"
-        elif p["completed_agents"] == p["total_agents"] and p["total_agents"] > 0:
-            # All agents finished, but this doesn't mean project is complete
-            # Project completion requires milestone/task verification
-            stage = "agents_done"
-        else:
-            stage = "idle"
+        project_id = p["project_id"]
 
-        p["current_stage"] = stage
-        # Also track milestone completion status (to be implemented)
-        p["milestone_status"] = "unknown"  # TODO: Check actual milestone files
-        stage_counts[stage] = stage_counts.get(stage, 0) + 1
+        # Count pending and completed reviews for this project
+        pending_count = len(pending_reviews_map.get(project_id, []))
+        completed_count = len(completed_reviews_map.get(project_id, []))
+
+        p["pending_reviews"] = pending_count
+        p["completed_deliverables"] = completed_count
+
+        # Determine DELIVERABLE stage (primary status)
+        if pending_count > 0:
+            deliverable_stage = "pending_review"
+        elif completed_count > 0 and p["active_agents"] == 0:
+            deliverable_stage = "deliverables_complete"
+        elif p["active_agents"] > 0:
+            deliverable_stage = "in_progress"
+        elif p["failed_agents"] > 0 and p["completed_agents"] == 0:
+            deliverable_stage = "failed"
+        elif p["awaiting_input"] > 0:
+            deliverable_stage = "awaiting_input"
+        elif p["completed_agents"] == p["total_agents"] and p["total_agents"] > 0:
+            deliverable_stage = "agents_done"
+        else:
+            deliverable_stage = "idle"
+
+        p["current_stage"] = deliverable_stage
+        p["deliverable_status"] = deliverable_stage
+
+        # Also track agent status separately for the second column
+        if p["active_agents"] > 0:
+            agent_stage = "running"
+        elif p["failed_agents"] > 0:
+            agent_stage = "failed"
+        elif p["completed_agents"] > 0:
+            agent_stage = "completed"
+        else:
+            agent_stage = "idle"
+        p["agent_status"] = agent_stage
+
+        stage_counts[deliverable_stage] = stage_counts.get(deliverable_stage, 0) + 1
 
     # Sort by created_at (newest first)
     sorted_projects = sorted(
@@ -2829,9 +2882,16 @@ async def get_agent_details(agent_class: str):
         activities = []
         for activity in activity_tracker.activities[-100:]:  # Last 100 activities
             if hasattr(activity, 'agent_name') and activity.agent_name == agent_class:
+                # Handle timestamp - could be datetime or already a string
+                timestamp = getattr(activity, 'timestamp', None)
+                if timestamp is not None:
+                    if hasattr(timestamp, 'isoformat'):
+                        timestamp = timestamp.isoformat()
+                    # If already a string, keep it as is
+
                 activities.append({
                     'type': activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type),
-                    'timestamp': activity.timestamp.isoformat() if hasattr(activity, 'timestamp') else None,
+                    'timestamp': timestamp,
                     'data': getattr(activity, 'data', {}),
                     'agent_id': getattr(activity, 'agent_id', None)
                 })
@@ -2945,6 +3005,156 @@ async def trigger_agent_recovery(agent_id: str, strategy: str = "retry"):
     except Exception as e:
         logger.error(f"Error triggering recovery for {agent_id}: {e}")
         return {"error": str(e)}
+
+
+@app.post("/api/agents/{agent_id:path}/restart")
+async def restart_agent_job(
+    agent_id: str,
+    clear_messages: bool = True,
+    new_max_iterations: Optional[int] = None
+):
+    """
+    Properly restart a failed/stalled agent job.
+
+    This resets the agent's state (iteration=0, clears errors) and re-executes it
+    with the same input data. Unlike recovery which creates new agents, this
+    restarts the existing agent in-place.
+    """
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        from src.runtime.agents.definition import AgentDefinition
+        from src.runtime.agents.runtime import AgentRuntime
+        from src.runtime.agents.tools import ToolRegistry, SpawnAgentTool
+        from pathlib import Path
+
+        swarm_state = get_swarm_state()
+
+        # Get agent info before restart
+        agent = swarm_state.get_agent(agent_id)
+        if not agent:
+            return {"success": False, "error": f"Agent {agent_id} not found"}
+
+        # Store original input data for re-execution
+        raw_input_data = agent.get('input_data', {})
+
+        # Robustly convert input_data to a dict
+        import json
+        input_data = {}
+        if raw_input_data:
+            if isinstance(raw_input_data, dict):
+                input_data = raw_input_data
+            elif isinstance(raw_input_data, str):
+                try:
+                    parsed = json.loads(raw_input_data)
+                    if isinstance(parsed, dict):
+                        input_data = parsed
+                    else:
+                        input_data = {"task": str(parsed)}
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    input_data = {"task": raw_input_data}
+            else:
+                input_data = {"task": str(raw_input_data)}
+
+        # Ensure we have at least a problem/task field
+        if not input_data:
+            # Try to get problem from agent state
+            problem = agent.get('problem', '') or agent.get('current_task', '')
+            if problem:
+                input_data = {"problem": problem}
+            else:
+                input_data = {"problem": "Continue previous task"}
+
+        logger.info(f"Restarting agent {agent_id} with input_data: {input_data}")
+
+        agent_type = agent['agent_type']
+        session_id = agent['session_id']
+        parent_agent_id = agent.get('parent_agent_id')
+        request_id = agent.get('request_id')
+
+        # Restart the agent (reset state)
+        restarted = swarm_state.restart_agent(
+            agent_id=agent_id,
+            clear_messages=clear_messages,
+            new_max_iterations=new_max_iterations
+        )
+
+        if not restarted:
+            return {"success": False, "error": "Failed to restart agent"}
+
+        # Re-execute the agent in background
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            return {"success": False, "error": "No API key configured"}
+
+        def execute_agent():
+            try:
+                # Load agent definition
+                agent_types_dir = Path(__file__).parent.parent.parent.parent.parent
+                agent_def_path = agent_types_dir / f"{agent_type}.md"
+
+                if not agent_def_path.exists():
+                    logger.error(f"Agent definition not found: {agent_def_path}")
+                    swarm_state.update_agent_status(agent_id, "failed", error_message="Agent definition not found")
+                    return
+
+                agent_definition = AgentDefinition.from_file(agent_def_path)
+
+                # Create tools
+                tools = ToolRegistry.default(
+                    agent_definition=agent_definition,
+                    request_id=request_id,
+                    session_id=session_id,
+                    agent_id=agent_id
+                )
+
+                # Add spawn tool
+                spawn_tool = SpawnAgentTool(
+                    agent_types_dir=agent_types_dir,
+                    api_key=api_key,
+                    tools=None,
+                    budget_tier="balanced",
+                    parent_agent_id=agent_id,
+                    request_id=request_id,
+                    session_id=session_id
+                )
+                tools.register(spawn_tool)
+
+                # Create runtime and execute
+                runtime = AgentRuntime(
+                    agent_definition,
+                    api_key=api_key,
+                    tools=tools,
+                    budget_tier="balanced",
+                    agent_id=agent_id,
+                    request_id=request_id,
+                    parent_agent_id=parent_agent_id,
+                    session_id=session_id
+                )
+
+                result = runtime.execute(input_data)
+                logger.info(f"Restarted agent {agent_id} completed: {result.get('status')}")
+
+            except Exception as e:
+                logger.error(f"Restarted agent {agent_id} failed: {e}")
+                swarm_state.update_agent_status(agent_id, "failed", error_message=str(e))
+
+        # Execute in background thread
+        import threading
+        thread = threading.Thread(target=execute_agent, daemon=True)
+        thread.start()
+
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "message": f"Agent {agent_id} restarted with iteration=0",
+            "agent_type": agent_type,
+            "session_id": session_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error restarting agent {agent_id}: {e}")
+        return {"success": False, "error": str(e)}
+
 
 @app.post("/api/recovery/scan")
 async def scan_for_stalled_agents(threshold_minutes: int = 5):
@@ -4239,6 +4449,98 @@ async def delete_session(session_id: str):
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== Log Monitor / Runtime Issues Endpoints ==========
+
+@app.get("/api/issues")
+async def get_runtime_issues(
+    severity: Optional[str] = None,
+    category: Optional[str] = None,
+    unresolved_only: bool = True,
+    limit: int = 50
+):
+    """
+    Get detected runtime issues for user review.
+
+    The log monitor automatically detects errors and failures,
+    categorizes them, and suggests remediation actions.
+    """
+    try:
+        monitor = get_log_monitor()
+
+        # Convert string params to enums if provided
+        from src.runtime.agents.log_monitor import IssueSeverity, IssueCategory
+        sev_enum = None
+        cat_enum = None
+
+        if severity:
+            try:
+                sev_enum = IssueSeverity(severity.lower())
+            except ValueError:
+                pass
+
+        if category:
+            try:
+                cat_enum = IssueCategory(category.lower())
+            except ValueError:
+                pass
+
+        issues = monitor.get_issues(
+            severity=sev_enum,
+            category=cat_enum,
+            unresolved_only=unresolved_only,
+            limit=limit
+        )
+
+        return {
+            "issues": issues,
+            "count": len(issues),
+            "unresolved_only": unresolved_only
+        }
+    except Exception as e:
+        logger.error(f"Error getting issues: {e}")
+        return {"error": str(e), "issues": [], "count": 0}
+
+
+@app.get("/api/issues/summary")
+async def get_issues_summary():
+    """Get a summary of current runtime issues."""
+    try:
+        monitor = get_log_monitor()
+        return monitor.get_summary()
+    except Exception as e:
+        logger.error(f"Error getting issues summary: {e}")
+        return {"error": str(e)}
+
+
+@app.post("/api/issues/{issue_id}/resolve")
+async def resolve_issue(issue_id: str):
+    """Mark an issue as resolved."""
+    try:
+        monitor = get_log_monitor()
+        success = monitor.resolve_issue(issue_id)
+        if success:
+            return {"success": True, "issue_id": issue_id, "resolved": True}
+        else:
+            raise HTTPException(status_code=404, detail="Issue not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving issue {issue_id}: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/issues/resolve-all")
+async def resolve_all_issues():
+    """Mark all issues as resolved."""
+    try:
+        monitor = get_log_monitor()
+        count = monitor.resolve_all()
+        return {"success": True, "resolved_count": count}
+    except Exception as e:
+        logger.error(f"Error resolving all issues: {e}")
+        return {"success": False, "error": str(e)}
 
 
 if __name__ == "__main__":

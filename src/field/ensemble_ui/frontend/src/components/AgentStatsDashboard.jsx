@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Container, Row, Col, Card, Spinner, Badge, ListGroup, Alert, Button
+  Container, Row, Col, Card, Spinner, Badge, ListGroup, Alert, Button, ButtonGroup
 } from 'react-bootstrap';
 import { getAgentStats, getAgentDetails } from '../services/api';
+import AgentHierarchy from './AgentHierarchy';
 
 function AgentStatsDashboard() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +12,7 @@ function AgentStatsDashboard() {
   const [agentDetails, setAgentDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('stats'); // 'stats' or 'hierarchy'
 
   useEffect(() => {
     fetchAgentStats();
@@ -76,7 +78,21 @@ function AgentStatsDashboard() {
             View agent activity, achievements, and performance metrics.
           </p>
         </Col>
-        <Col xs="auto">
+        <Col xs="auto" className="d-flex align-items-center gap-3">
+          <ButtonGroup size="sm">
+            <Button
+              variant={viewMode === 'stats' ? 'primary' : 'outline-primary'}
+              onClick={() => setViewMode('stats')}
+            >
+              Stats
+            </Button>
+            <Button
+              variant={viewMode === 'hierarchy' ? 'primary' : 'outline-primary'}
+              onClick={() => setViewMode('hierarchy')}
+            >
+              Hierarchy
+            </Button>
+          </ButtonGroup>
           <Badge bg="warning" className="me-2">
             {runningCount} Running
           </Badge>
@@ -86,9 +102,16 @@ function AgentStatsDashboard() {
         </Col>
       </Row>
 
-      <Row style={{ height: 'calc(100% - 100px)' }}>
-        {/* Left Panel - Agent List */}
-        <Col md={5} style={{ height: '100%', overflowY: 'auto' }}>
+      {viewMode === 'hierarchy' ? (
+        <Row style={{ height: 'calc(100% - 100px)' }}>
+          <Col style={{ height: '100%' }}>
+            <AgentHierarchy />
+          </Col>
+        </Row>
+      ) : (
+        <Row style={{ height: 'calc(100% - 100px)' }}>
+          {/* Left Panel - Agent List */}
+          <Col md={5} style={{ height: '100%', overflowY: 'auto' }}>
           <Card bg="dark" text="light" style={{ height: '100%' }}>
             <Card.Header>
               <strong>Agent Classes</strong>
@@ -288,6 +311,7 @@ function AgentStatsDashboard() {
           </Card>
         </Col>
       </Row>
+      )}
     </Container>
   );
 }

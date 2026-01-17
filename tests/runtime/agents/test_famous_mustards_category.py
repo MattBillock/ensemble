@@ -113,17 +113,17 @@ class TestFamousMustardsCategory:
         """Test that FAMOUS_MUSTARDS is included in the enum categories."""
         # Current categories include all the original plus expansions:
         # productivity, comedy, milestone, streak, meta, ska, brass_band, drum_corps,
-        # guitar_hero, famous_mustards, dungeons_dragons, favorite_tacos, loser_board, family
+        # guitar_hero, famous_mustards, dungeons_dragons, favorite_tacos, fine_dining, loser_board, family
         current_categories = [
             'productivity', 'comedy', 'milestone', 'streak', 'meta', 'ska',
             'brass_band', 'drum_corps', 'guitar_hero', 'famous_mustards',
-            'dungeons_dragons', 'favorite_tacos', 'loser_board', 'family'
+            'dungeons_dragons', 'favorite_tacos', 'fine_dining', 'loser_board', 'family'
         ]
 
         all_categories = [category.value for category in AchievementCategory]
 
-        # Should have 14 categories total
-        expected_count = 14
+        # Should have 15 categories total
+        expected_count = 15
         assert len(all_categories) == expected_count, \
             f"Enum should have {expected_count} values, found {len(all_categories)}"
 

@@ -793,12 +793,13 @@ class SelfImprovementLoop:
             if rec_type == "model_upgrade":
                 new_model = changes.get("target_tier", changes.get("new_model", "sonnet"))
                 content = self._update_model_preference(content, new_model)
-                applied_changes.append(f"Upgraded model capability tier to {new_model} for enhanced reasoning")
+                tier_name = {"opus": "high", "sonnet": "standard", "haiku": "fast"}.get(new_model, new_model)
+                applied_changes.append(f"Enhanced reasoning capability - agent now uses {tier_name}-tier model for better task handling")
 
             elif rec_type == "model_downgrade":
                 new_model = changes.get("new_model", "haiku")
                 content = self._update_model_preference(content, new_model)
-                applied_changes.append(f"Optimized to cost-efficient model tier ({new_model}) - agent performs well at this level")
+                applied_changes.append(f"Optimized for cost efficiency - agent performs well with faster model tier")
 
             elif rec_type == "iteration_increase":
                 new_iterations = changes.get("new_max_iterations", 15)

@@ -1,64 +1,45 @@
-# Frontend Coordinator Model Update - Requirements
+# Smart Task Decomposition Engine - Implementation Requirements
 
-## Vision
-Update the Frontend Coordinator agent definition to use the 'sonnet' model instead of the current 'haiku' model for cost optimization, while maintaining the agent's excellent performance (98.41% success rate).
+## Project Overview
+Implement a comprehensive Task Decomposition Engine that transforms complex user requests into optimized, parallel execution plans with resource estimation and continuous learning.
 
-## Objectives
-1. **Primary**: Change model preference from 'haiku' to 'sonnet' in Frontend Coordinator definition
-2. **Verification**: Ensure syntax correctness and proper configuration
-3. **Validation**: Confirm no breaking changes to agent functionality
-4. **Documentation**: Record the change and rationale
+## Key Components to Implement
+1. Frontend (React)
+   - TaskDecompositionViewer.jsx
+     - [ ] Implement Mermaid dependency graph rendering
+     - [ ] Create resource estimates display
+     - [ ] Develop execution wave visualization
+     - [ ] Add Approve/Reject/Modify action buttons
 
-## Scope
+2. Backend (FastAPI)
+   - Implement API Endpoints:
+     - [ ] POST /api/decompose
+     - [ ] POST /api/approve-plan
+     - [ ] GET /api/decomposition-history
 
-### In Scope
-- Modify the "## Model Preference" section in `/Users/mattbillock/Development/ai_exploration/ensemble/coordinators/frontend_coordinator.md`
-- Update model preference from "haiku" to "sonnet"
-- Verify file syntax and structure integrity
-- Validate related configuration consistency
-
-### Out of Scope
-- Changes to other agent definitions
-- Modifications to agent behavior or capabilities
-- Updates to runtime system or configuration loading
-- Testing the model change in live environment
-
-## Requirements
-
-### Functional Requirements
-- **FR-1**: Model preference must be changed from "haiku" to "sonnet"
-- **FR-2**: All other sections of the agent definition must remain unchanged
-- **FR-3**: File must maintain valid markdown structure
-- **FR-4**: Agent capabilities and permissions must remain identical
-
-### Non-Functional Requirements
-- **NFR-1**: Change must be backward compatible with current configuration system
-- **NFR-2**: No impact on agent's existing success rate or performance characteristics
-- **NFR-3**: Change must be easily reversible if needed
+3. Core Decomposition Engine
+   - TaskDecompositionEngine (decomposition_engine.py)
+     - [ ] Implement analyze_task() method
+     - [ ] Implement decompose_task() method
+     - [ ] Implement generate_dependency_graph() method
+     - [ ] Implement estimate_resources() method
+     - [ ] Implement optimize_allocation() method
+     - [ ] Implement generate_execution_schedule() method
 
 ## Success Criteria
-- ✅ Frontend Coordinator definition file updated with "sonnet" model preference
-- ✅ File syntax validation passes
-- ✅ All other configuration sections preserved exactly
-- ✅ Change committed to version control with descriptive message
+- Fully functional task decomposition system
+- Ability to break down complex tasks into parallel executable components
+- Resource estimation and optimization
+- Visualizable dependency and execution graphs
+- Persistent history of task decompositions
 
-## Constraints
-- Must preserve exact formatting and structure of existing file
-- Cannot modify agent permissions, tools, or capabilities
-- Must maintain consistency with other model preference formats in the system
+## Technical Constraints
+- Frontend: React with Mermaid.js for visualization
+- Backend: FastAPI with Python
+- Dependency graph generation using NetworkX
+- Resource estimation with configurable parameters
 
-## Assumptions
-- The 'sonnet' model is available and compatible with the Frontend Coordinator's role
-- The configuration loading system supports the 'sonnet' model identifier
-- Cost optimization is the primary driver for this change
-- No behavioral changes are expected from the model switch
-
-## Technical Details
-- **Target File**: `/Users/mattbillock/Development/ai_exploration/ensemble/coordinators/frontend_coordinator.md`
-- **Section to Update**: `## Model Preference`
-- **Current Value**: `haiku`
-- **New Value**: `sonnet`
-- **Configuration Format**: Simple text value under the Model Preference heading
-
-## Rationale
-The Frontend Coordinator has demonstrated exceptional performance with a 98.41% success rate, indicating that it can maintain effectiveness with a more cost-efficient model. The 'sonnet' model provides a balance of capability and cost that aligns with optimization goals while preserving the agent's proven effectiveness.
+## Out of Scope
+- Advanced machine learning model training
+- Distributed computing integration
+- Enterprise-level scalability beyond prototype
