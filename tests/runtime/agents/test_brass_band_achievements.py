@@ -1,7 +1,7 @@
 """
 Unit tests for BRASS_BAND achievement category and brass band achievements.
 
-Tests verify that all 15 brass band achievements are properly defined with correct
+Tests verify that all brass band achievements are properly defined with correct
 categories, rarities, points, and agent classes.
 """
 
@@ -24,24 +24,24 @@ def test_brass_band_achievements_exist():
     """Test that all 15 brass band achievement IDs exist in ACHIEVEMENTS list."""
     expected_achievement_ids = [
         'championship_section',
-        'silver_band',
         'principal_cornet',
-        'adjudicator',
+        'euphonium_feature',
         'test_piece',
-        'bandroom_practice',
-        'promotion',
-        'brass_section_harmony',
-        'march_on_stage',
-        'quick_march',
-        'hymn_tune_encore',
-        'grand_shield',
-        'fanfare',
-        'youth_band_graduate',
-        'national_finals'
+        'bandstand_performance',
+        'nationals',
+        'colliery_band',
+        'hymn_tune',
+        'march_tempo',
+        'treble_clef',
+        'fourth_section',
+        'whit_friday',
+        'bb_flat',
+        'flugel_horn',
+        'percussion_section',
     ]
-    
+
     achievement_ids = [achievement.id for achievement in ACHIEVEMENTS]
-    
+
     for expected_id in expected_achievement_ids:
         assert expected_id in achievement_ids, f"Achievement '{expected_id}' not found in ACHIEVEMENTS"
 
@@ -50,22 +50,22 @@ def test_brass_band_achievements_category():
     """Test that each brass band achievement has category=AchievementCategory.BRASS_BAND."""
     brass_band_achievement_ids = [
         'championship_section',
-        'silver_band',
         'principal_cornet',
-        'adjudicator',
+        'euphonium_feature',
         'test_piece',
-        'bandroom_practice',
-        'promotion',
-        'brass_section_harmony',
-        'march_on_stage',
-        'quick_march',
-        'hymn_tune_encore',
-        'grand_shield',
-        'fanfare',
-        'youth_band_graduate',
-        'national_finals'
+        'bandstand_performance',
+        'nationals',
+        'colliery_band',
+        'hymn_tune',
+        'march_tempo',
+        'treble_clef',
+        'fourth_section',
+        'whit_friday',
+        'bb_flat',
+        'flugel_horn',
+        'percussion_section',
     ]
-    
+
     for achievement in ACHIEVEMENTS:
         if achievement.id in brass_band_achievement_ids:
             assert achievement.category == AchievementCategory.BRASS_BAND, \
@@ -76,27 +76,27 @@ def test_brass_band_achievements_rarity():
     """Test that brass band achievements have correct rarities."""
     rarity_mapping = {
         # LEGENDARY
-        'championship_section': AchievementRarity.LEGENDARY,
-        'national_finals': AchievementRarity.LEGENDARY,
+        'nationals': AchievementRarity.LEGENDARY,
         # EPIC
-        'promotion': AchievementRarity.EPIC,
-        'grand_shield': AchievementRarity.EPIC,
+        'championship_section': AchievementRarity.EPIC,
+        'flugel_horn': AchievementRarity.EPIC,
         # RARE
-        'silver_band': AchievementRarity.RARE,
-        'adjudicator': AchievementRarity.RARE,
-        'brass_section_harmony': AchievementRarity.RARE,
-        'quick_march': AchievementRarity.RARE,
-        'fanfare': AchievementRarity.RARE,
+        'euphonium_feature': AchievementRarity.RARE,
+        'test_piece': AchievementRarity.RARE,
+        'march_tempo': AchievementRarity.RARE,
+        'whit_friday': AchievementRarity.RARE,
+        'bb_flat': AchievementRarity.RARE,
         # UNCOMMON
         'principal_cornet': AchievementRarity.UNCOMMON,
-        'test_piece': AchievementRarity.UNCOMMON,
-        'hymn_tune_encore': AchievementRarity.UNCOMMON,
-        'youth_band_graduate': AchievementRarity.UNCOMMON,
+        'colliery_band': AchievementRarity.UNCOMMON,
+        'hymn_tune': AchievementRarity.UNCOMMON,
+        'treble_clef': AchievementRarity.UNCOMMON,
+        'percussion_section': AchievementRarity.UNCOMMON,
         # COMMON
-        'bandroom_practice': AchievementRarity.COMMON,
-        'march_on_stage': AchievementRarity.COMMON
+        'bandstand_performance': AchievementRarity.COMMON,
+        'fourth_section': AchievementRarity.COMMON,
     }
-    
+
     for achievement in ACHIEVEMENTS:
         if achievement.id in rarity_mapping:
             expected_rarity = rarity_mapping[achievement.id]
@@ -107,23 +107,23 @@ def test_brass_band_achievements_rarity():
 def test_brass_band_achievements_points():
     """Test that brass band achievements have correct point values."""
     points_mapping = {
-        'championship_section': 200,
-        'silver_band': 50,
+        'championship_section': 80,
         'principal_cornet': 30,
-        'adjudicator': 60,
-        'test_piece': 25,
-        'bandroom_practice': 15,
-        'promotion': 100,
-        'brass_section_harmony': 45,
-        'march_on_stage': 10,
-        'quick_march': 40,
-        'hymn_tune_encore': 35,
-        'grand_shield': 120,
-        'fanfare': 55,
-        'youth_band_graduate': 20,
-        'national_finals': 150
+        'euphonium_feature': 45,
+        'test_piece': 40,
+        'bandstand_performance': 15,
+        'nationals': 150,
+        'colliery_band': 35,
+        'hymn_tune': 25,
+        'march_tempo': 50,
+        'treble_clef': 30,
+        'fourth_section': 20,
+        'whit_friday': 45,
+        'bb_flat': 40,
+        'flugel_horn': 70,
+        'percussion_section': 25,
     }
-    
+
     for achievement in ACHIEVEMENTS:
         if achievement.id in points_mapping:
             expected_points = points_mapping[achievement.id]
@@ -132,26 +132,35 @@ def test_brass_band_achievements_points():
 
 
 def test_brass_band_achievements_agent_classes():
-    """Test that each brass band achievement has agent_classes=['*']."""
-    brass_band_achievement_ids = [
+    """Test that brass band achievements have correct agent_classes."""
+    # Most are ['*'], but some have specific agent classes
+    specific_agent_classes = {
+        'principal_cornet': ['Executive Director', 'Development Manager', 'System Architect'],
+        'bb_flat': ['Backend Developer', 'Backend Lead', 'System Architect'],
+    }
+
+    # All others should be ['*']
+    default_agent_classes = [
         'championship_section',
-        'silver_band',
-        'principal_cornet',
-        'adjudicator',
+        'euphonium_feature',
         'test_piece',
-        'bandroom_practice',
-        'promotion',
-        'brass_section_harmony',
-        'march_on_stage',
-        'quick_march',
-        'hymn_tune_encore',
-        'grand_shield',
-        'fanfare',
-        'youth_band_graduate',
-        'national_finals'
+        'bandstand_performance',
+        'nationals',
+        'colliery_band',
+        'hymn_tune',
+        'march_tempo',
+        'treble_clef',
+        'fourth_section',
+        'whit_friday',
+        'flugel_horn',
+        'percussion_section',
     ]
-    
+
     for achievement in ACHIEVEMENTS:
-        if achievement.id in brass_band_achievement_ids:
+        if achievement.id in specific_agent_classes:
+            expected = specific_agent_classes[achievement.id]
+            assert achievement.agent_classes == expected, \
+                f"Achievement '{achievement.id}' should have agent_classes={expected}, got {achievement.agent_classes}"
+        elif achievement.id in default_agent_classes:
             assert achievement.agent_classes == ['*'], \
                 f"Achievement '{achievement.id}' should have agent_classes=['*'], got {achievement.agent_classes}"

@@ -277,6 +277,14 @@ def generate_agent_name(agent_type: str, parent_id: str = None, use_whimsical: b
         >>> generate_agent_name("Frontend Developer", family_name="Sparrow")
         'Bramblejay Sparrow-FrontendDev-4730'
     """
+    # When use_whimsical is False, create a temporary generator to ensure proper behavior
+    # (the singleton may have been created with use_whimsical_names=True)
+    if not use_whimsical:
+        temp_generator = NameGenerator(use_whimsical_names=False)
+        if family_name:
+            return temp_generator.get_name_with_family(agent_type, family_name, parent_id)
+        return temp_generator.get_name(agent_type, parent_id)
+
     generator = get_generator(use_whimsical_names=use_whimsical)
     if family_name:
         return generator.get_name_with_family(agent_type, family_name, parent_id)

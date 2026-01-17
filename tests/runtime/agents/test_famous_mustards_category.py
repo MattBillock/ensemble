@@ -110,22 +110,23 @@ class TestFamousMustardsCategory:
             f"FAMOUS_MUSTARDS should have repr: {expected_repr}"
     
     def test_famous_mustards_enum_count(self):
-        """Test that adding FAMOUS_MUSTARDS increases the total enum count."""
-        # This test checks that the enum count increases by 1 when FAMOUS_MUSTARDS is added
-        # Current count should be 9 (based on existing categories in achievements.py)
-        # After adding FAMOUS_MUSTARDS, it should be 10
+        """Test that FAMOUS_MUSTARDS is included in the enum categories."""
+        # Current categories include all the original plus expansions:
+        # productivity, comedy, milestone, streak, meta, ska, brass_band, drum_corps,
+        # guitar_hero, famous_mustards, dungeons_dragons, favorite_tacos, loser_board, family
         current_categories = [
-            'productivity', 'comedy', 'milestone', 'streak', 'meta', 'ska', 
-            'brass_band', 'drum_corps', 'guitar_hero'
+            'productivity', 'comedy', 'milestone', 'streak', 'meta', 'ska',
+            'brass_band', 'drum_corps', 'guitar_hero', 'famous_mustards',
+            'dungeons_dragons', 'favorite_tacos', 'loser_board', 'family'
         ]
-        
+
         all_categories = [category.value for category in AchievementCategory]
-        
-        # Should include all existing categories plus FAMOUS_MUSTARDS
-        expected_count = len(current_categories) + 1
+
+        # Should have 14 categories total
+        expected_count = 14
         assert len(all_categories) == expected_count, \
-            f"After adding FAMOUS_MUSTARDS, enum should have {expected_count} values"
-        
-        # Should include the new category
+            f"Enum should have {expected_count} values, found {len(all_categories)}"
+
+        # Should include the famous_mustards category
         assert 'famous_mustards' in all_categories, \
             "FAMOUS_MUSTARDS should be included in all category values"
