@@ -1,0 +1,31 @@
+UNDEFINED TASK RESOLUTION STRATEGY
+
+Operational Principles:
+1. Maximum Adaptability
+2. Continuous Learning
+3. Proactive Problem Solving
+
+Resolution Workflow:
+- Initial Context Assessment
+- Hypothesis Generation
+- Scenario Mapping
+- Dynamic Strategy Formulation
+- Iterative Refinement
+
+Preparedness Levels:
+- Level 0: No Task Information
+- Level 1: Minimal Context Available
+- Level 2: Partial Task Specification
+- Level 3: Comprehensive Understanding
+
+Adaptive Response Mechanisms:
+- Information Extraction
+- Contextual Hypothesis Generation
+- Flexible Scenario Modeling
+- Continuous Feedback Integration
+
+Emergency Protocols:
+- Request Immediate Clarification
+- Generate Placeholder Framework
+- Establish Communication Channels
+- Maintain Operational Readiness
