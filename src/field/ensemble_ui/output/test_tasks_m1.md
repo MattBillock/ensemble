@@ -1,286 +1,283 @@
-# Test Strategy - Comprehensive Testing Strategy
+# Test Strategy - Backend WebSocket & Frontend Log Viewer
 
 ## Overview
-This test strategy covers both the Activity Tracking Fixes system and the Agent Families Implementation. The strategy ensures robust testing of file tracking, request counting, family name generation, and achievement systems.
+Comprehensive testing strategy for implementing real-time activity tracking through WebSocket communication and log viewer interface. Based on the activity tracking fixes architecture, this milestone focuses on backend WebSocket infrastructure and frontend real-time log viewing capabilities.
 
-## Coverage Goals
-- **Unit Test Coverage**: 85% for business logic
-- **Integration Coverage**: 100% of API endpoints and critical component interactions
-- **E2E Coverage**: Happy path flows and critical error scenarios
+## Test Strategy Summary
 
-## Test Categories
+### Coverage Goals
+- **Unit Test Coverage**: 85% for business logic components
+- **Integration Coverage**: 100% of WebSocket endpoints and real-time communication flows
+- **E2E Coverage**: Critical real-time update scenarios and log viewing user journeys
 
-### 1. Unit Tests - Activity Tracking System
+### Testing Frameworks
+- **Backend**: pytest with pytest-asyncio for WebSocket testing
+- **Frontend**: Jest + React Testing Library for components, WebSocket mocking
+- **E2E**: Playwright for real-time interaction testing
+- **WebSocket Testing**: websocket-client for connection testing
 
-#### Task 1.1: WriteFileTool Unit Tests
-**Component**: `src/runtime/agents/tools.py` - WriteFileTool class
-**Coverage Target**: 90%
-**Test Scenarios**:
-- File creation with tracking context (agent_id, request_id, agent_name)
-- File creation without tracking context (backward compatibility)
-- Error handling in tracking calls doesn't break file operations
-- Context parameter validation and defaults
-- File path resolution and validation
+## Detailed Test Breakdown
 
-**Mock Dependencies**:
-- ActivityTracker.record_file_generated()
-- File system operations
-- Agent definition objects
+### 1. Backend WebSocket Infrastructure
 
-**Test Pattern**: AAA (Arrange, Act, Assert)
+#### 1.1 WebSocket Connection Management
+**Task**: Unit tests for WebSocket connection lifecycle
+**Components**: WebSocket server setup, connection handling, disconnection cleanup
+**Tests Required**:
+- Test WebSocket server initialization
+- Test client connection establishment
+- Test connection authentication/authorization
+- Test graceful disconnection handling
+- Test connection timeout management
+- Test concurrent connection limits
 
-#### Task 1.2: ActivityTracker Auto-Increment Tests
-**Component**: `src/runtime/agents/activity_tracker.py`
-**Coverage Target**: 95%
-**Test Scenarios**:
-- increment_request_counts() with different counter types
-- Auto-increment triggered by record_file_generated()
-- Auto-increment triggered by record_agent_started()
-- Thread safety of increment operations
-- Counter overflow/boundary conditions
+**Coverage**: 90% for connection management logic
 
-**Mock Dependencies**:
-- Concurrent thread operations
-- Database/storage layer
+#### 1.2 Real-time Activity Broadcasting
+**Task**: Unit tests for activity event broadcasting
+**Components**: Event emission, message formatting, subscription management
+**Tests Required**:
+- Test activity event capture and formatting
+- Test selective broadcasting based on subscriptions
+- Test message queuing for disconnected clients
+- Test event filtering by agent/request ID
+- Test message rate limiting
+- Test error handling for malformed events
 
-#### Task 1.3: ToolRegistry Context Tests
-**Component**: Tool registry context injection
-**Coverage Target**: 85%
-**Test Scenarios**:
-- Tool registration with tracking context
-- Context propagation to WriteFileTool
-- Default tool creation without context
-- Multiple tool registrations with different contexts
+**Coverage**: 85% for broadcasting logic
 
-### 2. Unit Tests - Agent Families System
+#### 1.3 WebSocket API Integration
+**Task**: Integration tests for WebSocket API endpoints
+**Components**: ActivityTracker → WebSocket event pipeline
+**Tests Required**:
+- Test file generation events broadcast in real-time
+- Test agent lifecycle events (start/complete) broadcast
+- Test git commit events broadcast
+- Test request counter updates broadcast
+- Test error event handling and propagation
+- Test WebSocket authentication with existing API auth
 
-#### Task 2.1: Family Name Generator Tests
-**Component**: `src/runtime/agents/name_generator.py`
-**Coverage Target**: 90%
-**Test Scenarios**:
-- Unique family name generation
-- Name consistency for same family
-- Randomness and unpredictability
-- Name format validation
-- Edge cases (empty inputs, special characters)
+**Coverage**: 100% of WebSocket API endpoints
 
-**Mock Dependencies**:
-- Random number generators
-- Name databases/lists
+### 2. Frontend WebSocket Client
 
-#### Task 2.2: Family Name Inheritance Tests
-**Component**: Agent spawning and metadata system
-**Coverage Target**: 85%
-**Test Scenarios**:
-- Child agents inherit parent family name
-- Family name persistence through agent lifecycle
-- Family name in agent metadata storage
-- Family name propagation through multiple generations
+#### 2.1 WebSocket Client Connection
+**Task**: Unit tests for WebSocket client management
+**Components**: Connection establishment, reconnection logic, event handling
+**Tests Required**:
+- Test WebSocket client initialization
+- Test automatic reconnection on connection loss
+- Test connection state management (connecting/connected/disconnected)
+- Test heartbeat/ping-pong for connection health
+- Test graceful degradation when WebSocket unavailable
+- Test authentication token handling in WebSocket connections
 
-#### Task 2.3: Family Achievement System Tests
-**Component**: Achievement tracking logic
-**Coverage Target**: 80%
-**Test Scenarios**:
-- Collective task completion tracking
-- Efficiency metrics calculation
-- Innovation score aggregation
-- Achievement trigger conditions
-- Family-level metric rollup
+**Coverage**: 85% for client connection logic
 
-**Mock Dependencies**:
-- Task completion events
-- Performance metrics
-- Achievement database
+#### 2.2 Real-time Event Processing
+**Task**: Unit tests for incoming message processing
+**Components**: Message parsing, state updates, UI notifications
+**Tests Required**:
+- Test incoming activity event parsing
+- Test real-time state updates for activity data
+- Test event deduplication for duplicate messages
+- Test event ordering for out-of-sequence messages
+- Test error handling for malformed server messages
+- Test memory management for event history
 
-### 3. Integration Tests
+**Coverage**: 90% for event processing logic
 
-#### Task 3.1: Activity API Integration Tests
-**Component**: `/api/activity/*` endpoints
-**Coverage Target**: 100% of endpoints
-**Test Scenarios**:
-- GET /api/activity/files returns tracked files
-- GET /api/activity/timeline shows updated counters
-- Activity data includes family information
-- Error handling for missing/invalid data
-- Response format validation
+### 3. Frontend Log Viewer Components
 
-**Test Environment**: 
-- Test database with sample data
-- Mock agent execution
+#### 3.1 Log Viewer Component
+**Task**: Unit tests for log display component
+**Components**: Real-time log rendering, filtering, searching
+**Tests Required**:
+- Test log entry rendering with real-time updates
+- Test log filtering by agent, request ID, event type
+- Test log search functionality
+- Test auto-scroll to newest entries
+- Test log entry formatting and timestamps
+- Test performance with large log volumes (virtualization)
 
-#### Task 3.2: Agent Runtime Integration Tests
-**Component**: Agent spawning with tracking
-**Coverage Target**: Critical paths only
-**Test Scenarios**:
-- Agent creation triggers activity tracking
-- File generation recorded in ActivityTracker
-- Request counts properly incremented
-- Family names assigned and inherited
-- Full agent lifecycle with tracking
+**Coverage**: 85% for log viewer component logic
 
-#### Task 3.3: Family System Integration Tests
-**Component**: End-to-end family functionality
-**Test Scenarios**:
-- Executive Director spawns task with family name
-- Child agents inherit family name correctly
-- Family achievements calculated across members
-- API endpoints expose family data correctly
+#### 3.2 Activity Timeline Component
+**Task**: Unit tests for timeline visualization
+**Components**: Timeline rendering, real-time updates, interactions
+**Tests Required**:
+- Test timeline entry creation from WebSocket events
+- Test chronological ordering of timeline events
+- Test timeline filtering and grouping
+- Test real-time timeline updates without full refresh
+- Test timeline interaction (click, expand/collapse)
+- Test responsive timeline layout
 
-### 4. End-to-End Tests
+**Coverage**: 80% for timeline component logic
 
-#### Task 4.1: Activity Tracking E2E Flow
-**Test Environment**: Full system with browser automation
-**Critical Path**:
-1. User initiates agent task
-2. Agent creates files
-3. Activity appears in UI
-4. Request counters update
-5. Timeline shows activity
+#### 3.3 Log Viewer Integration
+**Task**: Integration tests for log viewer with WebSocket client
+**Components**: Component communication, state management, real-time updates
+**Tests Required**:
+- Test real-time log updates from WebSocket events
+- Test log viewer state consistency during reconnections
+- Test log viewer performance during high-frequency updates
+- Test log viewer error handling for connection failures
+- Test log viewer integration with existing UI state
+- Test log viewer accessibility features
 
-**Tools**: Playwright or Cypress
-**Test Data**: Sample agent tasks and file operations
+**Coverage**: 90% for integration logic
 
-#### Task 4.2: Agent Families E2E Flow
-**Critical Path**:
-1. Executive Director spawns new task group
-2. Family name generated and displayed
-3. Child agents show inherited family name
-4. Family achievements visible in UI
-5. API returns family-grouped data
+### 4. End-to-End Real-time Testing
 
-#### Task 4.3: Error Recovery E2E Tests
-**Error Scenarios**:
-- Activity tracking failures don't break agent execution
-- Family name generation failures use fallback
-- UI gracefully handles missing family data
-- API error responses for malformed requests
+#### 4.1 Real-time Activity Flow
+**Task**: E2E tests for complete real-time activity tracking
+**User Journey**: Agent execution → WebSocket broadcast → UI updates
+**Tests Required**:
+- Test agent file creation appears in log viewer immediately
+- Test agent lifecycle events show in timeline real-time
+- Test multiple agents generating activity simultaneously
+- Test log viewer updates during agent failures
+- Test UI responsiveness during high activity periods
+- Test WebSocket reconnection during active agent execution
 
-### 5. Performance Tests
+**Priority**: High (critical user experience)
 
-#### Task 5.1: Activity Tracking Performance
-**Component**: WriteFileTool with tracking overhead
-**Test Scenarios**:
-- File creation latency with/without tracking
-- Memory usage during bulk file operations
-- Concurrent file creation performance
-- ActivityTracker query performance
+#### 4.2 Log Viewer User Experience
+**Task**: E2E tests for log viewer usability
+**User Journey**: User views logs → filters → searches → monitors real-time
+**Tests Required**:
+- Test log viewer initial load with existing activity
+- Test real-time filtering without losing new events
+- Test search functionality with live updates
+- Test log viewer performance with extended viewing sessions
+- Test log viewer on different screen sizes
+- Test keyboard navigation and accessibility
 
-**Target**: <5% performance overhead
+**Priority**: Medium (user experience enhancement)
 
-#### Task 5.2: Family System Performance
-**Component**: Name generation and inheritance
-**Test Scenarios**:
-- Family name generation latency
-- Memory usage for family metadata
-- API response times with family data
-- Bulk agent spawning with families
+## Performance Testing
 
-### 6. Backward Compatibility Tests
+### WebSocket Performance
+**Load Testing**:
+- 100 concurrent WebSocket connections
+- 1000 events/minute broadcast rate
+- Memory usage monitoring during extended sessions
+- Connection establishment time < 100ms
+- Event delivery latency < 50ms
 
-#### Task 6.1: Existing Tool Interface Tests
-**Component**: Tool registry and WriteFileTool
-**Test Scenarios**:
-- Existing tests continue to pass
-- Tools work without tracking parameters
-- No breaking changes to public APIs
-- Migration path validation
+### Frontend Performance  
+**Rendering Performance**:
+- Log viewer with 10,000+ entries
+- Real-time updates at 10+ events/second
+- Component render time < 16ms (60fps)
+- Memory growth rate < 10MB/hour during active use
 
-#### Task 6.2: API Compatibility Tests
-**Component**: Activity and agent APIs
-**Test Scenarios**:
-- Existing API consumers not affected
-- Response format backward compatibility
-- Optional family fields don't break clients
+## Integration Testing Strategy
 
-## Test Infrastructure Requirements
+### Backend Integration
+1. **ActivityTracker + WebSocket**: Test activity events trigger WebSocket broadcasts
+2. **WebSocket + Authentication**: Test WebSocket security integration
+3. **WebSocket + API**: Test WebSocket coexistence with REST API
+4. **Database + WebSocket**: Test activity persistence and real-time sync
 
-### Test Framework Setup
-- **Backend**: pytest with fixtures and mocks
-- **Frontend**: Jest + React Testing Library (if applicable)
-- **E2E**: Playwright for browser automation
-- **Performance**: pytest-benchmark for performance tests
+### Frontend Integration  
+1. **WebSocket Client + React State**: Test state management integration
+2. **Log Viewer + Router**: Test navigation with real-time components
+3. **Log Viewer + Theme**: Test UI consistency with existing design system
+4. **WebSocket + Error Handling**: Test error boundary integration
 
-### Test Data and Fixtures
-- Sample agent configurations
-- Mock file system structures
-- Test family name databases
-- Activity tracking test data
-- Achievement test scenarios
+## Test Data Strategy
 
-### CI/CD Integration
-- Run unit tests on every commit
-- Integration tests on pull requests
-- E2E tests on staging deployment
-- Performance regression detection
-- Coverage reporting and enforcement
+### Test Fixtures
+- **Activity Events**: Predefined file generation, agent lifecycle, git events
+- **WebSocket Messages**: Valid/invalid message formats for testing
+- **Agent Hierarchies**: Test data for multi-agent family scenarios
+- **Authentication Tokens**: Test JWT tokens for WebSocket auth testing
 
-## Risk-Based Testing Priorities
+### Mock Strategy
+- **WebSocket Server**: Mock server for frontend unit tests
+- **Activity Tracker**: Mock tracker for WebSocket testing
+- **File System**: Mock file operations for activity event testing
+- **External APIs**: Mock git commands and external integrations
 
-### High Priority (Must Test)
-1. WriteFileTool tracking integration
-2. Family name inheritance
-3. Activity API data accuracy
-4. Backward compatibility
+## Continuous Integration
 
-### Medium Priority (Should Test)
-1. Performance impact
-2. Error recovery scenarios
-3. Concurrent operations
-4. Achievement calculations
+### Test Pipeline
+1. **Unit Tests**: Run on every commit (< 30 seconds)
+2. **Integration Tests**: Run on PR creation (< 5 minutes)
+3. **E2E Tests**: Run on main branch merge (< 10 minutes)
+4. **Performance Tests**: Run nightly (< 30 minutes)
 
-### Low Priority (Nice to Test)
-1. Edge case name generation
-2. UI visual consistency
-3. Advanced error scenarios
-4. Load testing
+### Quality Gates
+- All unit tests pass (100%)
+- Integration tests pass (100%)
+- Critical E2E paths pass (100%)
+- Code coverage meets targets (85%+)
+- Performance benchmarks met (100%)
 
-## Test Schedule and Dependencies
+## Risk Mitigation Testing
 
-### Phase 1: Unit Tests (Week 1)
-- All unit test tasks (1.1-2.3)
-- Mock infrastructure setup
-- Basic test fixtures
+### WebSocket Connection Reliability
+- Test connection drops during high activity
+- Test server restart scenarios
+- Test client-side network issues
+- Test concurrent connection limits
 
-### Phase 2: Integration Tests (Week 2)
-- API integration tests (3.1-3.3)
-- Component interaction validation
-- Test environment setup
+### Real-time Data Consistency
+- Test event ordering under load
+- Test duplicate event handling
+- Test missed event recovery
+- Test state synchronization after reconnection
 
-### Phase 3: E2E and Performance (Week 3)
-- End-to-end flows (4.1-4.3)
-- Performance benchmarks (5.1-5.2)
-- Compatibility validation (6.1-6.2)
+### Browser Compatibility
+- Test WebSocket support across target browsers
+- Test performance on low-end devices
+- Test WebSocket fallbacks (long polling)
+- Test mobile browser compatibility
 
-## Success Criteria
+## Task Priority Matrix
+
+### High Priority (Must Complete)
+1. WebSocket connection management tests
+2. Real-time activity broadcasting tests
+3. Log viewer component tests
+4. E2E real-time activity flow tests
+
+### Medium Priority (Should Complete)
+1. WebSocket client reconnection tests
+2. Log viewer filtering/search tests
+3. Performance testing for high-load scenarios
+4. Integration testing for authentication
+
+### Low Priority (Nice to Have)
+1. Advanced WebSocket fallback testing
+2. Comprehensive browser compatibility testing
+3. Extended performance benchmarking
+4. Advanced accessibility testing
+
+## Success Metrics
 
 ### Functional Success
-- All unit tests pass with target coverage
-- Integration tests validate component interactions
-- E2E tests confirm user-facing functionality
-- No regression in existing functionality
+- All WebSocket connections establish < 100ms
+- Real-time events appear in UI < 50ms after backend trigger
+- Log viewer handles 10,000+ entries smoothly
+- Zero data loss during normal connection interruptions
 
 ### Quality Success
-- Code coverage meets targets (85%+ unit, 100% integration)
-- Performance overhead within acceptable limits (<5%)
-- All backward compatibility tests pass
-- Error scenarios handled gracefully
+- 85%+ unit test coverage achieved
+- 100% integration test coverage for WebSocket flows
+- All critical E2E scenarios pass
+- Performance benchmarks met consistently
 
-### Process Success
-- Tests run automatically in CI/CD
-- Test failures block deployment
-- Coverage reports generated and reviewed
-- Test maintenance plan established
+### User Experience Success
+- Log viewer provides smooth real-time experience
+- WebSocket reconnection is transparent to user
+- UI remains responsive during high activity periods
+- Accessibility requirements met for log viewer
 
-## Testing Task Distribution
+---
 
-**Total Test Tasks**: 18
-- Unit Tests: 6 tasks
-- Integration Tests: 3 tasks  
-- E2E Tests: 3 tasks
-- Performance Tests: 2 tasks
-- Compatibility Tests: 2 tasks
-- Infrastructure: 2 tasks
-
-**Estimated Effort**: 3-4 weeks with parallel execution
-**Dependencies**: Architecture implementation must be complete before integration testing
-**Handoff**: All tasks ready for TDD Coordinator implementation
+**Total Test Tasks Identified**: 28
+**Estimated Coverage**: 85% overall
+**Critical Path**: WebSocket infrastructure → Real-time broadcasting → Log viewer integration → E2E validation
