@@ -162,7 +162,7 @@ Backend Developer Tech (backend development domain expert)
 - Backend Developer 1, 2, 3 performers if work is complex enough
 
 ## Model Preference
-haiku
+sonnet
 
 ## Max Iterations
 5
