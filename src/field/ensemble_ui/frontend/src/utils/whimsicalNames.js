@@ -33,13 +33,18 @@ export const NOUNS = [
  * @returns {number} Positive integer hash value
  */
 export function hashString(str) {
+  // Handle null/undefined/empty input
+  if (!str || typeof str !== 'string') {
+    return 5381; // Return default hash for invalid input
+  }
+
   let hash = 5381;
-  
+
   for (let i = 0; i < str.length; i++) {
     const charCode = str.charCodeAt(i);
     hash = ((hash << 5) + hash) + charCode;
   }
-  
+
   return Math.abs(hash);
 }
 
@@ -49,14 +54,19 @@ export function hashString(str) {
  * @returns {string} Whimsical name in format "[Adjective] [Noun]"
  */
 export function generateWhimsicalName(agentId) {
+  // Handle null/undefined/empty input
+  if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
+    return 'Unknown Agent';
+  }
+
   const hash = hashString(agentId);
-  
+
   const adjectiveIndex = hash % ADJECTIVES.length;
   const nounIndex = Math.floor(hash / ADJECTIVES.length) % NOUNS.length;
-  
+
   const adjective = ADJECTIVES[adjectiveIndex];
   const noun = NOUNS[nounIndex];
-  
+
   return `${adjective} ${noun}`;
 }
 

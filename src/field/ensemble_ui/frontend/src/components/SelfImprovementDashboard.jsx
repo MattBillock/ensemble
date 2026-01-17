@@ -184,8 +184,8 @@ function SelfImprovementDashboard() {
     <Container fluid className="mt-4">
       <Row className="mb-4">
         <Col>
-          <h2>Self-Improvement Loop</h2>
-          <p className="text-muted">
+          <h2 className="text-light">Self-Improvement Loop</h2>
+          <p style={{ color: '#9ca3af' }}>
             The self-improvement loop analyzes agent performance and generates recommendations for improvement.
             Feedback is automatically injected into agent prompts to help them learn from past performance.
           </p>
@@ -330,17 +330,17 @@ function SelfImprovementDashboard() {
       {analysis && (
         <Row className="mb-4">
           <Col>
-            <Card>
-              <Card.Header>
+            <Card bg="dark" text="light">
+              <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
                 <strong>Latest Analysis Results</strong>
-                <small className="text-muted ms-2">
+                <small style={{ color: '#9ca3af' }} className="ms-2">
                   {new Date(analysis.analysis_timestamp).toLocaleString()}
                 </small>
               </Card.Header>
               <Card.Body>
                 <Row>
                   <Col md={4}>
-                    <h6>Summary</h6>
+                    <h6 style={{ color: '#e2e8f0' }}>Summary</h6>
                     <ul className="list-unstyled">
                       <li>Period: Last {analysis.period_days} days</li>
                       <li>Recommendations: {analysis.recommendations_count}</li>
@@ -353,7 +353,7 @@ function SelfImprovementDashboard() {
                     </ul>
                   </Col>
                   <Col md={4}>
-                    <h6>Common Issues Found</h6>
+                    <h6 style={{ color: '#e2e8f0' }}>Common Issues Found</h6>
                     {Object.entries(analysis.patterns_found?.common_issues || {}).length > 0 ? (
                       <ul className="list-unstyled">
                         {Object.entries(analysis.patterns_found.common_issues)
@@ -366,11 +366,11 @@ function SelfImprovementDashboard() {
                           ))}
                       </ul>
                     ) : (
-                      <p className="text-muted">No patterns detected</p>
+                      <p style={{ color: '#9ca3af' }}>No patterns detected</p>
                     )}
                   </Col>
                   <Col md={4}>
-                    <h6>Model Recommendations</h6>
+                    <h6 style={{ color: '#e2e8f0' }}>Model Recommendations</h6>
                     {analysis.model_recommendations?.length > 0 ? (
                       <ul className="list-unstyled">
                         {analysis.model_recommendations.map((rec, idx) => (
@@ -382,7 +382,7 @@ function SelfImprovementDashboard() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-muted">No model optimizations suggested</p>
+                      <p style={{ color: '#9ca3af' }}>No model optimizations suggested</p>
                     )}
                   </Col>
                 </Row>
@@ -395,8 +395,8 @@ function SelfImprovementDashboard() {
       {/* Pending Recommendations */}
       <Row>
         <Col>
-          <Card>
-            <Card.Header>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
               <strong>Pending Recommendations</strong>
               <Badge bg="warning" text="dark" className="ms-2">
                 {recommendations.length} pending
@@ -404,26 +404,26 @@ function SelfImprovementDashboard() {
             </Card.Header>
             <Card.Body style={{ maxHeight: '500px', overflowY: 'auto' }}>
               {recommendations.length === 0 ? (
-                <div className="text-center py-4 text-muted">
+                <div className="text-center py-4" style={{ color: '#9ca3af' }}>
                   <p>No pending recommendations.</p>
                   <p>Click "Run Analysis" to analyze agent performance and generate recommendations.</p>
                 </div>
               ) : (
-                <Table hover size="sm">
+                <Table hover size="sm" variant="dark">
                   <thead>
                     <tr>
-                      <th>Priority</th>
-                      <th>Agent</th>
-                      <th>Type</th>
-                      <th>Title</th>
-                      <th>Actions</th>
+                      <th style={{ color: '#9ca3af' }}>Priority</th>
+                      <th style={{ color: '#9ca3af' }}>Agent</th>
+                      <th style={{ color: '#9ca3af' }}>Type</th>
+                      <th style={{ color: '#9ca3af' }}>Title</th>
+                      <th style={{ color: '#9ca3af' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recommendations.map((rec) => (
                       <tr key={rec.id}>
                         <td>{getPriorityBadge(rec.priority)}</td>
-                        <td><code>{rec.agent_name}</code></td>
+                        <td><code>{rec.agent_name || 'Unknown Agent'}</code></td>
                         <td>{getTypeBadge(rec.type)}</td>
                         <td>
                           <strong>{rec.title}</strong>
@@ -504,8 +504,8 @@ function SelfImprovementDashboard() {
         <Modal.Body>
           {selectedRec && (
             <>
-              <p><strong>Agent:</strong> {selectedRec.agent_name}</p>
-              <p><strong>Title:</strong> {selectedRec.title}</p>
+              <p><strong>Agent:</strong> {selectedRec.agent_name || 'Unknown Agent'}</p>
+              <p><strong>Title:</strong> {selectedRec.title || 'No title'}</p>
               <Form.Group>
                 <Form.Label>Reason for rejection (optional)</Form.Label>
                 <Form.Control

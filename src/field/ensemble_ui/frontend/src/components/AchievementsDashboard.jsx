@@ -83,11 +83,11 @@ function AchievementsDashboard() {
     const pollInterval = setInterval(async () => {
       try {
         const recentRes = await getRecentAchievements(20);
-        const newRecent = recentRes.achievements || [];
+        const newRecent = (recentRes?.achievements || []).filter(a => a && a.id);
 
         // Check for new achievements we haven't seen
         const newlyEarned = newRecent.filter(a => {
-          const key = `${a.id}_${a.agent_name}_${a.awarded_at}`;
+          const key = `${a.id}_${a.agent_name || 'unknown'}_${a.awarded_at || 'unknown'}`;
           if (!seenAchievementsRef.current.has(key)) {
             seenAchievementsRef.current.add(key);
             return true;
@@ -117,22 +117,30 @@ function AchievementsDashboard() {
     setLoading(true);
     try {
       const [achievementsRes, recentRes, statsRes] = await Promise.all([
-        getAllAchievements(),
-        getRecentAchievements(20),
-        getAchievementStats()
+        getAllAchievements().catch(() => ({ achievements: [] })),
+        getRecentAchievements(20).catch(() => ({ achievements: [] })),
+        getAchievementStats().catch(() => ({}))
       ]);
-      setAchievements(achievementsRes.achievements || []);
-      setRecent(recentRes.achievements || []);
-      setStats(statsRes);
+
+      // Filter out any null/undefined achievements
+      const validAchievements = (achievementsRes?.achievements || []).filter(a => a && a.id);
+      const validRecent = (recentRes?.achievements || []).filter(a => a && a.id);
+
+      setAchievements(validAchievements);
+      setRecent(validRecent);
+      setStats(statsRes || {});
 
       // Initialize seen achievements to prevent false notifications on load
-      const recentAchievements = recentRes.achievements || [];
-      recentAchievements.forEach(a => {
-        const key = `${a.id}_${a.agent_name}_${a.awarded_at}`;
+      validRecent.forEach(a => {
+        const key = `${a.id}_${a.agent_name || 'unknown'}_${a.awarded_at || 'unknown'}`;
         seenAchievementsRef.current.add(key);
       });
     } catch (error) {
       console.error('Failed to fetch achievements:', error);
+      // Set empty defaults on error
+      setAchievements([]);
+      setRecent([]);
+      setStats({});
     } finally {
       setLoading(false);
     }
@@ -390,9 +398,9 @@ function AchievementsDashboard() {
                   <tbody>
                     {(stats?.top_agents || []).slice(0, 10).map((agent, idx) => (
                       <tr key={idx}>
-                        <td style={{ color: '#e2e8f0' }}>{agent.agent.split('/').pop()?.replace('.md', '') || agent.agent}</td>
+                        <td style={{ color: '#e2e8f0' }}>{(agent?.agent || 'unknown').split('/').pop()?.replace('.md', '') || agent?.agent || 'unknown'}</td>
                         <td className="text-end">
-                          <Badge bg="primary">{agent.count}</Badge>
+                          <Badge bg="primary">{agent?.count || 0}</Badge>
                         </td>
                       </tr>
                     ))}
@@ -431,7 +439,7 @@ function AchievementsDashboard() {
                           {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
                         </td>
                         <td style={{ color: '#10b981', fontWeight: '500' }}>
-                          {generateWhimsicalName(agent.agent_id || agent.agent)}
+                          {generateWhimsicalName(agent?.agent_id || agent?.agent || 'unknown')}
                         </td>
                         <td style={{ color: '#9ca3af', fontSize: '12px' }}>
                           {(agent.agent_type || agent.agent || '').split('/').pop()?.replace('.md', '')}
@@ -473,7 +481,7 @@ function AchievementsDashboard() {
                           {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
                         </td>
                         <td style={{ color: '#a855f7', fontWeight: '500' }}>
-                          {generateWhimsicalName(agent.agent_id || agent.agent)}
+                          {generateWhimsicalName(agent?.agent_id || agent?.agent || 'unknown')}
                         </td>
                         <td style={{ color: '#9ca3af', fontSize: '12px' }}>
                           {(agent.agent_type || agent.agent || '').split('/').pop()?.replace('.md', '')}
@@ -620,25 +628,25 @@ function AchievementsDashboard() {
 
       {/* Achievement Toast Notifications */}
       <ToastContainer position="bottom-end" className="p-3" style={{ zIndex: 9999 }}>
-        {newAchievements.map((achievement, index) => (
+        {newAchievements.filter(a => a).map((achievement, index) => (
           <Toast
-            key={`${achievement.id}_${index}`}
+            key={`${achievement?.id || index}_${index}`}
             onClose={() => dismissToast(index)}
             delay={8000}
             autohide
             bg="dark"
           >
             <Toast.Header closeButton={true}>
-              <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>{achievement.icon}</span>
+              <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>{achievement?.icon || '🏆'}</span>
               <strong className="me-auto">Achievement Unlocked!</strong>
             </Toast.Header>
             <Toast.Body className="text-white">
-              <strong>{achievement.name}</strong>
+              <strong>{achievement?.name || 'Unknown Achievement'}</strong>
               <br />
-              <small>{achievement.description}</small>
+              <small>{achievement?.description || ''}</small>
               <br />
               <Badge bg="secondary" className="mt-1">
-                {achievement.agent_name}
+                {achievement?.agent_name || 'unknown'}
               </Badge>
             </Toast.Body>
           </Toast>

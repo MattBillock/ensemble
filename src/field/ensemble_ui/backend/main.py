@@ -2429,12 +2429,22 @@ async def reject_pending_review(review_id: int, reason: str = None):
 
 @app.post("/api/pending-reviews/scan")
 async def scan_for_pending_reviews():
-    """Manually trigger scan for new reviewable files."""
+    """Manually trigger scan for new reviewable files.
+
+    Note: In YOLO mode, this will skip creating pending reviews to allow
+    fully autonomous operation without human review gates.
+    """
     try:
         from src.runtime.agents.pending_review_scanner import PendingReviewScanner
         scanner = PendingReviewScanner(orchestrator.project_root)
-        new_reviews = scanner.scan_output_directory()
-        return {"scanned": True, "new_reviews": len(new_reviews), "reviews": new_reviews}
+        # Pass YOLO mode to scanner - when enabled, skip creating pending reviews
+        new_reviews = scanner.scan_output_directory(yolo_mode=orchestrator.yolo_mode)
+        return {
+            "scanned": True,
+            "new_reviews": len(new_reviews),
+            "reviews": new_reviews,
+            "yolo_mode": orchestrator.yolo_mode
+        }
     except Exception as e:
         logger.error(f"Error scanning for reviews: {e}")
         return {"error": str(e), "scanned": False, "new_reviews": 0}
@@ -3036,17 +3046,52 @@ async def set_yolo_mode(enabled: bool = True):
     orchestrator.yolo_mode = enabled
     status = "enabled" if enabled else "disabled"
     logger.info(f"YOLO Mode {status} - all new tasks will run {'fully autonomous' if enabled else 'with human review'}")
+
+    cleared_reviews = 0
+    if enabled:
+        # Auto-clear existing pending reviews when enabling YOLO mode
+        try:
+            from src.runtime.agents.swarm_state import get_swarm_state
+            swarm = get_swarm_state()
+            pending = swarm.get_pending_reviews(status='pending')
+            for review in pending:
+                swarm.update_pending_review(review['id'], status='auto_approved_yolo')
+                cleared_reviews += 1
+            if cleared_reviews > 0:
+                logger.info(f"YOLO Mode: Auto-approved {cleared_reviews} pending reviews")
+        except Exception as e:
+            logger.warning(f"Failed to auto-clear pending reviews: {e}")
+
     return {
         "enabled": orchestrator.yolo_mode,
-        "message": f"YOLO Mode {status}. {'All review phases will be skipped.' if enabled else 'Human review is required.'}"
+        "message": f"YOLO Mode {status}. {'All review phases will be skipped.' if enabled else 'Human review is required.'}",
+        "cleared_reviews": cleared_reviews
     }
 
 @app.post("/api/yolo-mode/enable")
 async def enable_yolo_mode():
-    """Shortcut to enable YOLO mode."""
+    """Shortcut to enable YOLO mode. Also auto-approves any pending reviews."""
     orchestrator.yolo_mode = True
     logger.info("YOLO Mode ENABLED - Bumpers off, full autonomous operation")
-    return {"enabled": True, "message": "YOLO Mode activated. No reviews, no regrets."}
+
+    cleared_reviews = 0
+    try:
+        from src.runtime.agents.swarm_state import get_swarm_state
+        swarm = get_swarm_state()
+        pending = swarm.get_pending_reviews(status='pending')
+        for review in pending:
+            swarm.update_pending_review(review['id'], status='auto_approved_yolo')
+            cleared_reviews += 1
+        if cleared_reviews > 0:
+            logger.info(f"YOLO Mode: Auto-approved {cleared_reviews} pending reviews")
+    except Exception as e:
+        logger.warning(f"Failed to auto-clear pending reviews: {e}")
+
+    return {
+        "enabled": True,
+        "message": f"YOLO Mode activated. No reviews, no regrets. Auto-approved {cleared_reviews} pending reviews.",
+        "cleared_reviews": cleared_reviews
+    }
 
 @app.post("/api/yolo-mode/disable")
 async def disable_yolo_mode():

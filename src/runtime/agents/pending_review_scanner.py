@@ -139,9 +139,12 @@ class PendingReviewScanner:
             logger.error(f"Error scanning file {file_path}: {e}")
             return None
 
-    def scan_output_directory(self) -> List[Dict[str, Any]]:
+    def scan_output_directory(self, yolo_mode: bool = False) -> List[Dict[str, Any]]:
         """
         Scan output directory for new reviewable files.
+
+        Args:
+            yolo_mode: If True, skip creating pending reviews (YOLO mode runs autonomously)
 
         Returns list of review items to be added to pending_reviews table.
         """
@@ -149,6 +152,11 @@ class PendingReviewScanner:
         swarm = get_swarm_state()
 
         new_reviews = []
+
+        # In YOLO mode, skip creating pending reviews - let agents run fully autonomous
+        if yolo_mode:
+            logger.info("YOLO mode enabled - skipping pending review creation")
+            return new_reviews
 
         if not self.output_dir.exists():
             logger.warning(f"Output directory does not exist: {self.output_dir}")
