@@ -320,75 +320,135 @@ function App() {
                 </div>
 
                 {/* View Switcher and Poll interval control */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <ButtonGroup size="sm">
-                    <Button
-                      variant={currentView === 'main' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('main')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Command Center: Operations */}
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant={['main', 'recovery', 'review'].includes(currentView) ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      id="command-center-dropdown"
                     >
-                      🎭 Activity
-                    </Button>
-                    <Button
-                      variant={currentView === 'timeline' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('timeline')}
+                      🎯 Command Center
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('main')}
+                        active={currentView === 'main'}
+                        style={{ color: currentView === 'main' ? '#fff' : '#e4e6eb' }}
+                      >
+                        🎭 Activity
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('recovery')}
+                        active={currentView === 'recovery'}
+                        style={{ color: currentView === 'recovery' ? '#fff' : '#e4e6eb' }}
+                      >
+                        🔧 Recovery
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('review')}
+                        active={currentView === 'review'}
+                        style={{ color: currentView === 'review' ? '#fff' : '#e4e6eb' }}
+                      >
+                        📋 Pending Review
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+
+                  {/* Insights: Observability */}
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant={['timeline', 'metrics', 'agentstats', 'costs'].includes(currentView) ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      id="insights-dropdown"
                     >
-                      ⏱️ Timeline
-                    </Button>
-                    <Button
-                      variant={currentView === 'metrics' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('metrics')}
+                      📊 Insights
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('timeline')}
+                        active={currentView === 'timeline'}
+                        style={{ color: currentView === 'timeline' ? '#fff' : '#e4e6eb' }}
+                      >
+                        ⏱️ Timeline
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('metrics')}
+                        active={currentView === 'metrics'}
+                        style={{ color: currentView === 'metrics' ? '#fff' : '#e4e6eb' }}
+                      >
+                        📈 Metrics
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('agentstats')}
+                        active={currentView === 'agentstats'}
+                        style={{ color: currentView === 'agentstats' ? '#fff' : '#e4e6eb' }}
+                      >
+                        🤖 Agent Stats
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('costs')}
+                        active={currentView === 'costs'}
+                        style={{ color: currentView === 'costs' ? '#fff' : '#e4e6eb' }}
+                      >
+                        💰 Costs
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+
+                  {/* Deliverables: Reporting */}
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant={['projects', 'completed'].includes(currentView) ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      id="deliverables-dropdown"
                     >
-                      📊 Metrics
-                    </Button>
-                    <Button
-                      variant={currentView === 'improve' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('improve')}
+                      📦 Deliverables
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('projects')}
+                        active={currentView === 'projects'}
+                        style={{ color: currentView === 'projects' ? '#fff' : '#e4e6eb' }}
+                      >
+                        📁 Projects
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('completed')}
+                        active={currentView === 'completed'}
+                        style={{ color: currentView === 'completed' ? '#fff' : '#e4e6eb' }}
+                      >
+                        ✅ Completed Work
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+
+                  {/* Growth Lab: Evolution */}
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant={['improve', 'achievements'].includes(currentView) ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      id="growth-lab-dropdown"
                     >
-                      🔄 Improve
-                    </Button>
-                    <Button
-                      variant={currentView === 'achievements' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('achievements')}
-                    >
-                      🏆 Achievements
-                    </Button>
-                    <Button
-                      variant={currentView === 'costs' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('costs')}
-                    >
-                      💰 Costs
-                    </Button>
-                    <Button
-                      variant={currentView === 'recovery' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('recovery')}
-                    >
-                      🔧 Recovery
-                    </Button>
-                    <Button
-                      variant={currentView === 'review' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('review')}
-                    >
-                      📋 Pending Review
-                    </Button>
-                    <Button
-                      variant={currentView === 'agentstats' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('agentstats')}
-                    >
-                      📊 Agent Stats
-                    </Button>
-                    <Button
-                      variant={currentView === 'projects' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('projects')}
-                    >
-                      📁 Projects
-                    </Button>
-                    <Button
-                      variant={currentView === 'completed' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('completed')}
-                    >
-                      ✅ Completed Work
-                    </Button>
-                  </ButtonGroup>
+                      🧪 Growth Lab
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('improve')}
+                        active={currentView === 'improve'}
+                        style={{ color: currentView === 'improve' ? '#fff' : '#e4e6eb' }}
+                      >
+                        🔄 Self-Improve
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => setCurrentView('achievements')}
+                        active={currentView === 'achievements'}
+                        style={{ color: currentView === 'achievements' ? '#fff' : '#e4e6eb' }}
+                      >
+                        🏆 Achievements
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
 
                   <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', marginRight: '4px' }}>Refresh:</span>
                   <ButtonGroup size="sm">
