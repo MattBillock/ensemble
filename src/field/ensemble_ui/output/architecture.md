@@ -1,167 +1,138 @@
-# Architecture Proposal: Design Phase Pause Fix
+# Recovery Visibility Architecture Proposal
 
-## A. Architecture Overview
+## 1. Architecture Overview
 
-### Purpose
-Implement a robust agent pipeline mechanism that allows pausing and continuing agent execution when user input is required, without terminating the entire process.
+### System Purpose
+Design a robust, stateful system for tracking and recovering AI agent swarm executions with persistent state management and comprehensive visibility.
 
 ### Architecture Pattern
-**Chosen Pattern**: Event-Driven Stateful Microservice Architecture
-- Allows dynamic agent state management
-- Supports asynchronous user interaction
-- Maintains clear separation of concerns
+**Layered Hexagonal Architecture** with clear separation of concerns:
+- Persistence Layer (Database)
+- State Management Layer
+- API Layer
+- UI Layer
 
-## B. Tech Stack
+## 2. Tech Stack
 
 ### Backend
-- **Language**: Python (existing ecosystem)
-- **Framework**: FastAPI 
-  - Async support
-  - Efficient request handling
-  - Built-in Swagger/OpenAPI documentation
-- **State Management**: In-memory dictionary (`active_agents`)
-- **Logging**: Standard Python `logging` module
+- **Language**: Python 3.10+
+- **Database**: SQLite (with SQLAlchemy ORM)
+- **Web Framework**: FastAPI
+- **State Management**: Pydantic models
+- **Background Processing**: Asyncio
 
 ### Frontend
-- **Framework**: Likely React (based on existing codebase)
-- **State Management**: Redux or Context API
-- **Components**: PendingQuestions, AgentStatus
+- **Framework**: React
+- **State Management**: Redux
+- **UI Library**: Chakra UI
+- **HTTP Client**: Axios
 
-## C. System Components
+### Tools
+- **CI/CD**: GitHub Actions
+- **Testing**: pytest (backend), Jest (frontend)
+- **Containerization**: Docker
 
-### 1. Agent Orchestrator
-**Responsibilities**:
-- Detect `needs_user_input` status
-- Preserve agent execution context
-- Manage agent state transitions
-- Spawn continuation agents
+## 3. System Components
 
-### 2. State Tracker
-**Responsibilities**:
-- Record agent state changes
-- Maintain agent hierarchy
-- Track request/execution lineage
+### Backend Components
+1. **Persistence Manager**
+   - Responsible for SQLite database interactions
+   - Handles state serialization/deserialization
+   - Manages database migrations
 
-### 3. Continuation Mechanism
-**Responsibilities**:
-- Build continuation context
-- Inject user answer into new agent
-- Maintain original task context
+2. **Session Tracker**
+   - Tracks overall swarm session lifecycle
+   - Manages agent state reconstruction
+   - Handles recovery and resumption logic
 
-## D. Data Flow Diagram
+3. **API Controller**
+   - Exposes RESTful endpoints for session management
+   - Handles session listing, retrieval, and actions
+   - Implements authentication and authorization
+
+### Frontend Components
+1. **Sessions Dashboard**
+   - Displays current and historical sessions
+   - Shows recovery status and actions
+   - Provides detailed session exploration
+
+2. **Session Detail View**
+   - Renders comprehensive session information
+   - Displays agent hierarchy and individual agent states
+   - Supports resume/abandon actions
+
+## 4. Data Flow
 
 ```
-Agent Execution 
-  ↓
-Detects Needs User Input 
-  ↓
-Set Status: awaiting_user_input
-  ↓
-Store Continuation Context
-  ↓
-Wait for User Answer
-  ↓
-User Provides Answer
-  ↓
-Spawn New Agent Instance
-  ↓
-Continue Execution
+User Input → API Controller → Session Tracker → Persistence Manager
+Persistence Manager → Session Tracker → API Controller → Frontend
 ```
 
-## E. API Design
+## 5. Database Schema
+```sql
+CREATE TABLE swarm_sessions (
+    session_id TEXT PRIMARY KEY,
+    prompt TEXT,
+    status TEXT,
+    started_at DATETIME,
+    completed_at DATETIME,
+    total_cost REAL,
+    total_tokens INTEGER,
+    family_name TEXT
+);
 
-### Endpoints
-1. `POST /continue-agent`
-   - Input: 
-     ```json
-     {
-       "agent_id": "string",
-       "user_answer": "string",
-       "original_context": "object"
-     }
-     ```
-   - Response: New agent execution details
-
-2. `GET /pending-questions`
-   - Returns list of agents awaiting user input
-
-## F. State Management
-
-### Agent State Machine
-- `running` → `awaiting_user_input` → `running`
-- Prevents premature completion
-- Maintains execution context
-
-### Continuation Context
-```python
-{
-  "original_task": "...",
-  "previous_question": "...",
-  "agent_config": {...},
-  "parent_agent_id": "..."
-}
+CREATE TABLE agent_states (
+    agent_id TEXT PRIMARY KEY,
+    session_id TEXT,
+    agent_type TEXT,
+    status TEXT,
+    started_at DATETIME,
+    completed_at DATETIME,
+    iterations INTEGER,
+    model_used TEXT,
+    FOREIGN KEY(session_id) REFERENCES swarm_sessions(session_id)
+);
 ```
 
-## G. Deployment Strategy
+## 6. API Design
 
-### Containerization
-- Docker containers
-- Easy scalability
-- Consistent environment
+### Session Endpoints
+- `GET /api/sessions` - List all sessions
+- `GET /api/sessions/{id}` - Get session details
+- `POST /api/sessions/{id}/resume` - Resume session
+- `POST /api/sessions/{id}/abandon` - Abandon session
 
-### Deployment Targets
-- Cloud platforms (AWS/GCP)
-- Kubernetes for orchestration
+## 7. Deployment Strategy
+- Containerized deployment using Docker
+- CI/CD pipeline with GitHub Actions
+- Automated database migrations
+- Minimal downtime during updates
 
-## H. Testing Strategy
+## 8. Testing Strategy
+- Unit tests for each component
+- Integration tests for API endpoints
+- State reconstruction tests
+- Persistence scenario testing
 
-### Unit Tests
-- State transition logic
-- Context preservation
-- Continuation mechanism
+## 9. Risks and Mitigations
+1. **Data Corruption**
+   - Mitigation: Use SQLite transactions
+   - Implement robust error handling
+   - Regular state checksums
 
-### Integration Tests
-- Full agent pause/continue flow
-- User interaction simulation
-- Context integrity checks
+2. **Performance Overhead**
+   - Mitigation: Optimize database queries
+   - Implement efficient serialization
+   - Limit historical data retention
 
-## I. Alternatives Considered
+## 10. Open Questions
+- Long-term storage strategy for historical sessions
+- Potential read-replica for large-scale deployments
 
-### 1. In-Place Agent Resume
-**Pros**: 
-- Potentially simpler implementation
-**Cons**:
-- More complex state management
-- Harder to maintain agent isolation
-
-### 2. Stateless Respawn (Current Choice)
-**Pros**:
-- Clear separation of concerns
-- Easier to implement
-- More robust
-**Cons**:
-- Slight overhead in agent spawning
-
-## J. Risks and Mitigations
-
-### Risk: Context Loss
-**Mitigation**: 
-- Comprehensive context serialization
-- Robust error handling
-- Logging of all state transitions
-
-### Risk: Performance Overhead
-**Mitigation**:
-- Lightweight agent spawning
-- In-memory state management
-- Minimal serialization
-
-## K. Open Questions
-
-1. Long-term persistence of continuation contexts?
-2. Support for multi-question interactions?
-3. Timeout handling for pending questions?
+## 11. Key Trade-offs
+- SQLite vs distributed database
+- In-memory caching strategies
+- Performance vs comprehensive tracking
 
 ## Conclusion
-
-The proposed architecture provides a flexible, robust solution for pausing and continuing agent execution, with clear mechanisms for state management and user interaction.
+A robust, flexible architecture enabling comprehensive session tracking and recovery with minimal complexity and performance impact.
