@@ -134,7 +134,9 @@ function MetricsDashboard() {
                   {summary?.most_active_agents?.map((agent, idx) => (
                     <tr key={idx}>
                       <td>
-                        <code style={{ fontSize: '0.85rem' }}>{agent.agent_name}</code>
+                        <code style={{ fontSize: '0.85rem' }}>
+                          {agent.agent_name || <span style={{ color: '#6b7280', fontStyle: 'italic' }}>(unknown)</span>}
+                        </code>
                       </td>
                       <td className="text-end">
                         <Badge bg="primary">{agent.executions}</Badge>
@@ -166,7 +168,9 @@ function MetricsDashboard() {
                   {summary?.best_performing_agents?.map((agent, idx) => (
                     <tr key={idx}>
                       <td>
-                        <code style={{ fontSize: '0.85rem' }}>{agent.agent_name}</code>
+                        <code style={{ fontSize: '0.85rem' }}>
+                          {agent.agent_name || <span style={{ color: '#6b7280', fontStyle: 'italic' }}>(unknown)</span>}
+                        </code>
                       </td>
                       <td className="text-end">
                         <Badge
@@ -209,7 +213,9 @@ function MetricsDashboard() {
                   {agentMetrics?.agents?.map((agent, idx) => (
                     <tr key={idx}>
                       <td>
-                        <code style={{ fontSize: '0.85rem' }}>{agent.agent_name}</code>
+                        <code style={{ fontSize: '0.85rem' }}>
+                          {agent.agent_name || <span style={{ color: '#6b7280', fontStyle: 'italic' }}>(unknown)</span>}
+                        </code>
                       </td>
                       <td className="text-end">{agent.total_executions}</td>
                       <td className="text-end">

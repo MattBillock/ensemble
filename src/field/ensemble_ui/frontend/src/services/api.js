@@ -124,6 +124,34 @@ export const generateSolution = async (problemDescription, budgetTier = 'balance
   }
 };
 
+export const continueProject = async (projectId, budgetTier = 'balanced') => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}/continue?budget_tier=${budgetTier}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new APIError(
+        `Failed to continue project: ${errorText || response.statusText}`,
+        response.status,
+        `/api/projects/${projectId}/continue`
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Continue project error:', error);
+    throw error;
+  }
+};
+
 export const getApplicationStatus = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/status`);

@@ -325,7 +325,15 @@ class AgentActivityTracker:
             "current_iteration": 0,
             "max_iterations": None,
             "started_at": activity.timestamp,
-            "activities": []
+            "activities": [],
+            # Include fields needed for project grouping
+            "request_id": request_id,
+            "agent_name": agent_name,
+            "agent_type": agent_type,
+            "parent_agent_id": parent_agent_id,
+            "problem": problem,
+            "project_id": project_id or request_id,
+            "current_stage": current_stage or "requirements"
         }
 
         self._emit_activity(activity)

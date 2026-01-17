@@ -231,26 +231,37 @@ function AgentStats() {
                   {searchTerm ? 'No agents match your search' : 'No agents in this category'}
                 </ListGroup.Item>
               ) : (
-                filteredAgents(activeCategory).map((agent) => (
+                filteredAgents(activeCategory).map((agent, idx) => (
                   <ListGroup.Item
                     key={agent.filename}
                     variant="dark"
                     action
                     active={selectedAgent?.filename === agent.filename && selectedAgent?.category === activeCategory}
                     onClick={() => handleSelectAgent(activeCategory, agent.filename)}
-                    style={{ cursor: 'pointer' }}
+                    style={{
+                      cursor: 'pointer',
+                      borderLeft: selectedAgent?.filename === agent.filename && selectedAgent?.category === activeCategory
+                        ? `3px solid var(--bs-${CATEGORY_COLORS[activeCategory]})`
+                        : '3px solid transparent',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div style={{ flex: 1 }}>
-                        <div className="fw-bold">{agent.name}</div>
-                        <small style={{ color: '#9ca3af' }}>
-                          {agent.purpose || 'No description'}
-                        </small>
-                      </div>
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                      <Badge
+                        bg={selectedAgent?.filename === agent.filename ? 'light' : CATEGORY_COLORS[activeCategory]}
+                        text={selectedAgent?.filename === agent.filename ? 'dark' : 'light'}
+                        style={{ fontSize: '10px', padding: '2px 6px' }}
+                      >
+                        #{idx + 1}
+                      </Badge>
+                      <div className="fw-bold" style={{ color: '#f7fafc' }}>{agent.name}</div>
                     </div>
-                    <div className="mt-1">
-                      <small style={{ color: '#6b7280' }}>
-                        {agent.filename} • {Math.round(agent.size_bytes / 1024)}KB
+                    <div style={{ paddingLeft: '28px' }}>
+                      <small style={{ color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                        {agent.purpose || 'No description'}
+                      </small>
+                      <small style={{ color: '#6b7280', fontSize: '10px' }}>
+                        📄 {agent.filename} • {Math.round(agent.size_bytes / 1024)}KB
                       </small>
                     </div>
                   </ListGroup.Item>
@@ -369,27 +380,69 @@ function AgentStats() {
                     <div style={{ fontFamily: 'monospace', fontSize: '13px' }}>
                       {/* Render sections */}
                       {agentContent?.sections && Object.keys(agentContent.sections).length > 0 ? (
-                        <div>
+                        <Accordion defaultActiveKey={Object.keys(agentContent.sections).map((_, i) => i.toString())} alwaysOpen>
                           {Object.entries(agentContent.sections).map(([sectionName, content], idx) => {
                             const displayName = sectionName
                               .replace(/_/g, ' ')
                               .replace(/\b\w/g, l => l.toUpperCase());
+                            const sectionIcons = {
+                              'Purpose': '🎯',
+                              'Inputs': '📥',
+                              'Outputs': '📤',
+                              'Tools': '🔧',
+                              'Permissions': '🔐',
+                              'Workflow': '📋',
+                              'Completion': '✅',
+                              'Rules': '📜',
+                              'Examples': '💡',
+                              'Default': '📄'
+                            };
+                            const icon = Object.entries(sectionIcons).find(([key]) =>
+                              displayName.toLowerCase().includes(key.toLowerCase())
+                            )?.[1] || '📄';
+
                             return (
-                              <div key={sectionName} className="section-container">
-                                <div className="section-header">
-                                  <span className="section-header-text">
-                                    {displayName}
-                                  </span>
-                                </div>
-                                <div className="section-body">
-                                  <pre className="section-content">
+                              <Accordion.Item
+                                key={sectionName}
+                                eventKey={idx.toString()}
+                                style={{
+                                  backgroundColor: '#1a1d29',
+                                  border: '1px solid #3a3f52',
+                                  marginBottom: '8px',
+                                  borderRadius: '6px',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <Accordion.Header
+                                  style={{
+                                    backgroundColor: '#242836'
+                                  }}
+                                >
+                                  <span style={{ marginRight: '8px' }}>{icon}</span>
+                                  <strong style={{ color: '#e2e8f0' }}>{displayName}</strong>
+                                </Accordion.Header>
+                                <Accordion.Body
+                                  style={{
+                                    backgroundColor: '#1a1d29',
+                                    padding: '12px',
+                                    borderTop: '1px solid #3a3f52'
+                                  }}
+                                >
+                                  <pre style={{
+                                    whiteSpace: 'pre-wrap',
+                                    wordWrap: 'break-word',
+                                    color: '#9ca3af',
+                                    margin: 0,
+                                    fontSize: '12px',
+                                    lineHeight: '1.6'
+                                  }}>
                                     {content}
                                   </pre>
-                                </div>
-                              </div>
+                                </Accordion.Body>
+                              </Accordion.Item>
                             );
                           })}
-                        </div>
+                        </Accordion>
                       ) : (
                         <pre style={{
                           whiteSpace: 'pre-wrap',

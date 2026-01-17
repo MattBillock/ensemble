@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, ProgressBar, Button, Spinner, Table } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, ProgressBar, Button, Spinner, Table, Alert } from 'react-bootstrap';
+import { continueProject } from '../services/api';
 
 const API_BASE_URL = 'http://localhost:8001';
 
 /**
  * Projects Dashboard - View and manage projects across the ensemble system
  */
-function ProjectsDashboard() {
+function ProjectsDashboard({ onViewTimeline }) {
   const [projects, setProjects] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [continuing, setContinuing] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -70,6 +74,29 @@ function ProjectsDashboard() {
     return Math.round((completed / total) * 100);
   };
 
+  const handleContinueProject = async () => {
+    if (!selectedProject || continuing) return;
+
+    setContinuing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await continueProject(selectedProject.project_id);
+      if (result.status === 'started') {
+        setSuccess(`Project continuation started! Agent ID: ${result.agent_id}`);
+        // Refresh projects to see the new activity
+        await fetchProjects();
+      } else if (result.error) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to continue project');
+    } finally {
+      setContinuing(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container className="mt-5 text-center">
@@ -81,12 +108,45 @@ function ProjectsDashboard() {
 
   return (
     <Container fluid className="mt-4">
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)} className="mb-3">
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert variant="success" dismissible onClose={() => setSuccess(null)} className="mb-3">
+          {success}
+        </Alert>
+      )}
+
       <Row className="mb-4">
         <Col>
           <h2>📁 Projects Dashboard</h2>
           <p style={{ color: '#9ca3af' }}>
             View and manage all projects in the ensemble system
           </p>
+        </Col>
+        <Col xs="auto">
+          <Button
+            variant="outline-warning"
+            size="sm"
+            onClick={async () => {
+              try {
+                setError(null);
+                // Clear zombie agents
+                await fetch(`${API_BASE_URL}/api/agents/clear-zombies`, { method: 'POST' });
+                // Mark stale requests
+                const response = await fetch(`${API_BASE_URL}/api/requests/mark-stale`, { method: 'POST' });
+                const result = await response.json();
+                setSuccess(`Cleaned up ${result.marked_count} orphaned requests`);
+                await fetchProjects();
+              } catch (err) {
+                setError('Cleanup failed: ' + err.message);
+              }
+            }}
+          >
+            🧹 Cleanup Orphaned
+          </Button>
         </Col>
       </Row>
 
@@ -285,14 +345,23 @@ function ProjectsDashboard() {
                   <Button
                     variant="primary"
                     size="sm"
-                    disabled={selectedProject.active_agents > 0}
+                    disabled={selectedProject.active_agents > 0 || continuing}
+                    onClick={handleContinueProject}
                   >
-                    ▶️ Continue Project
+                    {continuing ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Starting...
+                      </>
+                    ) : (
+                      '▶️ Continue Project'
+                    )}
                   </Button>
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    href={`#timeline?request_id=${selectedProject.project_id}`}
+                    onClick={() => onViewTimeline && onViewTimeline(selectedProject.project_id)}
+                    disabled={!onViewTimeline}
                   >
                     📊 View Timeline
                   </Button>

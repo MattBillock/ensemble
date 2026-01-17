@@ -298,7 +298,9 @@ function CostTrackingDashboard() {
                     return (
                       <tr key={idx}>
                         <td>
-                          <code style={{ fontSize: '0.85rem' }}>{agent.agent_name}</code>
+                          <code style={{ fontSize: '0.85rem' }}>
+                            {agent.agent_name || <span style={{ color: '#6b7280', fontStyle: 'italic' }}>(unknown)</span>}
+                          </code>
                         </td>
                         <td className="text-end">{formatNumber(agent.total_executions)}</td>
                         <td className="text-end">

@@ -13,7 +13,8 @@ import {
   setYoloMode,
   clearAgentStates,
   getSwarmPauseStatus,
-  toggleSwarmPause
+  toggleSwarmPause,
+  triggerRecovery
 } from './services/api';
 import { generateWhimsicalName, getAgentEmoji } from './utils/whimsicalNames';
 
@@ -34,6 +35,7 @@ const CostTrackingDashboard = lazy(() => import('./components/CostTrackingDashbo
 const RecoveryDashboard = lazy(() => import('./components/RecoveryDashboard'));
 const PendingReviewDashboard = lazy(() => import('./components/PendingReviewDashboard'));
 const AgentStats = lazy(() => import('./components/AgentStats'));
+const AgentStatsDashboard = lazy(() => import('./components/AgentStatsDashboard'));
 const ProjectsDashboard = lazy(() => import('./components/ProjectsDashboard'));
 
 // Loading fallback component
@@ -45,7 +47,7 @@ const LoadingFallback = () => (
 );
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', 'recovery', 'review', 'agents', or 'projects'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'metrics', 'timeline', 'improve', 'achievements', 'costs', 'recovery', 'review', 'agents', 'agentstats', or 'projects'
   const [problemInput, setProblemInput] = useState('');
   const [budgetTier, setBudgetTier] = useState('balanced');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +68,15 @@ function App() {
   // Swarm pause (server-side - pauses entire agent swarm)
   const [isSwarmPaused, setIsSwarmPaused] = useState(false);
   const [swarmPauseReason, setSwarmPauseReason] = useState(null);
+
+  // Timeline initial request ID (for navigating from Projects page)
+  const [timelineRequestId, setTimelineRequestId] = useState(null);
+
+  // Navigate to timeline for a specific project
+  const handleViewTimeline = (requestId) => {
+    setTimelineRequestId(requestId);
+    setCurrentView('timeline');
+  };
 
   // YOLO Mode (fully autonomous, no reviews)
   const [yoloMode, setYoloModeState] = useState(false);
@@ -170,6 +181,32 @@ function App() {
     } catch (err) {
       console.error(`Failed to clear ${config.label}:`, err);
       setError(`Failed to clear ${config.label}`);
+    }
+  };
+
+  // Retry a failed agent
+  const handleRetryAgent = async (agentId) => {
+    try {
+      await triggerRecovery(agentId, 'retry');
+      await fetchActivityData();
+    } catch (err) {
+      console.error(`Failed to retry agent ${agentId}:`, err);
+      setError(`Failed to retry agent`);
+    }
+  };
+
+  // Delete a single agent from the UI state
+  const handleDeleteAgent = async (agentId) => {
+    try {
+      // Clear just this agent by filtering it out locally
+      setAgentStates(prev => {
+        const updated = { ...prev };
+        delete updated[agentId];
+        return updated;
+      });
+    } catch (err) {
+      console.error(`Failed to delete agent ${agentId}:`, err);
+      setError(`Failed to delete agent`);
     }
   };
 
@@ -333,10 +370,10 @@ function App() {
                       📋 Pending Review
                     </Button>
                     <Button
-                      variant={currentView === 'agents' ? 'primary' : 'outline-secondary'}
-                      onClick={() => setCurrentView('agents')}
+                      variant={currentView === 'agentstats' ? 'primary' : 'outline-secondary'}
+                      onClick={() => setCurrentView('agentstats')}
                     >
-                      🤖 Agent Stats
+                      📊 Agent Stats
                     </Button>
                     <Button
                       variant={currentView === 'projects' ? 'primary' : 'outline-secondary'}
@@ -449,7 +486,7 @@ function App() {
       ) : currentView === 'timeline' ? (
         <Suspense fallback={<LoadingFallback />}>
           <div style={{ height: 'calc(100vh - 80px)' }}>
-            <HorizontalTimelineView />
+            <HorizontalTimelineView initialRequestId={timelineRequestId} />
           </div>
         </Suspense>
       ) : currentView === 'improve' ? (
@@ -472,13 +509,13 @@ function App() {
         <Suspense fallback={<LoadingFallback />}>
           <PendingReviewDashboard />
         </Suspense>
-      ) : currentView === 'agents' ? (
+      ) : currentView === 'agentstats' ? (
         <Suspense fallback={<LoadingFallback />}>
-          <AgentStats />
+          <AgentStatsDashboard />
         </Suspense>
       ) : currentView === 'projects' ? (
         <Suspense fallback={<LoadingFallback />}>
-          <ProjectsDashboard />
+          <ProjectsDashboard onViewTimeline={handleViewTimeline} />
         </Suspense>
       ) : (
         <>
@@ -760,6 +797,28 @@ function App() {
                           <span> • Completed: {new Date(state.completed_at).toLocaleTimeString()}</span>
                         )}
                       </div>
+
+                      {/* Retry/Delete buttons for failed agents */}
+                      {(state.status === 'failed' || state.status === 'forever_failed' || state.status === 'error') && (
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            style={{ fontSize: '10px', padding: '2px 8px' }}
+                            onClick={(e) => { e.stopPropagation(); handleRetryAgent(agentId); }}
+                          >
+                            🔄 Retry
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            style={{ fontSize: '10px', padding: '2px 8px' }}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteAgent(agentId); }}
+                          >
+                            🗑️ Remove
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

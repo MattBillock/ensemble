@@ -206,14 +206,15 @@ function AchievementsDashboard() {
   };
 
   const filteredAchievements = achievements.filter(a => {
+    if (!a || !a.id) return false;  // Filter out null/undefined achievements
     if (filter !== 'all' && a.category !== filter) return false;
     if (showUnlocked === 'unlocked' && !a.unlocked) return false;
     if (showUnlocked === 'locked' && a.unlocked) return false;
     return true;
   });
 
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalPoints = achievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.points, 0);
+  const unlockedCount = achievements.filter(a => a && a.unlocked).length;
+  const totalPoints = achievements.filter(a => a && a.unlocked).reduce((sum, a) => sum + (a.points || 0), 0);
 
   if (loading) {
     return (
@@ -312,7 +313,7 @@ function AchievementsDashboard() {
                   No achievements unlocked yet. Start running tasks!
                 </p>
               ) : (
-                recent.map((a, idx) => (
+                recent.filter(a => a && a.name).map((a, idx) => (
                   <div
                     key={idx}
                     style={{
@@ -324,16 +325,16 @@ function AchievementsDashboard() {
                     }}
                   >
                     <div style={{ fontSize: '1.5rem', display: 'inline-block', marginRight: '8px' }}>
-                      {a.icon}
+                      {a.icon || '🏆'}
                     </div>
                     <strong style={{ color: '#f7fafc' }}>{a.name}</strong>
                     <br />
                     <small style={{ color: '#9ca3af' }}>
-                      {generateWhimsicalName(a.agent_name)} ({a.agent_name.split('/').pop()?.replace('.md', '')})
+                      {generateWhimsicalName(a.agent_name || 'unknown')} ({(a.agent_name || '').split('/').pop()?.replace('.md', '') || 'unknown'})
                     </small>
                     <br />
                     <small style={{ color: '#6b7280' }}>
-                      {new Date(a.awarded_at).toLocaleDateString()}
+                      {a.awarded_at ? new Date(a.awarded_at).toLocaleDateString() : 'Unknown date'}
                     </small>
                   </div>
                 ))
@@ -493,8 +494,8 @@ function AchievementsDashboard() {
       {/* All Achievements */}
       <Row>
         <Col>
-          <Card>
-            <Card.Header>
+          <Card bg="dark" text="light">
+            <Card.Header style={{ backgroundColor: '#242836', borderColor: '#3a3f52' }}>
               <div className="d-flex justify-content-between align-items-center">
                 <strong>📋 All Achievements</strong>
                 <div className="d-flex gap-2">
@@ -553,11 +554,11 @@ function AchievementsDashboard() {
                               filter: achievement.unlocked ? 'none' : 'grayscale(100%)'
                             }}
                           >
-                            {achievement.icon}
+                            {achievement.icon || '🏆'}
                           </div>
                           <div style={{ flex: 1 }}>
                             <h6 className="mb-1">
-                              {achievement.name}
+                              {achievement.name || 'Unknown Achievement'}
                               {achievement.unlocked && (
                                 <Badge bg="success" className="ms-2" style={{ fontSize: '0.6rem' }}>
                                   ✓
@@ -565,14 +566,14 @@ function AchievementsDashboard() {
                               )}
                             </h6>
                             <p className="mb-2" style={{ fontSize: '0.85rem', color: '#6c757d' }}>
-                              {achievement.description}
+                              {achievement.description || 'No description available'}
                             </p>
                             <div className="d-flex justify-content-between align-items-center">
                               <div>
-                                {getRarityBadge(achievement.rarity)}
-                                {getCategoryBadge(achievement.category)}
+                                {getRarityBadge(achievement.rarity || 'common')}
+                                {getCategoryBadge(achievement.category || 'misc')}
                               </div>
-                              <Badge bg="dark">{achievement.points} pts</Badge>
+                              <Badge bg="dark">{achievement.points || 0} pts</Badge>
                             </div>
                           </div>
                         </div>
@@ -589,11 +590,11 @@ function AchievementsDashboard() {
       {/* Rotating Ska Facts */}
       <Row className="mt-4 mb-4">
         <Col>
-          <Card bg="light" style={{ transition: 'all 0.3s ease' }}>
+          <Card bg="dark" text="light" style={{ transition: 'all 0.3s ease', border: '1px solid #3a3f52' }}>
             <Card.Body>
-              <h6>🎺 Ska Facts</h6>
-              <p className="mb-0" style={{ fontSize: '0.875rem' }}>
-                <strong>{SKA_FACTS[currentSkaFact].title}:</strong>{' '}
+              <h6 style={{ color: '#f7fafc' }}>🎺 Fun Facts</h6>
+              <p className="mb-0" style={{ fontSize: '0.875rem', color: '#e2e8f0' }}>
+                <strong style={{ color: '#f59e0b' }}>{SKA_FACTS[currentSkaFact].title}:</strong>{' '}
                 {SKA_FACTS[currentSkaFact].fact}
               </p>
               <div className="mt-2 d-flex justify-content-center gap-1">
@@ -605,7 +606,7 @@ function AchievementsDashboard() {
                       width: '8px',
                       height: '8px',
                       borderRadius: '50%',
-                      backgroundColor: idx === currentSkaFact ? '#333' : '#ccc',
+                      backgroundColor: idx === currentSkaFact ? '#10b981' : '#3a3f52',
                       cursor: 'pointer',
                       transition: 'background-color 0.2s'
                     }}

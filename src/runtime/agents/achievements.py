@@ -2080,7 +2080,7 @@ class AchievementTracker:
                         "count": row['count']
                     })
 
-            # Top agents (all agents, not limited)
+            # Top agents by type (all agents, not limited)
             cursor.execute("""
                 SELECT agent_class, COUNT(*) as count
                 FROM awarded_achievements
@@ -2090,13 +2090,59 @@ class AchievementTracker:
             top_agents = [{"agent": row['agent_class'], "count": row['count']}
                          for row in cursor.fetchall()]
 
+            # Individual agents by achievement count (leaderboard)
+            cursor.execute("""
+                SELECT agent_name, agent_class, COUNT(*) as count
+                FROM awarded_achievements
+                GROUP BY agent_name
+                ORDER BY count DESC
+                LIMIT 25
+            """)
+            individual_by_count = [
+                {
+                    "agent_id": row['agent_name'],
+                    "agent_type": row['agent_class'],
+                    "count": row['count']
+                }
+                for row in cursor.fetchall()
+            ]
+
+            # Individual agents by total score (leaderboard)
+            # Join with achievement points
+            cursor.execute("""
+                SELECT agent_name, agent_class, achievement_id
+                FROM awarded_achievements
+            """)
+            agent_scores = {}
+            for row in cursor.fetchall():
+                agent_name = row['agent_name']
+                achievement = self.achievements_by_id.get(row['achievement_id'])
+                points = achievement.points if achievement else 0
+                if agent_name not in agent_scores:
+                    agent_scores[agent_name] = {
+                        "agent_id": agent_name,
+                        "agent_type": row['agent_class'],
+                        "score": 0,
+                        "count": 0
+                    }
+                agent_scores[agent_name]["score"] += points
+                agent_scores[agent_name]["count"] += 1
+
+            individual_by_score = sorted(
+                agent_scores.values(),
+                key=lambda x: x['score'],
+                reverse=True
+            )[:25]
+
             return {
                 "total_achievements_available": len(ACHIEVEMENTS),
                 "total_achievements_awarded": total_awarded,
                 "by_rarity": rarity_counts,
                 "by_category": category_counts,
                 "most_awarded": most_awarded,
-                "top_agents": top_agents
+                "top_agents": top_agents,
+                "individual_agents_by_count": individual_by_count,
+                "individual_agents_by_score": individual_by_score
             }
 
 

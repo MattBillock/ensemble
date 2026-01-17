@@ -1405,12 +1405,18 @@ async def get_projects_summary():
 
     # Get all agent states from activity tracker (persistent)
     agent_states = getattr(activity_tracker, 'agent_states', {})
+    # Also get hierarchy for fallback data
+    agent_hierarchy = getattr(activity_tracker, 'agent_hierarchy', {})
 
     for agent_id, state in agent_states.items():
         if not isinstance(state, dict):
             continue
 
-        request_id = state.get("request_id", "unknown")
+        # Try to get request_id from state, fall back to hierarchy
+        request_id = state.get("request_id")
+        if not request_id:
+            hierarchy_data = agent_hierarchy.get(agent_id, {})
+            request_id = hierarchy_data.get("request_id", "unknown")
         if not request_id or request_id == "unknown":
             continue
 
@@ -1447,17 +1453,26 @@ async def get_projects_summary():
             "status": status
         })
 
-        # Get project name from executive_director or first agent with a task
+        # Get project name from problem field (the actual task description)
+        # Priority: executive director's problem > any agent's problem > fallback to current_task
         agent_type = state.get("agent_type", "")
-        if "executive" in agent_type.lower() or "director" in agent_type.lower():
-            task = state.get("current_task", "")
-            if task and not projects[request_id]["project_name"]:
-                projects[request_id]["project_name"] = task[:80]
+        problem = state.get("problem", "")
 
-        # Fallback: use current_task from any agent if no name yet
+        if "executive" in agent_type.lower() or "director" in agent_type.lower():
+            if problem and not projects[request_id]["project_name"]:
+                projects[request_id]["project_name"] = problem[:80]
+
+        # Fallback: use problem field from any agent if no name yet
+        if not projects[request_id]["project_name"] and problem:
+            projects[request_id]["project_name"] = problem[:80]
+
+        # Last resort: use current_task but filter out tool-related messages
         if not projects[request_id]["project_name"]:
             task = state.get("current_task", "")
-            if task:
+            # Skip status messages that don't describe the actual task
+            skip_patterns = ["Using tool:", "Processing", "Thinking...", "Initializing",
+                           "Completed", "Failed:", "Waiting for"]
+            if task and not any(pattern in task for pattern in skip_patterns):
                 projects[request_id]["project_name"] = task[:80]
 
     # Also check orchestrator.active_agents for any running tasks not yet in activity_tracker
@@ -1510,6 +1525,74 @@ async def get_projects_summary():
             "stage_distribution": stage_counts,
         }
     }
+
+
+@app.post("/api/projects/{project_id}/continue")
+async def continue_project(project_id: str, budget_tier: str = "balanced"):
+    """Continue a project by spawning a new Executive Director with context."""
+    from src.runtime.agents.runtime import AgentRuntime
+
+    activity_tracker = AgentRuntime.get_activity_tracker()
+    agent_states = getattr(activity_tracker, 'agent_states', {})
+
+    # Find the original problem for this project
+    problem = None
+    completed_work = []
+
+    for agent_id, state in agent_states.items():
+        if not isinstance(state, dict):
+            continue
+        state_project_id = state.get("project_id") or state.get("request_id")
+        if state_project_id == project_id:
+            # Get the problem description
+            if state.get("problem") and not problem:
+                problem = state.get("problem")
+            # Collect completed work summaries
+            if state.get("status") == "completed" and state.get("summary"):
+                completed_work.append({
+                    "agent": state.get("agent_type") or state.get("agent_name"),
+                    "summary": state.get("summary")
+                })
+
+    if not problem:
+        return {"error": "Could not find original problem for this project", "status": "error"}
+
+    # Build continuation prompt
+    continuation_prompt = f"""CONTINUATION REQUEST:
+
+Original Task: {problem}
+
+This is a continuation of a previous session. The following work has already been completed:
+"""
+    if completed_work:
+        for work in completed_work[:10]:  # Limit to 10 summaries
+            continuation_prompt += f"\n- {work['agent']}: {work['summary'][:200]}"
+    else:
+        continuation_prompt += "\n(No completed work summaries available)"
+
+    continuation_prompt += """
+
+Please review the existing work and continue from where the previous session left off.
+Do not restart from the beginning - identify remaining tasks and complete them."""
+
+    try:
+        agent_id, result = await orchestrator.spawn_executive_director(
+            continuation_prompt,
+            budget_tier=budget_tier,
+            auto_continue=True,
+            fully_autonomous=orchestrator.yolo_mode
+        )
+
+        return {
+            "agent_id": agent_id,
+            "status": "started",
+            "project_id": project_id,
+            "message": "Project continuation started"
+        }
+    except Exception as e:
+        logger.error(f"Error continuing project {project_id}: {e}")
+        return {"error": str(e), "status": "error"}
+
 
 @app.get("/api/deliverables/{request_id}")
 async def get_deliverables(request_id: str):
@@ -2682,14 +2765,16 @@ async def get_cost_summary(days: int = 30):
 
         # Get token usage stats
         stats = tracker.get_summary_stats(days)
+        # Stats are nested under "overall" key
+        overall = stats.get("overall", {})
 
         # Calculate estimated costs (rough estimates based on Claude pricing)
         # These are approximate - actual costs depend on the specific model used
         cost_per_1k_input = 0.003  # ~$3/million input tokens (Sonnet average)
         cost_per_1k_output = 0.015  # ~$15/million output tokens
 
-        total_input = stats.get("total_input_tokens", 0)
-        total_output = stats.get("total_output_tokens", 0)
+        total_input = overall.get("total_input_tokens", 0) or 0
+        total_output = overall.get("total_output_tokens", 0) or 0
 
         estimated_input_cost = (total_input / 1000) * cost_per_1k_input
         estimated_output_cost = (total_output / 1000) * cost_per_1k_output
@@ -2708,9 +2793,9 @@ async def get_cost_summary(days: int = 30):
                 "total_cost_usd": round(estimated_total_cost, 4)
             },
             "execution_stats": {
-                "total_executions": stats.get("total_executions", 0),
-                "successful_executions": stats.get("successful_executions", 0),
-                "failed_executions": stats.get("failed_executions", 0)
+                "total_executions": overall.get("total_executions", 0) or 0,
+                "successful_executions": overall.get("successful", 0) or 0,
+                "failed_executions": overall.get("failed", 0) or 0
             }
         }
     except Exception as e:
@@ -2969,6 +3054,134 @@ async def disable_yolo_mode():
     orchestrator.yolo_mode = False
     logger.info("YOLO Mode DISABLED - Human review required")
     return {"enabled": False, "message": "YOLO Mode deactivated. Back to safety."}
+
+
+# ========== Zombie Agent Cleanup ==========
+
+@app.post("/api/agents/clear-zombies")
+async def clear_zombie_agents():
+    """
+    Clear zombie agents from the orchestrator.
+
+    Zombie agents are those that are registered as 'running' but haven't
+    had activity for a long time, or are in 'error' status.
+    """
+    cleared = []
+    kept = []
+
+    for agent_id, agent_info in list(orchestrator.active_agents.items()):
+        status = agent_info.get("status", "unknown")
+
+        # Remove agents in error or unknown status
+        if status in ("error", "unknown", "failed"):
+            cleared.append({
+                "agent_id": agent_id,
+                "type": agent_info.get("type"),
+                "status": status,
+                "reason": f"Status was '{status}'"
+            })
+            del orchestrator.active_agents[agent_id]
+        else:
+            kept.append({
+                "agent_id": agent_id,
+                "type": agent_info.get("type"),
+                "status": status
+            })
+
+    logger.info(f"Cleared {len(cleared)} zombie agents, kept {len(kept)}")
+    return {
+        "cleared": cleared,
+        "kept": kept,
+        "cleared_count": len(cleared),
+        "remaining_count": len(kept)
+    }
+
+
+@app.post("/api/agents/force-clear-all")
+async def force_clear_all_agents():
+    """
+    Force clear ALL agents from the orchestrator.
+    Use with caution - this will stop tracking all active agents.
+    """
+    count = len(orchestrator.active_agents)
+    agents_cleared = list(orchestrator.active_agents.keys())
+    orchestrator.active_agents.clear()
+
+    logger.warning(f"Force cleared ALL {count} agents from orchestrator")
+    return {
+        "success": True,
+        "cleared_count": count,
+        "cleared_agents": agents_cleared,
+        "message": f"Cleared {count} agents from orchestrator"
+    }
+
+
+@app.post("/api/requests/mark-stale")
+async def mark_stale_requests():
+    """
+    Mark orphaned 'running' requests as 'abandoned' if their agents are no longer active.
+    This helps clean up the UI when agents have been lost.
+    """
+    from src.runtime.agents.runtime import AgentRuntime
+    from datetime import datetime
+
+    activity_tracker = AgentRuntime.get_activity_tracker()
+
+    # Get all requests
+    requests = getattr(activity_tracker, 'requests', {})
+
+    marked = []
+    active_agent_ids = set(orchestrator.active_agents.keys())
+
+    for request_id, request_data in requests.items():
+        if not isinstance(request_data, dict):
+            continue
+
+        status = request_data.get("status")
+        if status != "running":
+            continue
+
+        # Check if the root agent is still active
+        root_agent_id = request_data.get("root_agent_id")
+        if root_agent_id and root_agent_id in active_agent_ids:
+            continue
+
+        # Mark as abandoned
+        request_data["status"] = "abandoned"
+        request_data["completed_at"] = datetime.now().isoformat()
+        request_data["abandonment_reason"] = "Root agent no longer active"
+        marked.append({
+            "request_id": request_id,
+            "title": request_data.get("title"),
+            "root_agent_id": root_agent_id
+        })
+
+    return {
+        "marked_count": len(marked),
+        "marked": marked
+    }
+
+
+@app.post("/api/requests/{request_id}/mark-completed")
+async def mark_request_completed(request_id: str):
+    """Manually mark a request as completed."""
+    from src.runtime.agents.runtime import AgentRuntime
+    from datetime import datetime
+
+    activity_tracker = AgentRuntime.get_activity_tracker()
+    requests = getattr(activity_tracker, 'requests', {})
+
+    if request_id not in requests:
+        return {"error": f"Request {request_id} not found", "success": False}
+
+    requests[request_id]["status"] = "completed"
+    requests[request_id]["completed_at"] = datetime.now().isoformat()
+
+    return {
+        "success": True,
+        "request_id": request_id,
+        "message": "Request marked as completed"
+    }
 
 
 # ========== Swarm Pause/Resume Endpoints ==========

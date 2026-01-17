@@ -7,14 +7,22 @@ import { Badge, Card, Button, Collapse } from 'react-bootstrap';
  * Displays agent execution as horizontal timelines with branching paths.
  * Each request/prompt gets its own track with AI-generated title.
  */
-function HorizontalTimelineView() {
+function HorizontalTimelineView({ initialRequestId = null }) {
   const [requests, setRequests] = useState([]);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(initialRequestId);
   const [timelineData, setTimelineData] = useState(null);
   const [githubInfo, setGithubInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const containerRef = useRef(null);
+  const hasInitialized = useRef(false);
+
+  // Handle initialRequestId prop changes
+  useEffect(() => {
+    if (initialRequestId && initialRequestId !== selectedRequest) {
+      setSelectedRequest(initialRequestId);
+    }
+  }, [initialRequestId]);
 
   // Fetch requests and GitHub info on mount
   useEffect(() => {
@@ -39,8 +47,9 @@ function HorizontalTimelineView() {
       setRequests(data.requests || []);
       setLoading(false);
 
-      // Auto-select first request if none selected
-      if (!selectedRequest && data.requests?.length > 0) {
+      // Auto-select first request if none selected and no initial request provided
+      if (!selectedRequest && !hasInitialized.current && data.requests?.length > 0) {
+        hasInitialized.current = true;
         setSelectedRequest(data.requests[0].request_id);
       }
     } catch (error) {
