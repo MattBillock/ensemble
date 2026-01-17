@@ -1,184 +1,100 @@
-# Requirements: Fix Agent Pipeline Design Phase Termination
+# Requirements: Design Phase Pause Fix Implementation
+
+## Project Overview
+**Project Name**: Design Phase Pause Fix Implementation
+**Purpose**: Fix the agent pipeline termination issue when agents return `needs_user_input` status during the design phase
+**Priority**: High - critical bug fix
+**TDD Required**: Yes - write tests first, then implementation
 
 ## Problem Statement
-When agents complete the design phase and return `status: "needs_user_input"`, the development pipeline terminates/dies instead of generating a pending task for the user and waiting for their response. This causes the entire agent pipeline to stop prematurely.
+Currently, when an Executive Director agent returns `status: "needs_user_input"` during the design phase, the backend incorrectly marks the agent as "completed" instead of pausing execution to wait for user input. This causes the pipeline to terminate prematurely, preventing proper user interaction and continuation.
 
-## Root Cause Analysis
+## Core Requirements
 
-### Current Behavior (Broken)
-1. Agent (e.g., Executive Director) returns `{"status": "needs_user_input", "user_question": "..."}`
-2. Runtime correctly:
-   - Records the question in activity tracker
-   - Adds `question_id` and `awaiting_user_input` to response
-   - Returns the response to backend
-3. Backend (`_execute_agent_background`) incorrectly:
-   - Sets agent status to `"completed"` regardless of `needs_user_input`
-   - Logs "Completed successfully"
-   - No continuation mechanism is triggered
-4. UI shows:
-   - Agent marked as "completed" (wrong - should be "awaiting_user_input")
-   - Question appears in PendingQuestions component
-   - User can submit an answer via `answerQuestion` API
-5. Answer handling (`record_answer`):
-   - Updates question record with answer
-   - Updates agent state to "running" (optimistic)
-   - BUT does not actually resume the agent execution
-
-### Desired Behavior (Fixed)
-1. Agent returns `{"status": "needs_user_input", "user_question": "..."}`
-2. Runtime correctly records question (already works)
-3. Backend should:
-   - Detect `needs_user_input` status in result
-   - Set agent status to `"awaiting_user_input"` (NOT "completed")
-   - Store the execution state for resumption
-4. UI should:
-   - Show agent as "awaiting_user_input" with prominent question badge
-   - Display question in PendingQuestions component (already works)
-5. When user answers:
-   - Resume agent execution with user's answer as input
-   - Agent continues from where it left off
-
-## Requirements
-
-### Functional Requirements
-
-#### FR1: Backend Status Detection
-- When agent result contains `status: "needs_user_input"`, backend MUST set agent status to `"awaiting_user_input"`
-- Agent should NOT be marked as "completed" when waiting for user input
-- Affected file: `src/field/ensemble_ui/backend/main.py`
-- Location: `_execute_agent_background` method
-
-#### FR2: Agent State Preservation
-- When agent returns `needs_user_input`, preserve execution context for resumption:
-  - Agent definition and configuration
+### 1. Agent Status Handling (CRITICAL)
+- **REQ-001**: `_execute_agent_background` method MUST detect `needs_user_input` status from agent results
+- **REQ-002**: Agents with `needs_user_input` status MUST be marked as `"awaiting_user_input"` (NOT "completed")
+- **REQ-003**: Agent context MUST be preserved for later continuation including:
   - Original input data
-  - Question ID and question text
-  - Request ID for tracing
-- Store this in `active_agents` dict for the waiting agent
+  - Question asked to user
+  - Agent type information
+- **REQ-004**: Agent logs MUST reflect waiting state with appropriate message
 
-#### FR3: Answer-Triggered Continuation
-- When `answerQuestion` API is called, it must trigger agent continuation
-- Two approaches (choose one):
-  1. **Respawn approach**: Start a new agent instance with original context + user answer
-  2. **Resume approach**: Use runtime's `set_user_answer` and resume execution (more complex)
-- Recommended: Respawn approach (simpler, more robust)
+### 2. Question-Answer Flow (CRITICAL)
+- **REQ-005**: `answer_question` endpoint MUST trigger agent continuation after recording answer
+- **REQ-006**: System MUST match answers to waiting agents using question_id
+- **REQ-007**: Answer processing MUST happen asynchronously to avoid blocking response
 
-#### FR4: Answer Integration in New Execution
-- User's answer must be incorporated into the new agent's context
-- The agent should receive:
-  - Original task/requirements
-  - Previous agent's question
+### 3. Agent Continuation (CRITICAL) 
+- **REQ-008**: New `continue_agent_with_answer` method MUST spawn fresh agent with continuation context
+- **REQ-009**: Continuation context MUST include:
+  - Original task input
+  - Previous question
   - User's answer
-  - Instruction to continue based on clarification
+  - Clear instruction to continue implementation
+- **REQ-010**: Agent continuation MUST use Executive Director agent type for consistency
 
-#### FR5: Activity Tracker Updates
-- Record state transitions: running → awaiting_user_input → running → completed
-- Record answer received event
-- Maintain proper hierarchy for resumed/respawned agents
+### 4. Data Structure Requirements
+- **REQ-011**: `active_agents[agent_id]` MUST support new fields:
+  - `awaiting_question_id`: Links agent to pending question
+  - `continuation_context`: Stores resumption data
+- **REQ-012**: Status field MUST support `"awaiting_user_input"` state
+- **REQ-013**: State transitions MUST follow: `running → awaiting_user_input → [answer] → running → completed`
 
-### Non-Functional Requirements
+## Implementation Scope
 
-#### NFR1: No Pipeline Death
-- Agent pipeline must never terminate when user input is needed
-- System must remain responsive and ready to accept answers
+### Files to Modify
+- **Primary**: `backend/main.py` - All core changes
+- **Secondary**: Test files for validation
 
-#### NFR2: UI Visibility
-- Users must clearly see which agents need input
-- Status badges should accurately reflect "awaiting_user_input" state
+### Components to Change
+1. **`_execute_agent_background` method** (modify existing)
+2. **`answer_question` endpoint** (modify existing) 
+3. **`continue_agent_with_answer` method** (add new)
 
-#### NFR3: Traceability
-- Request IDs and parent-child relationships must be maintained across continuation
+## Testing Requirements (TDD)
 
-## Technical Design
+### Unit Tests (MUST IMPLEMENT)
+- **TEST-001**: Verify `_execute_agent_background` correctly detects `needs_user_input`
+- **TEST-002**: Verify continuation context is properly stored and structured
+- **TEST-003**: Verify `continue_agent_with_answer` builds correct input data
+- **TEST-004**: Verify state transitions work correctly
+- **TEST-005**: Verify question_id matching logic works
 
-### Changes Required
-
-#### 1. `backend/main.py` - `_execute_agent_background` method
-```python
-# After getting result, check for needs_user_input
-if result and result.get("status") == "needs_user_input":
-    self.active_agents[agent_id]["status"] = "awaiting_user_input"
-    self.active_agents[agent_id]["awaiting_question_id"] = result.get("question_id")
-    self.active_agents[agent_id]["continuation_context"] = {
-        "original_input": input_data,
-        "question": result.get("user_question"),
-        "agent_def_path": exec_dir_path  # or however agent is loaded
-    }
-    self.active_agents[agent_id]["logs"].append(f"❓ Waiting for user input: {result.get('user_question', 'No question provided')}")
-    return  # Don't mark as completed
-```
-
-#### 2. `backend/main.py` - Answer handling endpoint
-Currently, `record_answer` just updates the activity tracker. Need to add:
-```python
-@app.post("/api/activity/questions/{question_id}/answer")
-async def answer_question(question_id: str, answer: dict, background_tasks: BackgroundTasks):
-    # ... existing code ...
-    
-    # Find the agent waiting for this answer
-    for agent_id, agent_info in orchestrator.active_agents.items():
-        if agent_info.get("awaiting_question_id") == question_id:
-            # Trigger continuation with answer
-            background_tasks.add_task(
-                orchestrator.continue_agent_with_answer,
-                agent_id,
-                answer["answer"]
-            )
-            break
-```
-
-#### 3. `backend/main.py` - New continuation method
-```python
-def continue_agent_with_answer(self, agent_id: str, answer: str):
-    """Continue an agent execution after receiving user answer."""
-    agent_info = self.active_agents.get(agent_id)
-    if not agent_info:
-        return
-    
-    context = agent_info.get("continuation_context", {})
-    original_input = context.get("original_input", {})
-    question = context.get("question", "")
-    
-    # Build continuation input with answer context
-    continuation_input = {
-        **original_input,
-        "continuation_context": {
-            "previous_question": question,
-            "user_answer": answer,
-            "instruction": "The user has answered your question. Please continue with implementation based on their clarification."
-        }
-    }
-    
-    # Spawn new executive director with continuation context
-    # ... similar to spawn_executive_director but with continuation_input
-```
-
-#### 4. Activity Tracker - New event type (optional but recommended)
-Add `AWAITING_USER_INPUT` state transition for better tracking.
+### Integration Tests (MUST IMPLEMENT)
+- **TEST-006**: Mock agent returns `needs_user_input` → verify status becomes `awaiting_user_input`
+- **TEST-007**: Submit answer → verify new agent spawned with correct context
+- **TEST-008**: End-to-end flow from question through continuation to completion
 
 ## Success Criteria
-
-1. ✅ When an agent returns `needs_user_input`, the UI shows it as "awaiting_user_input"
-2. ✅ The pending question appears in the PendingQuestions component
-3. ✅ When user submits an answer, the agent continues execution
-4. ✅ The continued execution has access to the original context + user's answer
-5. ✅ Agent hierarchy and request IDs are properly maintained
-6. ✅ No "agent completed" status when actually waiting for input
-7. ✅ Pipeline does not terminate/die on design phase completion
+- ✅ Agent pipeline NO LONGER terminates when `needs_user_input` is returned
+- ✅ User sees appropriate "waiting" status in UI
+- ✅ User can provide answer and agent continues with full context
+- ✅ All tests pass (unit + integration)
+- ✅ No regression in normal (non-question) agent execution flow
 
 ## Out of Scope
-- Multi-question support (handle one question at a time for now)
+- Persistent storage for paused agents (agents lost on server restart)
+- Multiple question support (one question per agent session)
 - Question timeout handling
-- Question editing/revision
-- Agent definition changes (use existing agent structure)
+- Hot reload of agent definitions during continuation
+- UI changes (backend focus only)
+
+## Technical Constraints
+- **Language**: Python (FastAPI backend)
+- **Testing Framework**: pytest
+- **Async**: Must use async/await patterns for continuations
+- **Backwards Compatibility**: Must not break existing agent execution
+- **Error Handling**: Must gracefully handle missing agents or invalid question_ids
 
 ## Assumptions
-- Only one question per agent at a time
-- User will provide an answer (no timeout handling needed initially)
-- Continuation uses the same budget tier as original execution
-- Agent definitions are stable (no hot-reload during continuation)
+- Question tracking system already exists and works correctly
+- Executive Director agent can handle continuation context appropriately
+- UI will properly display `awaiting_user_input` status
+- Single concurrent answer per question_id (no race conditions expected)
 
 ## Dependencies
-- Existing activity tracker infrastructure (works correctly)
-- Existing PendingQuestions UI component (works correctly)
-- Existing answerQuestion API endpoint (needs enhancement)
+- Existing `AgentOrchestrator` class
+- Existing question tracking system
+- FastAPI BackgroundTasks for async processing
+- Current agent spawning infrastructure

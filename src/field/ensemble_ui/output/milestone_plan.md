@@ -1,61 +1,59 @@
-# TDD Coordinator Model Performance Validation - Milestone Plan
+# Agent Families Implementation Milestone Plan
 
-## Project Overview
-Compare performance of claude-3-5-sonnet-20241022 against claude-3-5-haiku-20241022 models in the TDD Coordinator role across three complexity levels.
+## Overall Project Goal
+Implement a family-based naming and achievement system for agent groups to provide visual cohesion and collective tracking across the ensemble.
 
-## Success Criteria
-- Demonstrate +50% improvement in success rate
-- Verify consistent performance across complexity levels  
-- Validate code quality metrics improve
+## Milestone Structure
 
-## Milestone 1: Test Framework Setup and Haiku Baseline
-**Duration**: 1 week
-**Objective**: Establish testing framework and capture haiku model baseline performance
+### Milestone 1: Family Name Generation Core
+**Objective**: Implement robust family name generation and inheritance mechanism
+**Deliverables**:
+- Family name generation system
+- Inheritance mechanism for agent hierarchies
+- Initial unit tests for name generation
+- Performance validation for name generation
 
-### Deliverables:
-- Test harness for automated TDD Coordinator evaluation
-- Standardized test scenarios (low, medium, high complexity)
-- Baseline metrics for haiku model across all scenarios
-- Performance measurement tools
+**Acceptance Criteria**:
+- Generate unique, whimsical family names 
+- Propagate family names across agent hierarchies
+- Name generation time < 1ms
+- 90%+ test coverage for name generation logic
 
-### Acceptance Criteria:
-- Test framework can execute all 3 complexity scenarios
-- Baseline metrics captured for haiku model: test coverage, code quality, cycle time, error rate
-- Repeatable test execution process established
+### Milestone 2: Activity Tracking & Achievements
+**Objective**: Create family-level activity tracking and achievement system
+**Deliverables**:
+- Activity aggregation mechanism
+- Three initial achievement types:
+  1. Collective Task Completion
+  2. Efficiency Badge
+  3. Collaboration Star
+- Persistence and query interface for achievements
+- Comprehensive unit tests
 
-### Dependencies: None
+**Acceptance Criteria**:
+- Track family-level metrics
+- Implement 3 defined achievement types
+- Tracking operation overhead < 5ms
+- Queryable achievement interface
+- 90%+ test coverage for tracking logic
 
-## Milestone 2: Sonnet Model Performance Evaluation  
-**Duration**: 1 week
-**Objective**: Execute identical test scenarios with sonnet model and capture performance metrics
+### Milestone 3: API and Frontend Integration
+**Objective**: Seamlessly integrate family system into existing infrastructure
+**Deliverables**:
+- REST API endpoints for family information
+- Updated React components to display family relationships
+- Integration tests
+- Performance and compatibility validation
 
-### Deliverables:
-- Complete sonnet model performance data
-- Comparative analysis framework
-- Initial performance comparison results
+**Acceptance Criteria**:
+- Expose family data through REST endpoints
+- Update UI to show family names and achievements
+- Maintain existing performance standards
+- Backwards compatibility preserved
+- 90%+ test coverage for integration components
 
-### Acceptance Criteria:
-- Identical test scenarios executed with sonnet model
-- Performance metrics captured using same measurement tools
-- Data ready for comparative analysis
-
-### Dependencies: Milestone 1 complete
-
-## Milestone 3: Performance Analysis and Reporting
-**Duration**: 0.5 weeks  
-**Objective**: Analyze comparative results and generate comprehensive performance report
-
-### Deliverables:
-- Detailed performance comparison report
-- Recommendations for model selection
-- Documentation of findings and methodologies
-
-### Acceptance Criteria:
-- Quantitative comparison across all 4 metrics
-- Clear recommendation on model performance
-- Reproducible methodology documented
-- Success criteria validation (50% improvement target)
-
-### Dependencies: Milestone 2 complete
-
-## Total Timeline: 2.5 weeks
+## Cross-Cutting Requirements
+- Maintain < 5ms performance overhead
+- 90%+ test coverage across all components
+- No breaking changes to existing systems
+- Graceful handling of legacy agent data
