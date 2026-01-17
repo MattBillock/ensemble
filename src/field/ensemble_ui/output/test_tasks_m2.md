@@ -1,92 +1,102 @@
-# Test Strategy: Question-Answer Flow Implementation
+# Test Strategy: Metrics Display and Tracking Features
 
-## Test Categories
-
-### Unit Tests
-1. **Agent Status Handling**
-   - Verify `_execute_agent_background` method correctly detects `needs_user_input` status
-   - Confirm agent status changes to `awaiting_user_input`
-   - Validate preservation of agent context during pause
-   - Test logging mechanism for waiting state
-
-2. **Continuation Context**
-   - Verify continuation context contains:
-     * Original task input
-     * Previous question
-     * Mechanisms for user answer integration
-   - Test `continue_agent_with_answer` method input construction
-   - Validate state transition logic
-
-3. **Data Structure Tests**
-   - Test `active_agents[agent_id]` structure
-   - Verify new fields: `awaiting_question_id`, `continuation_context`
-   - Validate state transition sequence
-
-### Integration Tests
-1. **Question Flow**
-   - Simulate agent returning `needs_user_input`
-   - Verify system status changes correctly
-   - Test `answer_question` endpoint integration
-   - Validate asynchronous answer processing
-   - Confirm agent continuation mechanism
-
-2. **End-to-End Scenarios**
-   - Complete question-answer-continuation flow
-   - Test multiple agent types
-   - Verify no pipeline termination
-   - Ensure full context preservation
-
-### Error Handling Tests
-1. **Edge Case Scenarios**
-   - Missing question_id
-   - Invalid agent continuation
-   - Simultaneous answer submissions
-   - Incomplete context scenarios
-
-## Testing Tasks Breakdown
-
-### Task 1: Unit Test Infrastructure Setup
-- Configure pytest for async testing
-- Create mock agent and context generators
-- Implement fixtures for consistent test environment
-
-### Task 2: Status Detection Unit Tests
-- Write tests for `_execute_agent_background`
-- Verify status change mechanisms
-- Test context preservation
-
-### Task 3: Continuation Context Tests
-- Validate context storage
-- Test input reconstruction
-- Verify state transition logic
-
-### Task 4: Integration Test Scenarios
-- Design comprehensive flow tests
-- Mock complex agent interactions
-- Validate end-to-end question-answer mechanism
-
-### Task 5: Error Handling Verification
-- Create tests for edge cases
-- Verify graceful error management
-- Test system resilience
-
-## Coverage Goals
+## Test Coverage Overview
 - Unit Test Coverage: 90%
-- Integration Test Coverage: 100% of critical paths
-- Error Handling Coverage: 85%
+- Integration Test Coverage: 100%
+- E2E Test Coverage: Critical Paths
 
-## Testing Tools
-- pytest
-- asyncio for async testing
-- Mock libraries for agent simulation
+## Unit Test Tasks
 
-## Risks and Mitigations
-- Limited persistent state
-- Potential race conditions
-- Complex context management
+### WriteFileTool Tests
+1. Test initialization with no tracking context
+   - Verify default behavior unchanged
+   - Confirm no tracking occurs when context is empty
 
-## Recommended Testing Sequence
-1. Unit test individual components
-2. Integration tests for core flows
-3. Error handling and edge case testing
-4. End-to-end verification
+2. Test initialization with full tracking context
+   - Verify context parameters are correctly stored
+   - Check tracking mechanism is activated
+
+3. Test file writing functionality
+   - Ensure original file write logic works perfectly
+   - Validate tracking does not interfere with core functionality
+
+### ActivityTracker Tests
+1. Test file event recording
+   - Verify event details are correctly captured
+   - Check timestamp, file path, and context accuracy
+
+2. Test request count incrementation
+   - Confirm request counts increase correctly
+   - Validate tracking across multiple file operations
+
+3. Test context propagation
+   - Ensure optional context works without breaking existing code
+   - Verify context can be partially or fully populated
+
+## Integration Test Tasks
+
+### WriteFileTool and ActivityTracker Integration
+1. Test complete tracking workflow
+   - Simulate file generation with full context
+   - Verify entire tracking pipeline functions correctly
+
+2. Test tracking with partial context
+   - Use scenarios with incomplete tracking information
+   - Ensure graceful handling of partial contexts
+
+3. Performance integration tests
+   - Measure tracking overhead
+   - Confirm < 1ms performance impact
+
+## End-to-End Test Scenarios
+
+### Agent File Generation Flow
+1. Happy Path Tracking
+   - Complete agent file generation with full context
+   - Verify entire tracking and logging process
+
+2. Tracking Failure Scenarios
+   - Test system behavior when tracking fails
+   - Confirm core file writing remains unaffected
+
+3. Multiple Agent Tracking
+   - Simulate concurrent agent file generations
+   - Validate accurate tracking across different agents
+
+## Test Fixture Requirements
+- Mock agent contexts
+- Temporary file system for testing
+- Performance measurement utilities
+- Comprehensive logging verification tools
+
+## Testing Constraints
+- No external dependencies
+- Must work with Python 3.9+
+- Zero modification to existing agent code
+
+## Quality Gates
+- 90%+ Code Coverage
+- All existing tests must pass
+- Performance overhead < 1ms per operation
+- No exceptions from tracking subsystem
+
+## Recommended Testing Tools
+- pytest for unit and integration tests
+- Hypothesis for property-based testing
+- pytest-benchmark for performance measurements
+
+## Risk Mitigation Test Cases
+1. Verify no breaking changes
+2. Test tracking with edge case contexts
+3. Performance under high load
+4. Graceful degradation testing
+
+## Test Phases
+1. Core Mechanism Testing
+2. Integration Verification
+3. Performance Validation
+4. Edge Case Exploration
+
+**Total Test Tasks**: 15
+**Estimated Coverage**: 90-95%
+**Complexity**: Medium
