@@ -1,217 +1,214 @@
-# Backend Tasks - Milestone 1: Basic Tmux Layout
+# Backend Tasks - Milestone 1: Basic Tmux Layout (MVP)
 
 ## Overview
-Milestone 1 creates the foundational tmux-based monitoring dashboard with a 2x2 layout. This milestone focuses on **session management**, **layout creation**, and **basic monitoring setup** rather than complex backend services.
+This milestone creates the foundational tmux monitoring dashboard with a 2x2 layout providing real-time monitoring capabilities. The focus is on establishing the basic infrastructure using shell scripts and native Unix tools.
 
 ## Task Breakdown
 
-### Core Session Management Tasks
-
-#### 1. Main Dashboard Launcher Script
-**File**: `scripts/deployment/start_monitor.sh`
-**Description**: Create the primary script that initializes the tmux monitoring dashboard
+### Task 1: Core Session Management Script
+**ID**: BT-M1-001  
+**Description**: Create main launcher script that establishes tmux session with 2x2 layout  
 **Acceptance Criteria**:
-- Creates named tmux session (e.g., "ensemble-monitor-{project_id}")
-- Detects if session already exists and handles gracefully
-- Sets up 2x2 pane layout with proper sizing
-- Launches appropriate commands in each pane
-- Provides command-line options for project-id, session-name, directories
+- Creates named tmux session (ensemble-monitor-{project_id})
+- Establishes exact 2x2 pane layout using tmux commands
+- Handles existing session detection and cleanup
+- Supports command-line options for project-id, session-name
 - Returns success/failure exit codes
-**Dependencies**: None
-**Complexity**: Medium
 
-#### 2. Clean Shutdown Script
+**Dependencies**: None  
+**Complexity**: Medium  
+**File**: `scripts/deployment/start_monitor.sh`
+
+### Task 2: Session Cleanup Script  
+**ID**: BT-M1-002  
+**Description**: Create clean shutdown script for tmux session management  
+**Acceptance Criteria**:
+- Safely terminates tmux session by name
+- Kills any child processes spawned by monitoring
+- Handles missing session gracefully (no error)
+- Supports optional session name parameter
+- Provides confirmation message
+
+**Dependencies**: Task 1 (session naming convention)  
+**Complexity**: Simple  
 **File**: `scripts/deployment/stop_monitor.sh`
-**Description**: Create script for graceful dashboard termination
-**Acceptance Criteria**:
-- Accepts session name as parameter (with sensible default)
-- Terminates all processes running in panes
-- Kills tmux session cleanly
-- Handles case where session doesn't exist
-- Provides confirmation of shutdown
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
 
-#### 3. Tmux Layout Configuration
-**File**: `scripts/deployment/config/tmux.conf`
-**Description**: Custom tmux configuration for optimal dashboard experience
+### Task 3: Interactive CLI Pane Setup
+**ID**: BT-M1-003  
+**Description**: Configure top-left pane for interactive shell usage  
 **Acceptance Criteria**:
-- Configures 2x2 layout with equal pane sizing
-- Sets appropriate key bindings for navigation
-- Configures status bar for session identification
-- Sets proper window/pane titles
-- Optimizes for monitoring use case (no unnecessary features)
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
+- Opens in project root directory
+- Provides standard bash/zsh shell
+- Sets appropriate environment variables (PROJECT_ID, etc.)
+- Ready for manual command execution
+- Maintains session on terminal disconnect
 
-### Pane Content Implementation Tasks
+**Dependencies**: Task 1 (session management)  
+**Complexity**: Simple  
+**Implementation**: Shell script commands in start_monitor.sh
 
-#### 4. Interactive Shell Setup (Pane 1)
-**Description**: Configure top-left pane for interactive CLI usage
+### Task 4: Log Streaming Pane
+**ID**: BT-M1-004  
+**Description**: Implement real-time log streaming in top-right pane  
 **Acceptance Criteria**:
-- Starts with clean bash/zsh shell
-- Sets working directory to project root
-- Provides clear prompt indicating dashboard context
-- Maintains shell history and environment variables
-- Ready for Claude CLI integration (future milestone)
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
-
-#### 5. Log Stream Implementation (Pane 2)
-**Description**: Set up real-time log streaming in top-right pane
-**Acceptance Criteria**:
-- Uses `tail -f` to stream backend.log file
+- Uses tail -f to stream backend.log in real-time
+- Starts with last 50 lines of existing log
 - Handles missing log file gracefully (shows waiting message)
-- Displays reasonable number of initial lines (50)
-- Updates in real-time as new log entries appear
-- Handles log rotation properly
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
+- Auto-resumes when log file appears
+- Displays timestamps and maintains scroll position
 
-#### 6. File Browser Setup (Pane 3)
-**Description**: Configure bottom-left pane with vim file browser
+**Dependencies**: Task 1 (session management)  
+**Complexity**: Simple  
+**Implementation**: tail -f command with error handling
+
+### Task 5: File Browser Pane
+**ID**: BT-M1-005  
+**Description**: Set up vim-based file browser in bottom-left pane  
 **Acceptance Criteria**:
-- Opens vim in output directory (or project root if output doesn't exist)
-- Uses vim's netrw file explorer mode
-- Sets appropriate vim settings for file browsing
-- Handles directory creation if output dir doesn't exist
-- Provides clear navigation interface
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
+- Opens vim in netrw (directory browser) mode
+- Starts in project output directory
+- Allows navigation and file editing
+- Falls back to 'less' if vim unavailable
+- Maintains directory context between files
 
-#### 7. Basic Project File Watcher (Pane 4)
-**Description**: Implement simple file monitoring in bottom-right pane
+**Dependencies**: Task 1 (session management)  
+**Complexity**: Simple  
+**Implementation**: vim/netrw configuration in tmux
+
+### Task 6: Basic Project Monitoring Pane
+**ID**: BT-M1-006  
+**Description**: Implement basic project file monitoring in bottom-right pane  
 **Acceptance Criteria**:
-- Uses `watch` command to monitor project.json file
-- Updates every 2 seconds by default
-- Shows basic file content or "file not found" message
-- Handles missing ensemble project directory gracefully
-- Displays timestamp of last update
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Simple
+- Uses watch command to monitor project.json changes
+- Shows raw project file content or "No project found"
+- Updates every 2 seconds
+- Handles missing project file gracefully
+- Displays current timestamp for last update
 
-### Directory Structure and Environment Tasks
+**Dependencies**: Task 1 (session management)  
+**Complexity**: Simple  
+**Implementation**: watch command with JSON file monitoring
 
-#### 8. Directory Structure Creation
-**Description**: Set up required directory structure for scripts and configuration
+### Task 7: Project Detection Logic
+**ID**: BT-M1-007  
+**Description**: Implement project ID detection and validation  
 **Acceptance Criteria**:
-- Creates scripts/deployment/ directory
-- Creates scripts/deployment/config/ directory
-- Creates scripts/monitoring/ directory (for future use)
-- Sets proper file permissions (executable for .sh files)
-- Includes .gitignore for temporary files
-**Dependencies**: None
-**Complexity**: Simple
+- Auto-detects project ID from current working directory
+- Validates project exists in ~/.ensemble/projects/
+- Supports explicit --project-id parameter override
+- Provides clear error messages for missing projects
+- Sets environment variables for other panes
 
-#### 9. Environment Detection and Validation
-**File**: `scripts/deployment/utils/env_check.sh` (helper script)
-**Description**: Validate system requirements and environment setup
+**Dependencies**: None  
+**Complexity**: Medium  
+**Implementation**: Shell script logic in start_monitor.sh
+
+### Task 8: Tmux Configuration
+**ID**: BT-M1-008  
+**Description**: Create optimal tmux configuration for monitoring dashboard  
 **Acceptance Criteria**:
-- Checks tmux is installed and minimum version (3.0+)
-- Verifies vim/nvim availability
-- Validates ensemble project directory structure
-- Checks file permissions for reading logs and project files
-- Provides clear error messages for missing requirements
-**Dependencies**: None
-**Complexity**: Simple
+- Sets appropriate pane borders and titles
+- Configures mouse support for pane navigation
+- Sets status line to show session info
+- Optimizes key bindings for monitoring workflow
+- Ensures compatibility with tmux 3.0+
 
-#### 10. Project Auto-Detection Logic
-**Description**: Implement logic to automatically detect current project context
+**Dependencies**: Task 1 (session management)  
+**Complexity**: Simple  
+**File**: `scripts/deployment/config/tmux.conf`
+
+### Task 9: Error Handling and Validation
+**ID**: BT-M1-009  
+**Description**: Implement comprehensive error handling across all scripts  
 **Acceptance Criteria**:
-- Detects project ID from current working directory
-- Scans for .ensemble directory structure
-- Falls back to user-provided project-id parameter
-- Validates project exists and is accessible
-- Provides meaningful error if no project found
-**Dependencies**: Task 9 (env_check.sh)
-**Complexity**: Medium
+- Validates tmux availability and version
+- Checks file system permissions
+- Handles missing directories/files gracefully
+- Provides helpful error messages with suggestions
+- Implements proper exit codes for automation
 
-### Error Handling and Logging Tasks
+**Dependencies**: Tasks 1-6 (all core functionality)  
+**Complexity**: Medium  
+**Implementation**: Error checking across all shell scripts
 
-#### 11. Error Handling Framework
-**Description**: Implement consistent error handling across all scripts
+### Task 10: Basic Documentation
+**ID**: BT-M1-010  
+**Description**: Create essential documentation for Milestone 1  
 **Acceptance Criteria**:
-- Standardized error message format
-- Proper exit codes for different failure scenarios
-- Graceful degradation when optional features fail
-- Error logging to dedicated dashboard log file
-- User-friendly error messages with suggested fixes
-**Dependencies**: Tasks 1, 2 (main scripts)
-**Complexity**: Simple
+- README with installation and usage instructions
+- Command reference for start/stop scripts
+- Troubleshooting guide for common issues
+- Requirements and compatibility information
+- Example usage scenarios
 
-#### 12. Session Conflict Resolution
-**Description**: Handle cases where monitoring session already exists
-**Acceptance Criteria**:
-- Detect existing sessions with same name
-- Offer options: attach, kill and restart, or choose new name
-- Prevent accidental session termination
-- Clean up orphaned sessions automatically
-- Provide clear feedback about session state
-**Dependencies**: Task 1 (start_monitor.sh)
-**Complexity**: Medium
+**Dependencies**: Tasks 1-9 (complete functionality)  
+**Complexity**: Simple  
+**Files**: `docs/README.md`, `docs/troubleshooting.md`
 
 ## Task Dependencies
-
 ```
-Task 8 (Directory Structure) → Task 9 (Environment Check)
-                            ↓
-Task 9 (Environment Check) → Task 10 (Project Detection)
-                          ↓
-Task 10 (Project Detection) → Task 1 (Main Launcher)
-                            ↓
-Task 1 (Main Launcher) → Tasks 2,3,4,5,6,7 (All dependent components)
-                      ↓
-Tasks 2,3,4,5,6,7 → Task 11 (Error Handling)
-                 ↓
-Task 11 (Error Handling) → Task 12 (Session Conflicts)
+Task 1 (Session Management) 
+    ↓
+Tasks 2,3,4,5,6,8 (Pane Setup & Cleanup)
+    ↓  
+Task 7 (Project Detection)
+    ↓
+Task 9 (Error Handling)
+    ↓
+Task 10 (Documentation)
 ```
 
-## Implementation Priority
+## Priority Order
+1. **Task 1**: Core session management (foundation)
+2. **Task 7**: Project detection (required for other panes)
+3. **Tasks 3,4,5,6**: Pane setup (can be developed in parallel)
+4. **Task 2**: Session cleanup
+5. **Task 8**: Tmux configuration
+6. **Task 9**: Error handling
+7. **Task 10**: Documentation
 
-### Phase 1: Foundation
-1. Directory Structure Creation (Task 8)
-2. Environment Detection (Task 9) 
-3. Project Auto-Detection (Task 10)
+## Implementation Notes
 
-### Phase 2: Core Functionality
-4. Main Dashboard Launcher (Task 1)
-5. Basic pane implementations (Tasks 4, 5, 6, 7)
-6. Tmux Configuration (Task 3)
+### Technology Choices
+- **Shell scripting (Bash)**: Primary implementation language
+- **Tmux commands**: Direct tmux control for layout management
+- **Native Unix tools**: tail, watch, vim for pane content
+- **Environment variables**: Cross-pane communication
+- **JSON**: Project tracking data format
 
-### Phase 3: Polish and Reliability
-7. Clean Shutdown Script (Task 2)
-8. Error Handling Framework (Task 11)
-9. Session Conflict Resolution (Task 12)
+### File Structure
+```
+scripts/
+├── deployment/
+│   ├── start_monitor.sh       # Tasks 1, 3-7, 9
+│   ├── stop_monitor.sh        # Task 2
+│   └── config/
+│       └── tmux.conf          # Task 8
+docs/
+├── README.md                  # Task 10
+└── troubleshooting.md         # Task 10
+```
 
-## Testing Strategy
+### Critical Paths
+- Session management must work before any pane setup
+- Project detection must work before monitoring can function
+- Error handling should be implemented throughout development
 
-### Manual Testing
-- Test on clean system without existing sessions
-- Test with missing project directories
-- Test with missing log files
-- Test session restart scenarios
-- Test across different terminal sizes
+### Testing Strategy
+- Manual testing on macOS and Linux
+- Test various tmux versions (3.0+)
+- Test missing file scenarios
+- Test permission issues
+- Validate session cleanup
 
-### Automated Testing
-- Shell script linting with shellcheck
-- Basic integration tests for session creation
-- Environment validation testing
-- Mock project file testing
+## Success Criteria
+- Single command launches complete dashboard
+- All 4 panes display correctly in 2x2 grid
+- Log streaming works in real-time
+- File browser navigates output directory
+- Session persists if terminal disconnects
+- Clean shutdown script works
+- Basic project monitoring shows file changes
 
-## Success Criteria for Milestone 1
-
-✅ Single command creates working 2x2 tmux dashboard
-✅ All four panes display appropriate content
-✅ Log streaming works in real-time
-✅ File browser navigates project output
-✅ Session persists through disconnections
-✅ Clean shutdown works reliably
-✅ Basic error handling for common failure cases
-
-## Notes
-
-- **No Complex Backend**: This milestone intentionally avoids complex backend services
-- **Shell-First Approach**: Leverages proven Unix tools rather than custom daemons
-- **Incremental Value**: Each task delivers standalone value
-- **Future-Ready**: Architecture supports enhancement in later milestones
-- **Cross-Platform**: Designed for macOS/Linux with tmux 3.0+
+## Handoff to TDD Coordinator
+This task breakdown provides specific, testable components for TDD implementation. Each task has clear acceptance criteria suitable for test-driven development. The TDD Coordinator should implement tasks in the specified priority order, ensuring each component works independently before integration.
