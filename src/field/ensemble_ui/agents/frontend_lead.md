@@ -13,6 +13,9 @@
   - UI/UX Implementation
   - Frontend Architecture
 
+## Max Iterations
+- Max Iterations: 20
+
 ## Configuration
 model_config:
   current_model: sonnet
