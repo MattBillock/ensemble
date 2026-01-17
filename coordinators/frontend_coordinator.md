@@ -200,7 +200,7 @@ See [Common Instructions - Self-Improvement Directive](/Users/mattbillock/Develo
 - **NOT for**: standard UI patterns, common component structures, typical interactions
 
 ## Model Preference
-haiku
+sonnet
 
 ## Max Iterations
 10
