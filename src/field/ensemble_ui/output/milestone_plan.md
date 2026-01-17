@@ -1,75 +1,67 @@
-# Milestone Plan: Logs & Agents Tab Implementation
+# Recovery Visibility Implementation - Milestone Plan
 
-## Milestone 1: Backend WebSocket Log Streaming (2-3 days)
-### Objectives
-- Implement `/ws/logs` WebSocket endpoint
-- Create log buffering mechanism
-- Develop server-side filtering capabilities
+## Project Overview
+Implementation of persistent swarm state and dashboard integration for recovered agents to address visibility and state loss issues.
 
-### Deliverables
-- WebSocket log streaming implementation
-- Log entry data structure
-- Server-side filtering logic
+## Milestone 1: Database Schema & State Persistence (Backend Foundation)
+**Duration**: 1 milestone  
+**Objective**: Create persistent storage for complete swarm state
 
-### Acceptance Criteria
-- Log entries have correct timestamp, level, agent_id, request_id
-- 1000-entry log buffer
-- Filtering by log level and agent_id works
+**Deliverables**:
+- SQLite schema with `swarm_sessions` and `agent_states` tables
+- Persistence layer implementation (`persistence.py`)  
+- Session management system (`session_manager.py`)
+- ActivityTracker integration with persistence hooks
+- Graceful shutdown handling
 
-## Milestone 2: Frontend Log Viewer (3-4 days)
-### Objectives
-- Create LogStreamPanel React component
-- Implement WebSocket connection
-- Develop log viewing controls
+**Acceptance Criteria**:
+- All swarm state saved to database at key points
+- Agent spawns, completions, and iterations persisted
+- Graceful shutdown preserves state
+- Database schema supports hierarchical agent relationships
 
-### Deliverables
-- LogStreamPanel component
-- Log level and search filtering
-- Auto-scroll and streaming controls
+**Dependencies**: None
 
-### Acceptance Criteria
-- Real-time log display
-- Pause/resume functionality
-- Color-coded log levels
-- Responsive design
+## Milestone 2: Recovery System Integration (Backend)
+**Duration**: 1 milestone  
+**Objective**: Implement state recovery on backend startup and API endpoints
 
-## Milestone 3: Agent Definition Explorer & Editor (3-4 days)
-### Objectives
-- Implement AgentExplorer with tree-view
-- Create AgentDefinitionViewer
-- Enable file selection and editing
+**Deliverables**:
+- State loading on backend startup
+- Agent hierarchy reconstruction
+- Session management API endpoints
+- Recovery status tracking
+- Resume/abandon session functionality
 
-### Deliverables
-- AgentExplorer component
-- Agent file selection mechanism
-- Read/edit functionality with backups
+**Acceptance Criteria**:
+- Backend startup loads incomplete sessions
+- Recovered agents properly reconstructed in memory
+- API endpoints for session management functional
+- Resume operation continues execution from last state
 
-### Acceptance Criteria
-- Tree-view of agent directories
-- File selection with visual feedback
-- Edit mode with markdown preview
-- Backup and revert functionality
+**Dependencies**: Milestone 1 complete
 
-## Milestone 4: Tab Integration & Final Testing (2-3 days)
-### Objectives
-- Add new tab to main application
-- Integrate all components
-- Comprehensive testing
+## Milestone 3: Dashboard UI Integration (Frontend)
+**Duration**: 1 milestone  
+**Objective**: Display recovered sessions and prompt history in dashboard
 
-### Deliverables
-- Updated App.jsx with new tab
-- Complete system integration
-- Full test coverage
+**Deliverables**:
+- Sessions/History tab in dashboard
+- Recovered session cards with status indicators
+- Resume/abandon action buttons
+- Status indicators throughout UI
+- Historical prompt browsing
 
-### Acceptance Criteria
-- New tab works without breaking existing functionality
-- All components integrated
-- All tests pass
-- Performance maintained
+**Acceptance Criteria**:
+- Recovered sessions visible immediately after restart
+- Users can resume or abandon recovered sessions
+- Full prompt history accessible via UI
+- Clear status indicators differentiate session states
 
-## Dependencies
-1. Milestone 1 must complete before Milestone 2
-2. Milestone 2 must complete before Milestone 3
-3. All previous milestones must complete before Milestone 4
+**Dependencies**: Milestone 2 complete
 
-## Total Estimated Timeline: 10-14 days
+## Risk Mitigation
+- **Data Loss Risk**: Implement atomic database transactions and backup strategies
+- **Performance Impact**: Profile persistence operations, optimize for <100ms overhead
+- **Recovery Complexity**: Thoroughly test agent hierarchy reconstruction
+- **UI Integration**: Mock backend responses for frontend development parallel work

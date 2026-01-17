@@ -1,283 +1,360 @@
-# Test Strategy - Backend WebSocket & Frontend Log Viewer
+# Test Strategy - Family Name Generation Core
 
 ## Overview
-Comprehensive testing strategy for implementing real-time activity tracking through WebSocket communication and log viewer interface. Based on the activity tracking fixes architecture, this milestone focuses on backend WebSocket infrastructure and frontend real-time log viewing capabilities.
+This document defines the comprehensive testing strategy for **Milestone 1: Family Name Generation Core** of the Agent Families Implementation project. This milestone establishes the foundation for family-based agent organization by implementing name generation, inheritance, and basic tracking.
 
-## Test Strategy Summary
+## Test Coverage Goals
+- **Unit Test Coverage**: 90% for all business logic components
+- **Integration Test Coverage**: 100% of component interactions
+- **Performance Test Coverage**: All critical path operations (<1ms name generation, <5ms tracking)
 
-### Coverage Goals
-- **Unit Test Coverage**: 85% for business logic components
-- **Integration Coverage**: 100% of WebSocket endpoints and real-time communication flows
-- **E2E Coverage**: Critical real-time update scenarios and log viewing user journeys
+## Components Under Test
 
-### Testing Frameworks
-- **Backend**: pytest with pytest-asyncio for WebSocket testing
-- **Frontend**: Jest + React Testing Library for components, WebSocket mocking
-- **E2E**: Playwright for real-time interaction testing
-- **WebSocket Testing**: websocket-client for connection testing
+### 1. Family Name Generator (`name_generator.py`)
+**Business Logic**: Generates unique, whimsical family names using adjective + noun pattern
 
-## Detailed Test Breakdown
+**Test Requirements**:
+- Name uniqueness validation
+- Performance requirements (< 1ms generation)
+- Word list integrity
+- Hash + timestamp collision prevention
 
-### 1. Backend WebSocket Infrastructure
+### 2. Agent Runtime Family Integration (`runtime.py`)
+**Business Logic**: Assigns family names on agent spawn and manages inheritance
 
-#### 1.1 WebSocket Connection Management
-**Task**: Unit tests for WebSocket connection lifecycle
-**Components**: WebSocket server setup, connection handling, disconnection cleanup
-**Tests Required**:
-- Test WebSocket server initialization
-- Test client connection establishment
-- Test connection authentication/authorization
-- Test graceful disconnection handling
-- Test connection timeout management
-- Test concurrent connection limits
+**Test Requirements**:
+- Family name assignment on new agent creation
+- Inheritance from parent to child agents
+- Backwards compatibility with legacy agents
+- Runtime state management
 
-**Coverage**: 90% for connection management logic
+### 3. Activity Tracker Family Extensions (`activity_tracker.py`)
+**Business Logic**: Tracks family-level activities and maintains family relationships
 
-#### 1.2 Real-time Activity Broadcasting
-**Task**: Unit tests for activity event broadcasting
-**Components**: Event emission, message formatting, subscription management
-**Tests Required**:
-- Test activity event capture and formatting
-- Test selective broadcasting based on subscriptions
-- Test message queuing for disconnected clients
-- Test event filtering by agent/request ID
-- Test message rate limiting
-- Test error handling for malformed events
+**Test Requirements**:
+- Family relationship tracking
+- Activity aggregation by family
+- Performance overhead validation (< 5ms per operation)
+- Data integrity across operations
 
-**Coverage**: 85% for broadcasting logic
+## Test Task Breakdown
 
-#### 1.3 WebSocket API Integration
-**Task**: Integration tests for WebSocket API endpoints
-**Components**: ActivityTracker → WebSocket event pipeline
-**Tests Required**:
-- Test file generation events broadcast in real-time
-- Test agent lifecycle events (start/complete) broadcast
-- Test git commit events broadcast
-- Test request counter updates broadcast
-- Test error event handling and propagation
-- Test WebSocket authentication with existing API auth
+### Unit Test Tasks
 
-**Coverage**: 100% of WebSocket API endpoints
+#### Task UT-1: Name Generator Core Logic
+**Component**: `name_generator.py`
+**Priority**: Critical
+**Estimated Effort**: 4 hours
 
-### 2. Frontend WebSocket Client
+**Test Scenarios**:
+- Generate single family name successfully
+- Validate adjective + noun pattern format
+- Ensure generated names are pronounceable and appropriate
+- Test word list boundary conditions (empty lists, single words)
+- Validate character limits and special character handling
 
-#### 2.1 WebSocket Client Connection
-**Task**: Unit tests for WebSocket client management
-**Components**: Connection establishment, reconnection logic, event handling
-**Tests Required**:
-- Test WebSocket client initialization
-- Test automatic reconnection on connection loss
-- Test connection state management (connecting/connected/disconnected)
-- Test heartbeat/ping-pong for connection health
-- Test graceful degradation when WebSocket unavailable
-- Test authentication token handling in WebSocket connections
+**Coverage Requirements**: 95%
+**Performance Requirements**: Each name generation < 1ms
 
-**Coverage**: 85% for client connection logic
+#### Task UT-2: Name Uniqueness and Collision Prevention
+**Component**: `name_generator.py`
+**Priority**: Critical
+**Estimated Effort**: 3 hours
 
-#### 2.2 Real-time Event Processing
-**Task**: Unit tests for incoming message processing
-**Components**: Message parsing, state updates, UI notifications
-**Tests Required**:
-- Test incoming activity event parsing
-- Test real-time state updates for activity data
-- Test event deduplication for duplicate messages
-- Test event ordering for out-of-sequence messages
-- Test error handling for malformed server messages
-- Test memory management for event history
+**Test Scenarios**:
+- Generate 10,000 names and verify uniqueness
+- Test hash + timestamp collision detection
+- Validate retry logic when collisions occur
+- Test concurrent name generation scenarios
+- Validate uniqueness across different word combinations
 
-**Coverage**: 90% for event processing logic
+**Coverage Requirements**: 100% of uniqueness logic
+**Performance Requirements**: Uniqueness check < 0.1ms
 
-### 3. Frontend Log Viewer Components
+#### Task UT-3: Agent Runtime Family Assignment
+**Component**: `runtime.py`
+**Priority**: Critical
+**Estimated Effort**: 5 hours
 
-#### 3.1 Log Viewer Component
-**Task**: Unit tests for log display component
-**Components**: Real-time log rendering, filtering, searching
-**Tests Required**:
-- Test log entry rendering with real-time updates
-- Test log filtering by agent, request ID, event type
-- Test log search functionality
-- Test auto-scroll to newest entries
-- Test log entry formatting and timestamps
-- Test performance with large log volumes (virtualization)
+**Test Scenarios**:
+- New agent spawns with assigned family name
+- Family name stored correctly in agent metadata
+- Agent metadata structure remains backwards compatible
+- Handle missing or invalid family name gracefully
+- Validate family name persistence across agent lifecycle
 
-**Coverage**: 85% for log viewer component logic
+**Coverage Requirements**: 90%
+**Mock Requirements**: Mock name generator for consistent testing
 
-#### 3.2 Activity Timeline Component
-**Task**: Unit tests for timeline visualization
-**Components**: Timeline rendering, real-time updates, interactions
-**Tests Required**:
-- Test timeline entry creation from WebSocket events
-- Test chronological ordering of timeline events
-- Test timeline filtering and grouping
-- Test real-time timeline updates without full refresh
-- Test timeline interaction (click, expand/collapse)
-- Test responsive timeline layout
+#### Task UT-4: Family Inheritance Logic
+**Component**: `runtime.py`
+**Priority**: Critical
+**Estimated Effort**: 4 hours
 
-**Coverage**: 80% for timeline component logic
+**Test Scenarios**:
+- Child agent inherits parent's family name
+- Multi-level inheritance (grandparent → parent → child)
+- Handle orphaned agents (no parent) gracefully
+- Validate inheritance across different agent types
+- Test inheritance with legacy agents (no family name)
 
-#### 3.3 Log Viewer Integration
-**Task**: Integration tests for log viewer with WebSocket client
-**Components**: Component communication, state management, real-time updates
-**Tests Required**:
-- Test real-time log updates from WebSocket events
-- Test log viewer state consistency during reconnections
-- Test log viewer performance during high-frequency updates
-- Test log viewer error handling for connection failures
-- Test log viewer integration with existing UI state
-- Test log viewer accessibility features
+**Coverage Requirements**: 95%
+**Mock Requirements**: Mock agent hierarchy for complex inheritance scenarios
 
-**Coverage**: 90% for integration logic
+#### Task UT-5: Activity Tracker Family Integration
+**Component**: `activity_tracker.py`
+**Priority**: High
+**Estimated Effort**: 4 hours
 
-### 4. End-to-End Real-time Testing
+**Test Scenarios**:
+- Family relationships stored correctly
+- Activity tracking includes family context
+- Family-level activity aggregation
+- Handle agents without family names
+- Validate thread safety for concurrent operations
 
-#### 4.1 Real-time Activity Flow
-**Task**: E2E tests for complete real-time activity tracking
-**User Journey**: Agent execution → WebSocket broadcast → UI updates
-**Tests Required**:
-- Test agent file creation appears in log viewer immediately
-- Test agent lifecycle events show in timeline real-time
-- Test multiple agents generating activity simultaneously
-- Test log viewer updates during agent failures
-- Test UI responsiveness during high activity periods
-- Test WebSocket reconnection during active agent execution
+**Coverage Requirements**: 85%
+**Performance Requirements**: Family tracking overhead < 5ms
 
-**Priority**: High (critical user experience)
+### Integration Test Tasks
 
-#### 4.2 Log Viewer User Experience
-**Task**: E2E tests for log viewer usability
-**User Journey**: User views logs → filters → searches → monitors real-time
-**Tests Required**:
-- Test log viewer initial load with existing activity
-- Test real-time filtering without losing new events
-- Test search functionality with live updates
-- Test log viewer performance with extended viewing sessions
-- Test log viewer on different screen sizes
-- Test keyboard navigation and accessibility
+#### Task IT-1: End-to-End Name Generation and Assignment
+**Components**: `name_generator.py` + `runtime.py`
+**Priority**: High
+**Estimated Effort**: 3 hours
 
-**Priority**: Medium (user experience enhancement)
+**Test Scenarios**:
+- Complete flow: Generate name → Assign to agent → Verify storage
+- Multiple agents get different family names
+- Agent spawning with family name integration
+- Error handling when name generation fails
+- Resource cleanup after agent termination
 
-## Performance Testing
+**Coverage Requirements**: 100% of integration points
+**Environment**: In-memory test environment
 
-### WebSocket Performance
-**Load Testing**:
-- 100 concurrent WebSocket connections
-- 1000 events/minute broadcast rate
-- Memory usage monitoring during extended sessions
-- Connection establishment time < 100ms
-- Event delivery latency < 50ms
+#### Task IT-2: Family Inheritance Across Agent Hierarchies
+**Components**: `runtime.py` + `activity_tracker.py`
+**Priority**: High
+**Estimated Effort**: 4 hours
 
-### Frontend Performance  
-**Rendering Performance**:
-- Log viewer with 10,000+ entries
-- Real-time updates at 10+ events/second
-- Component render time < 16ms (60fps)
-- Memory growth rate < 10MB/hour during active use
+**Test Scenarios**:
+- Parent agent spawns child with inherited family name
+- Complex hierarchies (parent → multiple children)
+- Activity tracking maintains family relationships
+- Cross-agent-type inheritance (different agent classes)
+- Inheritance with mixed legacy/modern agents
 
-## Integration Testing Strategy
+**Coverage Requirements**: 100% of inheritance flows
+**Environment**: Full agent runtime environment
 
-### Backend Integration
-1. **ActivityTracker + WebSocket**: Test activity events trigger WebSocket broadcasts
-2. **WebSocket + Authentication**: Test WebSocket security integration
-3. **WebSocket + API**: Test WebSocket coexistence with REST API
-4. **Database + WebSocket**: Test activity persistence and real-time sync
+#### Task IT-3: Performance Integration Testing
+**Components**: All M1 components
+**Priority**: High
+**Estimated Effort**: 3 hours
 
-### Frontend Integration  
-1. **WebSocket Client + React State**: Test state management integration
-2. **Log Viewer + Router**: Test navigation with real-time components
-3. **Log Viewer + Theme**: Test UI consistency with existing design system
-4. **WebSocket + Error Handling**: Test error boundary integration
+**Test Scenarios**:
+- Load test: 1000 agents spawned with family names
+- Performance monitoring during family assignment
+- Memory usage validation during family tracking
+- Concurrent agent spawning performance
+- Stress test with rapid agent creation/destruction
 
-## Test Data Strategy
+**Coverage Requirements**: All performance-critical paths
+**Performance Requirements**: 
+- Name generation: < 1ms per operation
+- Family tracking: < 5ms overhead per operation
 
-### Test Fixtures
-- **Activity Events**: Predefined file generation, agent lifecycle, git events
-- **WebSocket Messages**: Valid/invalid message formats for testing
-- **Agent Hierarchies**: Test data for multi-agent family scenarios
-- **Authentication Tokens**: Test JWT tokens for WebSocket auth testing
+### Performance Test Tasks
 
-### Mock Strategy
-- **WebSocket Server**: Mock server for frontend unit tests
-- **Activity Tracker**: Mock tracker for WebSocket testing
-- **File System**: Mock file operations for activity event testing
-- **External APIs**: Mock git commands and external integrations
+#### Task PT-1: Name Generation Performance Benchmark
+**Component**: `name_generator.py`
+**Priority**: High
+**Estimated Effort**: 2 hours
 
-## Continuous Integration
+**Test Scenarios**:
+- Benchmark single name generation (target < 1ms)
+- Benchmark 1000 sequential name generations
+- Benchmark concurrent name generation (10 threads)
+- Memory usage profiling during generation
+- Performance regression testing
 
-### Test Pipeline
-1. **Unit Tests**: Run on every commit (< 30 seconds)
-2. **Integration Tests**: Run on PR creation (< 5 minutes)
-3. **E2E Tests**: Run on main branch merge (< 10 minutes)
-4. **Performance Tests**: Run nightly (< 30 minutes)
+**Requirements**: 
+- Average < 1ms per generation
+- 99th percentile < 2ms per generation
+- Memory leak detection
 
-### Quality Gates
-- All unit tests pass (100%)
-- Integration tests pass (100%)
-- Critical E2E paths pass (100%)
-- Code coverage meets targets (85%+)
-- Performance benchmarks met (100%)
+#### Task PT-2: Family Tracking Performance Validation
+**Component**: `activity_tracker.py`
+**Priority**: Medium
+**Estimated Effort**: 2 hours
 
-## Risk Mitigation Testing
+**Test Scenarios**:
+- Benchmark family activity recording (target < 5ms overhead)
+- Load test with 100 families, 1000 agents
+- Concurrent family tracking stress test
+- Memory usage during extended tracking
+- Database query performance (if applicable)
 
-### WebSocket Connection Reliability
-- Test connection drops during high activity
-- Test server restart scenarios
-- Test client-side network issues
-- Test concurrent connection limits
+**Requirements**:
+- Average < 5ms overhead per operation
+- No memory leaks during extended operation
+- Scalability to 100+ families
 
-### Real-time Data Consistency
-- Test event ordering under load
-- Test duplicate event handling
-- Test missed event recovery
-- Test state synchronization after reconnection
+### Error Handling Test Tasks
 
-### Browser Compatibility
-- Test WebSocket support across target browsers
-- Test performance on low-end devices
-- Test WebSocket fallbacks (long polling)
-- Test mobile browser compatibility
+#### Task EH-1: Name Generation Error Scenarios
+**Component**: `name_generator.py`
+**Priority**: Medium
+**Estimated Effort**: 2 hours
 
-## Task Priority Matrix
+**Test Scenarios**:
+- Handle corrupted word lists gracefully
+- System behavior when all names exhausted (theoretical)
+- Network/IO failures during name generation
+- Invalid configuration handling
+- Graceful degradation scenarios
 
-### High Priority (Must Complete)
-1. WebSocket connection management tests
-2. Real-time activity broadcasting tests
-3. Log viewer component tests
-4. E2E real-time activity flow tests
+**Coverage Requirements**: 100% of error paths
 
-### Medium Priority (Should Complete)
-1. WebSocket client reconnection tests
-2. Log viewer filtering/search tests
-3. Performance testing for high-load scenarios
-4. Integration testing for authentication
+#### Task EH-2: Runtime Integration Error Handling
+**Component**: `runtime.py`
+**Priority**: Medium
+**Estimated Effort**: 2 hours
 
-### Low Priority (Nice to Have)
-1. Advanced WebSocket fallback testing
-2. Comprehensive browser compatibility testing
-3. Extended performance benchmarking
-4. Advanced accessibility testing
+**Test Scenarios**:
+- Agent spawning when family name generator fails
+- Inheritance with corrupted parent metadata
+- Runtime errors during family assignment
+- Recovery from partial family assignment failures
+- Backwards compatibility error scenarios
 
-## Success Metrics
+**Coverage Requirements**: 100% of error handling logic
+
+## Test Fixtures and Utilities
+
+### Required Test Fixtures
+1. **Mock Word Lists**: Predictable word lists for consistent testing
+2. **Agent Hierarchy Fixtures**: Pre-built agent hierarchies for inheritance testing
+3. **Performance Test Data**: Large datasets for load testing
+4. **Error Simulation Fixtures**: Controlled error injection for error handling tests
+
+### Utility Functions
+1. **Name Validation Helper**: Validates generated name format and appropriateness
+2. **Performance Measurement**: Consistent timing and memory usage measurement
+3. **Agent Lifecycle Manager**: Setup/teardown for agent-based tests
+4. **Family Relationship Validator**: Verify family inheritance correctness
+
+## Test Environment Requirements
+
+### Unit Test Environment
+- **Framework**: pytest with fixtures
+- **Mocking**: Mock external dependencies (file system, network)
+- **Isolation**: Each test runs in isolated environment
+- **Speed**: Fast execution for TDD workflow
+
+### Integration Test Environment
+- **Framework**: pytest with integration fixtures
+- **Database**: In-memory or test database instance
+- **Agent Runtime**: Full agent runtime environment
+- **Cleanup**: Automatic cleanup between tests
+
+### Performance Test Environment
+- **Isolation**: Dedicated performance testing environment
+- **Monitoring**: CPU, memory, and timing instrumentation
+- **Repeatability**: Consistent hardware/software configuration
+- **Baselines**: Performance regression detection
+
+## Testing Tools and Frameworks
+
+### Primary Tools
+- **pytest**: Test framework and runner
+- **pytest-mock**: Mocking and fixture management
+- **pytest-cov**: Coverage measurement and reporting
+- **pytest-benchmark**: Performance testing and benchmarking
+
+### Secondary Tools
+- **memory-profiler**: Memory usage analysis
+- **coverage.py**: Detailed coverage reporting
+- **hypothesis**: Property-based testing for edge cases
+
+## Success Criteria
 
 ### Functional Success
-- All WebSocket connections establish < 100ms
-- Real-time events appear in UI < 50ms after backend trigger
-- Log viewer handles 10,000+ entries smoothly
-- Zero data loss during normal connection interruptions
+- [ ] All unit tests pass (90%+ coverage)
+- [ ] All integration tests pass (100% integration coverage)
+- [ ] All performance tests meet requirements
+- [ ] All error handling scenarios covered
+
+### Performance Success
+- [ ] Name generation: < 1ms average, < 2ms 99th percentile
+- [ ] Family tracking: < 5ms overhead average
+- [ ] Memory usage: No memory leaks detected
+- [ ] Load testing: Handles 1000+ agents successfully
 
 ### Quality Success
-- 85%+ unit test coverage achieved
-- 100% integration test coverage for WebSocket flows
-- All critical E2E scenarios pass
-- Performance benchmarks met consistently
+- [ ] Test coverage: 90%+ overall coverage
+- [ ] Code quality: All tests are maintainable and readable
+- [ ] Documentation: Test scenarios clearly documented
+- [ ] CI/CD: All tests run automatically in pipeline
 
-### User Experience Success
-- Log viewer provides smooth real-time experience
-- WebSocket reconnection is transparent to user
-- UI remains responsive during high activity periods
-- Accessibility requirements met for log viewer
+## Risk Mitigation
+
+### Testing Risks
+- **Performance Test Reliability**: Use dedicated test environment and multiple runs
+- **Mock Accuracy**: Validate mocks against real implementations
+- **Test Data Management**: Ensure test data doesn't affect production
+- **Concurrency Issues**: Include thread safety testing
+
+### Technical Risks
+- **Test Environment Setup**: Document clear setup instructions
+- **Dependency Management**: Pin test dependency versions
+- **Test Execution Time**: Optimize tests for reasonable execution time
+- **False Positives**: Review and validate all failing tests
+
+## Implementation Order
+
+### Phase 1: Core Unit Tests (Days 1-2)
+1. Task UT-1: Name Generator Core Logic
+2. Task UT-2: Name Uniqueness and Collision Prevention
+3. Task UT-3: Agent Runtime Family Assignment
+
+### Phase 2: Advanced Unit Tests (Days 2-3)
+1. Task UT-4: Family Inheritance Logic
+2. Task UT-5: Activity Tracker Family Integration
+3. Task EH-1: Name Generation Error Scenarios
+
+### Phase 3: Integration Tests (Days 3-4)
+1. Task IT-1: End-to-End Name Generation and Assignment
+2. Task IT-2: Family Inheritance Across Agent Hierarchies
+3. Task EH-2: Runtime Integration Error Handling
+
+### Phase 4: Performance Tests (Day 4-5)
+1. Task PT-1: Name Generation Performance Benchmark
+2. Task PT-2: Family Tracking Performance Validation
+3. Task IT-3: Performance Integration Testing
+
+## Quality Assurance
+
+### Test Review Process
+1. **Code Review**: All test code reviewed by team member
+2. **Coverage Review**: Ensure coverage targets met
+3. **Performance Review**: Validate performance requirements
+4. **Documentation Review**: Ensure test documentation is clear
+
+### Continuous Quality
+- **Automated Testing**: All tests run on every commit
+- **Coverage Monitoring**: Track coverage trends over time
+- **Performance Monitoring**: Alert on performance regressions
+- **Test Maintenance**: Regular review and update of test cases
 
 ---
 
-**Total Test Tasks Identified**: 28
-**Estimated Coverage**: 85% overall
-**Critical Path**: WebSocket infrastructure → Real-time broadcasting → Log viewer integration → E2E validation
+**Test Strategy Document**  
+**Project**: Agent Families Implementation  
+**Milestone**: M1 - Family Name Generation Core  
+**Created**: 2026-01-14  
+**Test Coordinator**: AI Assistant  
+**Target Coverage**: 90% Unit, 100% Integration  
+**Total Test Tasks**: 13 tasks  
+**Estimated Effort**: 38 hours
