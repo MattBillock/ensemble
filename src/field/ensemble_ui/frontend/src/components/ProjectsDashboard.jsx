@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, ProgressBar, Button, Spinner, Table, Alert } from 'react-bootstrap';
-import { continueProject } from '../services/api';
+import { continueProject, reconcilePendingReviews } from '../services/api';
 
 const API_BASE_URL = 'http://localhost:8001';
 
@@ -13,6 +13,7 @@ function ProjectsDashboard({ onViewTimeline }) {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
   const [continuing, setContinuing] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -141,6 +142,31 @@ function ProjectsDashboard({ onViewTimeline }) {
           </p>
         </Col>
         <Col xs="auto">
+          <Button
+            variant="outline-info"
+            size="sm"
+            className="me-2"
+            disabled={reconciling}
+            onClick={async () => {
+              try {
+                setReconciling(true);
+                setError(null);
+                const result = await reconcilePendingReviews();
+                if (result.success) {
+                  setSuccess(`Reconciled ${result.updated} stale reviews`);
+                } else {
+                  setError('Reconcile failed: ' + (result.error || 'Unknown error'));
+                }
+                await fetchProjects();
+              } catch (err) {
+                setError('Reconcile failed: ' + err.message);
+              } finally {
+                setReconciling(false);
+              }
+            }}
+          >
+            {reconciling ? <Spinner size="sm" className="me-1" /> : '🔄'} Reconcile Status
+          </Button>
           <Button
             variant="outline-warning"
             size="sm"
