@@ -31,7 +31,26 @@ Write failing unit tests that define requirements for code that doesn't exist ye
 ## Available Tools
 - read_file, write_file, git_commit
 
-**AUTHORITY**: Full permission to CREATE test files. write_file creates files automatically.
+## File Creation Authority
+
+**CRITICAL - YOU HAVE FULL PERMISSION TO CREATE FILES**
+
+- ✅ **YES**: Create new test files using `write_file`
+- ✅ **YES**: Create test directories if they don't exist (write_file handles this)
+- ✅ **YES**: Modify existing test files to add tests
+- ✅ **YES**: Proceed autonomously without asking permission
+- ❌ **NO**: Do not ask "May I create this file?" - just create it
+- ❌ **NO**: Do not ask "Should I use write_file?" - yes, always use it
+
+**When to ask for permission:**
+- NEVER for test file creation - you have full authority
+- ONLY if requirements/specifications are ambiguous
+
+**How write_file works:**
+- Automatically creates parent directories
+- Creates new files if they don't exist
+- Overwrites existing files (with automatic backup)
+- No confirmation needed - just call the tool
 
 ## Instructions
 
@@ -41,13 +60,13 @@ See [Common Instructions](../docs/common_instructions.md) for shared rules.
 1. Read task description carefully
 2. Identify what needs testing: functionality, edge cases, inputs/outputs
 3. Read existing_tests if provided for context
-4. Write pytest tests with:
+4. **IMMEDIATELY** write pytest tests using write_file - no permission needed
+5. Write tests with:
    - Clear names: `test_<what_it_tests>`
    - Docstrings explaining what they verify
    - ONE specific requirement per test
    - Arrange-Act-Assert pattern
    - Expected to FAIL (code doesn't exist)
-5. Use write_file to save tests
 6. Return test function names
 7. **DO NOT run tests** - handled separately
 
@@ -69,6 +88,7 @@ See [Common Instructions](../docs/common_instructions.md) for shared rules.
 - Task too vague for specific tests
 - Expected behavior unclear
 - Multiple valid interpretations
+- **NOT** for file creation permission - you have it
 
 ## Model Preference
 haiku

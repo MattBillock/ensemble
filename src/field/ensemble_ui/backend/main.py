@@ -405,14 +405,14 @@ class AgentOrchestrator:
         self._generate_title_async(request_id, problem_description)
 
         try:
-            # Load Executive Director
-            exec_dir_path = self.project_root / "leadership" / "executive_director.md"
+            # Load Executive Director from consolidated agents/ folder
+            exec_dir_path = self.project_root / "agents" / "leadership" / "executive_director.md"
             exec_dir_def = AgentDefinition.from_file(exec_dir_path)
 
             # Set up tools
             tools = ToolRegistry.default(exec_dir_def)
             spawn_tool = SpawnAgentTool(
-                agent_types_dir=self.project_root,
+                agent_types_dir=self.project_root / "agents",
                 api_key=self.api_key,
                 tools=tools,
                 budget_tier=budget_tier,  # Pass budget tier to spawned agents
@@ -826,7 +826,7 @@ async def fix_bug(request: BugFixRequest, background_tasks: BackgroundTasks):
 
         # Spawn Executive Director with bug fix task
         # The Executive Director will read the bug_fix_director.md for guidance
-        bug_fix_task = f"""You are acting as a Bug Fix Director. Read leadership/bug_fix_director.md for detailed instructions.
+        bug_fix_task = f"""You are acting as a Bug Fix Director. Read agents/leadership/bug_fix_director.md for detailed instructions.
 
 {task_description}
 
@@ -2244,7 +2244,7 @@ After making the change:
 5. Report what was changed and why
 
 Focus on improving the agent's effectiveness without breaking existing functionality.
-Agent definition files are located in: leadership/, coordinators/, developers/, testers/, or designers/ directories."""
+Agent definition files are located in: agents/ directory (agents/leadership/, agents/coordinators/, agents/developers/, agents/testers/, agents/designers/, agents/support/)."""
 
     else:
         # Generic improvement task
@@ -4084,27 +4084,55 @@ async def preview_cleanup(
 
 # ========== Agent Definition Management API ==========
 
+# Valid agent category subdirectories within agents/ folder
+# ONLY these subdirectories contain agent definitions
+VALID_AGENT_CATEGORIES = frozenset([
+    'leadership',
+    'coordinators',
+    'developers',
+    'testers',
+    'designers',
+    'support',
+])
+
+# For backwards compatibility
+VALID_AGENT_DIRS = VALID_AGENT_CATEGORIES
+
+
 def discover_agent_directories() -> Dict[str, str]:
-    """Dynamically discover agent directories by scanning the project root."""
+    """
+    Discover agent directories from the consolidated agents/ folder.
+
+    All agent definitions live in agents/<category>/*.md
+    Only categories in VALID_AGENT_CATEGORIES are considered.
+    """
     project_root = Path(__file__).parent.parent.parent.parent.parent
+    agents_root = project_root / "agents"
     agent_dirs = {}
 
-    # Scan for directories that contain .md files that look like agent definitions
-    # (have ## Purpose section)
-    for item in project_root.iterdir():
-        if item.is_dir() and not item.name.startswith(('.', '_', 'venv', 'node_modules', '__')):
-            # Check if directory contains agent definition files
-            md_files = list(item.glob("*.md"))
-            for md_file in md_files:
-                if md_file.name.startswith(("_", "README", "AGENT_TEMPLATE")):
-                    continue
-                try:
-                    content = md_file.read_text(encoding='utf-8')
-                    if "## Purpose" in content or "## Instantiation" in content:
-                        agent_dirs[item.name] = item.name
-                        break
-                except Exception:
-                    continue
+    if not agents_root.exists():
+        logger.warning(f"Agents directory not found: {agents_root}")
+        return agent_dirs
+
+    # Only check category subdirectories in the whitelist
+    for category in VALID_AGENT_CATEGORIES:
+        category_path = agents_root / category
+        if not category_path.exists() or not category_path.is_dir():
+            continue
+
+        # Verify directory contains at least one valid agent definition
+        md_files = list(category_path.glob("*.md"))
+        for md_file in md_files:
+            if md_file.name.startswith(("_", "README", "AGENT_TEMPLATE")):
+                continue
+            try:
+                content = md_file.read_text(encoding='utf-8')
+                if "## Purpose" in content or "## Instantiation" in content:
+                    agent_dirs[category] = category
+                    break
+            except Exception:
+                continue
+
     return agent_dirs
 
 
@@ -4140,11 +4168,12 @@ async def get_agent_hierarchy():
     import re
     try:
         project_root = Path(__file__).parent.parent.parent.parent.parent
+        agents_root = project_root / "agents"
         agents = {}  # agent_path -> {name, purpose, category, can_spawn: []}
 
         # First pass: collect all agents and their spawn permissions
         for category, dirname in get_agent_dirs().items():
-            agent_dir = project_root / dirname
+            agent_dir = agents_root / dirname
             if not agent_dir.exists():
                 continue
 
