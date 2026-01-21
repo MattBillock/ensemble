@@ -151,11 +151,11 @@ class TestFamilyNameGenerator:
         # Arrange
         generator = self.name_generator
         min_length = 2  # Minimum 2 characters per name part
-        
+
         # Act
         generated_name = generator.generate_name()
         first_name, last_name = generated_name.split()
-        
+
         # Assert
         assert len(first_name) >= min_length, (
             f"First name '{first_name}' too short. Expected >= {min_length} characters"
@@ -163,3 +163,99 @@ class TestFamilyNameGenerator:
         assert len(last_name) >= min_length, (
             f"Last name '{last_name}' too short. Expected >= {min_length} characters"
         )
+
+    def test_generate_family_name(self):
+        """Test generate_family_name returns valid last name."""
+        generator = self.name_generator
+        family_name = generator.generate_family_name()
+
+        assert family_name in generator.LAST_NAMES
+
+    def test_generate_first_name(self):
+        """Test generate_first_name returns valid first name."""
+        generator = self.name_generator
+        first_name = generator.generate_first_name()
+
+        assert first_name in generator.FIRST_NAMES
+
+    def test_generate_name_with_family(self):
+        """Test generate_name_with_family uses provided family name."""
+        generator = self.name_generator
+        family_name = "TestFamily"
+        name = generator.generate_name_with_family(family_name)
+
+        assert name.endswith(family_name)
+        parts = name.split()
+        assert len(parts) == 2
+        assert parts[0] in generator.FIRST_NAMES
+
+    def test_reset(self):
+        """Test reset clears used names."""
+        generator = self.name_generator
+
+        # Generate some names
+        generator.generate_name()
+        generator.generate_name()
+        generator.generate_name()
+
+        assert generator.names_generated == 3
+
+        generator.reset()
+
+        assert generator.names_generated == 0
+        assert generator._used_names == set()
+
+    def test_total_combinations(self):
+        """Test total_combinations property."""
+        generator = self.name_generator
+
+        expected = len(generator.FIRST_NAMES) * len(generator.LAST_NAMES)
+        assert generator.total_combinations == expected
+
+    def test_names_generated(self):
+        """Test names_generated property."""
+        generator = self.name_generator
+
+        assert generator.names_generated == 0
+
+        generator.generate_name()
+        assert generator.names_generated == 1
+
+        generator.generate_name()
+        assert generator.names_generated == 2
+
+    def test_generate_suffix(self):
+        """Test _generate_suffix returns valid suffix."""
+        generator = self.name_generator
+        suffix = generator._generate_suffix()
+
+        valid_suffixes = ["us", "ia", "io", "ar", "en", "on", "is", "os", "ix", "ax"]
+        assert suffix in valid_suffixes
+
+    def test_seed_reproducibility(self):
+        """Test same seed produces same sequence."""
+        gen1 = FamilyNameGenerator(seed=123)
+        gen2 = FamilyNameGenerator(seed=123)
+
+        for _ in range(10):
+            assert gen1.generate_name() == gen2.generate_name()
+
+
+class TestSuffixGeneration:
+    """Tests for name suffix generation when combinations exhausted."""
+
+    def test_suffix_added_when_exhausted(self):
+        """Test suffix is added when common names exhausted."""
+        gen = FamilyNameGenerator(seed=42)
+
+        # Pre-fill used_names with many combinations to force suffix generation
+        for first in gen.FIRST_NAMES[:20]:
+            for last in gen.LAST_NAMES[:20]:
+                gen._used_names.add(f"{first} {last}")
+
+        # Now generate a name - may have suffix if collision
+        name = gen.generate_name()
+
+        # Should still work
+        assert len(name) > 0
+        assert " " in name

@@ -1,0 +1,118 @@
+{
+  "project": {
+    "name": "Ensemble AI Output Directory",
+    "version": "1.0.0",
+    "description": "Consolidated output artifacts directory for the Ensemble AI project",
+    "type": "output-directory",
+    "created": "2025-01-17",
+    "maintainer": "Ensemble AI System"
+  },
+  "structure": {
+    "directories": {
+      "projects": {
+        "purpose": "Generated code projects and applications",
+        "tracked": "selective",
+        "cleanup": "manual"
+      },
+      "test_results": {
+        "purpose": "Test execution results and coverage reports",
+        "tracked": false,
+        "cleanup": "periodic"
+      },
+      "logs": {
+        "purpose": "Execution logs and debugging information",
+        "tracked": false,
+        "cleanup": "periodic"
+      },
+      "docs": {
+        "purpose": "Generated documentation artifacts",
+        "tracked": true,
+        "cleanup": "manual"
+      },
+      "temp": {
+        "purpose": "Temporary files and scratch space",
+        "tracked": false,
+        "cleanup": "automatic"
+      },
+      "reports": {
+        "purpose": "Generated reports and analysis documents",
+        "tracked": "selective",
+        "cleanup": "manual"
+      }
+    }
+  },
+  "configuration": {
+    "version_control": {
+      "system": "git",
+      "ignore_file": ".gitignore",
+      "tracked_patterns": [
+        "*.md",
+        "docs/**",
+        "reports/**/*.md"
+      ],
+      "ignored_patterns": [
+        "temp/*",
+        "logs/*",
+        "*.log",
+        "*.tmp",
+        "test_results/*/coverage/",
+        "projects/*/node_modules/"
+      ]
+    },
+    "naming_conventions": {
+      "projects": "{project_name}/ or {project_name}_{timestamp}/",
+      "test_results": "test_results_{project_name}_{timestamp}.json",
+      "logs": "{agent_type}_{timestamp}.log",
+      "reports": "{report_type}_{project_name}_{date}.md"
+    }
+  },
+  "metadata": {
+    "purpose": "Centralized output management for Ensemble AI system",
+    "environment": "development",
+    "parent_project": "ensemble_ui",
+    "documentation": "README.md"
+  },
+  "build": {
+    "artifacts": {
+      "location": "projects/",
+      "retention": "manual",
+      "format": ["source", "compiled", "packaged"]
+    },
+    "test_results": {
+      "location": "test_results/",
+      "retention": "30-days",
+      "formats": ["json", "html", "xml"]
+    },
+    "logs": {
+      "location": "logs/",
+      "retention": "7-days",
+      "rotation": "daily",
+      "levels": ["debug", "info", "warning", "error"]
+    }
+  },
+  "deployment": {
+    "targets": [],
+    "strategy": "manual",
+    "notes": "Output directory is not deployed; artifacts within may be deployed individually"
+  },
+  "maintenance": {
+    "cleanup_schedule": {
+      "temp": "daily",
+      "logs": "weekly",
+      "test_results": "monthly"
+    },
+    "backup_schedule": {
+      "projects": "before-cleanup",
+      "docs": "weekly",
+      "reports": "weekly"
+    }
+  },
+  "tools": {
+    "required": [],
+    "optional": [
+      "git",
+      "node",
+      "python"
+    ]
+  }
+}

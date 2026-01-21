@@ -22,8 +22,10 @@ class AgentDefinition:
         max_iterations: int = 10,
         can_write_code: bool = False,
         can_write_tests: bool = False,
+        can_write_markdown: bool = False,
         task_complexity: str = "routine",
         category: str = "unknown",
+        definition_path: str = "",
     ):
         self.name = name
         self.purpose = purpose
@@ -37,8 +39,11 @@ class AgentDefinition:
         self.max_iterations = max_iterations
         self.can_write_code = can_write_code
         self.can_write_tests = can_write_tests
+        self.can_write_markdown = can_write_markdown
         self.task_complexity = task_complexity
         self.category = category
+        # Full path to definition file relative to project root (e.g., "leadership/executive_director")
+        self.definition_path = definition_path
 
     def get_required_input_fields(self) -> Set[str]:
         """
@@ -136,12 +141,35 @@ class AgentDefinition:
         can_write_tests_str = cls._extract_metadata(content, "Can Write Tests", "false").lower()
         can_write_tests = can_write_tests_str in ["true", "yes", "1"]
 
+        # Extract markdown writing policy (default to False)
+        can_write_markdown_str = cls._extract_metadata(content, "Can Write Markdown", "false").lower()
+        can_write_markdown = can_write_markdown_str in ["true", "yes", "1"]
+
         # Extract task complexity (default to routine)
         task_complexity = cls._extract_metadata(content, "Task Complexity", "routine").lower()
         # Validate task complexity
         valid_complexities = ["strategic", "creative", "routine"]
         if task_complexity not in valid_complexities:
             task_complexity = "routine"
+
+        # Calculate definition_path from file_path
+        # This is the relative path used to load the agent (e.g., "leadership/executive_director")
+        definition_path = ""
+        for valid_cat in valid_categories:
+            if valid_cat in str(file_path):
+                # Extract path starting from the category
+                parts = file_path.parts
+                try:
+                    cat_idx = parts.index(valid_cat)
+                    # Join from category to filename (without .md extension)
+                    rel_parts = parts[cat_idx:]
+                    definition_path = "/".join(rel_parts)[:-3]  # Remove .md
+                    break
+                except ValueError:
+                    continue
+        # Fallback: use category/stem
+        if not definition_path:
+            definition_path = f"{category}/{file_path.stem}"
 
         return cls(
             name=name,
@@ -156,8 +184,10 @@ class AgentDefinition:
             max_iterations=max_iterations,
             can_write_code=can_write_code,
             can_write_tests=can_write_tests,
+            can_write_markdown=can_write_markdown,
             task_complexity=task_complexity,
             category=category,
+            definition_path=definition_path,
         )
 
     @staticmethod

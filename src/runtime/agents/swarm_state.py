@@ -546,6 +546,84 @@ class SwarmStateManager:
             """, (f'-{stall_threshold_minutes} minutes',)).fetchall()
             return [dict(row) for row in rows]
 
+    def restart_agent(
+        self,
+        agent_id: str,
+        clear_messages: bool = True,
+        new_max_iterations: Optional[int] = None
+    ) -> bool:
+        """
+        Restart a failed/stalled agent by resetting its state.
+
+        This properly restarts an agent in-place instead of creating a new one.
+        Resets iteration to 0, clears errors, and optionally clears message history.
+
+        Args:
+            agent_id: The agent to restart
+            clear_messages: If True, clears all previous message history
+            new_max_iterations: Optionally set a new max_iterations value
+
+        Returns:
+            True if agent was found and restarted, False otherwise
+        """
+        with self._get_connection() as conn:
+            # First verify the agent exists
+            agent = conn.execute(
+                "SELECT * FROM agents WHERE agent_id = ?",
+                (agent_id,)
+            ).fetchone()
+
+            if not agent:
+                logger.warning(f"Cannot restart agent {agent_id}: not found")
+                return False
+
+            # Reset the agent state
+            updates = [
+                "status = 'pending'",
+                "iteration = 0",
+                "error_message = NULL",
+                "completed_at = NULL",
+                "started_at = NULL",
+                "last_checkpoint = CURRENT_TIMESTAMP"
+            ]
+            params = []
+
+            if new_max_iterations is not None:
+                updates.append("max_iterations = ?")
+                params.append(new_max_iterations)
+
+            params.append(agent_id)
+
+            conn.execute(f"""
+                UPDATE agents
+                SET {', '.join(updates)}
+                WHERE agent_id = ?
+            """, params)
+
+            # Clear message history if requested
+            if clear_messages:
+                conn.execute(
+                    "DELETE FROM agent_messages WHERE agent_id = ?",
+                    (agent_id,)
+                )
+
+            # Update session timestamp
+            conn.execute("""
+                UPDATE swarm_sessions
+                SET updated_at = CURRENT_TIMESTAMP
+                WHERE session_id = (SELECT session_id FROM agents WHERE agent_id = ?)
+            """, (agent_id,))
+
+            conn.commit()
+
+        self.emit_event("agent_restarted", agent_id=agent_id, payload={
+            "clear_messages": clear_messages,
+            "new_max_iterations": new_max_iterations
+        })
+
+        logger.info(f"Restarted agent: {agent_id}")
+        return True
+
     # ===================
     # Message History (Chunked)
     # ===================
@@ -786,8 +864,18 @@ class SwarmStateManager:
         strategy: str = "retry",
         priority: int = 0
     ):
-        """Add an agent to the recovery queue."""
+        """Add an agent to the recovery queue (prevents duplicates)."""
         with self._get_connection() as conn:
+            # Check if this agent is already in the queue with pending status
+            existing = conn.execute("""
+                SELECT id FROM recovery_queue
+                WHERE agent_id = ? AND status IN ('pending', 'in_progress')
+            """, (agent_id,)).fetchone()
+
+            if existing:
+                logger.debug(f"Agent {agent_id} already in recovery queue, skipping")
+                return
+
             conn.execute("""
                 INSERT INTO recovery_queue
                 (agent_id, session_id, recovery_reason, recovery_strategy, priority)

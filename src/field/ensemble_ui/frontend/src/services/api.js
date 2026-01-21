@@ -476,7 +476,9 @@ export const getPendingQuestions = async () => {
 
 export const answerQuestion = async (questionId, answer) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/activity/questions/${questionId}/answer`, {
+    // URL encode the question ID since it may contain slashes
+    const encodedId = encodeURIComponent(questionId);
+    const response = await fetch(`${API_BASE_URL}/api/activity/questions/${encodedId}/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ answer }),
@@ -840,6 +842,33 @@ export const triggerRecovery = async (agentId, strategy = 'retry') => {
     return await response.json();
   } catch (error) {
     console.error('Trigger recovery error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Properly restart an agent job in-place.
+ * This resets iteration to 0 and re-executes the agent with the same input.
+ * Unlike triggerRecovery which creates new agents, this restarts the existing agent.
+ */
+export const restartAgent = async (agentId, options = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (options.clearMessages !== undefined) {
+      params.append('clear_messages', options.clearMessages);
+    }
+    if (options.newMaxIterations !== undefined) {
+      params.append('new_max_iterations', options.newMaxIterations);
+    }
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await fetch(`${API_BASE_URL}/api/agents/${agentId}/restart${queryString}`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to restart agent');
+    return await response.json();
+  } catch (error) {
+    console.error('Restart agent error:', error);
     throw error;
   }
 };
@@ -1541,6 +1570,50 @@ export const clearFinishedAgents = async () => {
 };
 
 // ========== Agent Definition Management API ==========
+
+/**
+ * Get all discovered agent categories
+ */
+export const getAgentCategories = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-categories`);
+    if (!response.ok) throw new Error('Failed to fetch agent categories');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent categories error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get agent definition hierarchy built from spawn permissions
+ */
+export const getAgentDefinitionHierarchy = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/agent-hierarchy`);
+    if (!response.ok) throw new Error('Failed to fetch agent definition hierarchy');
+    return await response.json();
+  } catch (error) {
+    console.error('Get agent definition hierarchy error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Refresh the agent cache
+ */
+export const refreshAgentCache = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/refresh-agent-cache`, {
+      method: 'POST'
+    });
+    if (!response.ok) throw new Error('Failed to refresh agent cache');
+    return await response.json();
+  } catch (error) {
+    console.error('Refresh agent cache error:', error);
+    throw error;
+  }
+};
 
 /**
  * List all agent definitions by category

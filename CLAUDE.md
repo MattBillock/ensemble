@@ -30,11 +30,13 @@ npm run dev  # Port 5173
 
 ```
 ensemble/
-├── leadership/          # Strategic agents (Executive Director, Development Manager, etc.)
-├── coordinators/        # Task breakdown agents (Backend, Frontend, Test Coordinators)
-├── developers/          # Code writers (Frontend, Backend, API Developers)
-├── testers/             # Test writers (Unit Test, Integration Test Writers)
-├── designers/           # Styling agents (Style Developer)
+├── agents/              # ALL agent definitions (consolidated location)
+│   ├── leadership/      # Strategic agents (Executive Director, Development Manager, etc.)
+│   ├── coordinators/    # Task breakdown agents (Backend, Frontend, Test Coordinators)
+│   ├── developers/      # Code writers (Frontend, Backend, API Developers)
+│   ├── testers/         # Test writers (Unit Test, Integration Test Writers)
+│   ├── designers/       # Styling agents (Style Developer)
+│   └── support/         # Support agents (Code Reviewer, CI Agent, etc.)
 ├── src/
 │   ├── runtime/agents/  # Agent runtime, tools, activity tracking, metrics
 │   └── field/ensemble_ui/
@@ -151,7 +153,7 @@ Autonomous bug fixing system via `POST /api/fix-bug`:
 - Generates summary reports in `output/completed/`
 - Minimal user interaction required
 
-Agent definition: `leadership/bug_fix_director.md`
+Agent definition: `agents/leadership/bug_fix_director.md`
 
 ### UI Features
 - **Pending Review Dashboard** - Review agent-generated documents before implementation
@@ -198,7 +200,7 @@ npm run lint
 - Architecture: `src/field/ensemble_ui/architecture.md`
 - Quick Start: `QUICKSTART.md`
 - UI Implementation: `src/field/ensemble_ui/IMPLEMENTATION_SUMMARY.md`
-- Agent Template: `leadership/AGENT_TEMPLATE.md`
-- Bug Fix Director: `leadership/bug_fix_director.md`
+- Agent Template: `agents/leadership/AGENT_TEMPLATE.md`
+- Bug Fix Director: `agents/leadership/bug_fix_director.md`
 - Artifact Status: `src/field/ensemble_ui/output/ARTIFACT_STATUS.md`
 - Rate Limiter: `src/runtime/agents/resilience.py` (MultiDimensionalRateLimiter class)

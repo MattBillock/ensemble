@@ -62,6 +62,31 @@ Agents that handle styling and visual design.
 |-------|---------|----------------|------------------|
 | Style Developer | CSS, Tailwind, and styling code | Yes | Haiku |
 
+### Support (Cross-Cutting Layer)
+Agents that provide specialized support functions across the system.
+
+| Agent | Purpose | Can Write Code | Model Preference |
+|-------|---------|----------------|------------------|
+| Logistics Manager | Codebase exploration and mapping | No | Haiku |
+| Knowledge Repository | Maintains project knowledge base | No | Haiku |
+| Drill Writer | Documentation generation | Yes | Haiku |
+| Visual Tech | Code refactoring (TDD Refactor phase) | Yes | Haiku |
+| CI Agent | Automated quality gate | No | Haiku |
+| Code Reviewer | Reviews code changes | No | Sonnet |
+| Agent Refactorer | Improves agent definitions | Yes | Sonnet |
+| Parameter Enhancer | Enhances failed prompts | Yes | Sonnet |
+| State Evolution Agent | Manages state lifecycle | No | Sonnet |
+
+### Automation (GitHub Integration Layer)
+Bots that handle GitHub operations and automation tasks.
+
+| Bot | Purpose | Location |
+|-----|---------|----------|
+| GitHub Commit Bot | Commits code changes | scripts/github_bots/bots/commit_bot.py |
+| GitHub Push Bot | Pushes to remote repos | scripts/github_bots/bots/push_bot.py |
+| GitHub Sync Bot | Syncs with upstream repos | scripts/github_bots/bots/sync_bot.py |
+| Documentation Bot | Generates documentation | scripts/github_bots/bots/documentation_bot.py |
+
 ---
 
 ## Spawning Hierarchy
@@ -69,21 +94,18 @@ Agents that handle styling and visual design.
 ```
 Executive Director (ROOT)
 │
-└─→ Development Manager
-    │
-    ├─→ System Architect
-    │
-    ├─→ Backend Coordinator ──────→ (no spawning - breakdown agent)
-    │
-    ├─→ Frontend Coordinator ─────→ (no spawning - breakdown agent)
-    │
-    ├─→ Test Coordinator ─────────→ (no spawning - breakdown agent)
-    │
-    ├─→ Code Quality Director ────→ CI Agent, Code Reviewer, etc.
-    │
-    ├─→ System Polish Director ───→ Various optimization agents
-    │
-    └─→ TDD Coordinator
+├─→ Development Manager
+│   │
+│   ├─→ System Architect
+│   ├─→ Logistics Manager
+│   ├─→ Knowledge Repository
+│   ├─→ Drill Writer
+│   │
+│   ├─→ Backend Coordinator ──────→ (breakdown only)
+│   ├─→ Frontend Coordinator ─────→ (breakdown only)
+│   ├─→ Test Coordinator ─────────→ (breakdown only)
+│   │
+│   └─→ TDD Coordinator
         │
         ├─→ Backend Lead
         │   ├─→ Backend Developer
@@ -101,6 +123,23 @@ Executive Director (ROOT)
         │
         └─→ Integration Test Lead
             └─→ Integration Test Writer
+│
+├─→ Question Marshal
+│
+├─→ Code Quality Director
+│   ├─→ CI Agent
+│   ├─→ Code Reviewer
+│   ├─→ GitHub Commit Bot (automation)
+│   ├─→ GitHub Push Bot (automation)
+│   ├─→ GitHub Sync Bot (automation)
+│   └─→ Documentation Bot (automation)
+│
+├─→ System Polish Director
+│   ├─→ Agent Refactorer
+│   ├─→ Parameter Enhancer
+│   └─→ State Evolution Agent
+│
+└─→ Bug Fix Director ────────────→ (spawns sub-agents as needed)
 ```
 
 ---
@@ -209,44 +248,42 @@ These agents provide cross-cutting functionality:
 
 | Agent | Purpose | When Used |
 |-------|---------|-----------|
-| Code Reviewer | Quality gate before commits | After code is written |
-| Visual Tech | Code refactoring | REFACTOR phase of TDD |
+| Logistics Manager | Codebase exploration and mapping | Research tasks |
+| Knowledge Repository | Project knowledge base | Reference lookups |
 | Drill Writer | Documentation | When docs are needed |
-| Logistics Manager | Codebase exploration | Research tasks |
-| Question Marshal | Escalation handling | When agents need clarification |
+| Visual Tech | Code refactoring | REFACTOR phase of TDD |
+| CI Agent | Automated quality gate | Continuous integration |
+| Code Reviewer | Quality gate before commits | After code is written |
+| Agent Refactorer | Improves agent definitions | Self-improvement |
+| Parameter Enhancer | Enhances failed prompts | Error recovery |
+| State Evolution Agent | Manages state lifecycle | State transitions |
+
+---
+
+## Automation Bots
+
+GitHub integration bots (scripts, not agents):
+
+| Bot | Purpose | Location |
+|-----|---------|----------|
+| GitHub Commit Bot | Commits code changes | scripts/github_bots/bots/commit_bot.py |
+| GitHub Push Bot | Pushes to remote | scripts/github_bots/bots/push_bot.py |
+| GitHub Sync Bot | Syncs with upstream | scripts/github_bots/bots/sync_bot.py |
+| Documentation Bot | Generates docs | scripts/github_bots/bots/documentation_bot.py |
 
 ---
 
 ## Agent Definition Files
 
-Agent definitions are stored as Markdown files:
-
 ```
 ensemble/
-├── leadership/           # Strategic agents
-│   ├── executive_director.md
-│   ├── development_manager.md
-│   ├── system_architect.md
-│   └── tdd_coordinator.md
-├── coordinators/         # Planning agents
-│   ├── backend_coordinator.md
-│   ├── frontend_coordinator.md
-│   └── test_coordinator.md
-├── developers/           # Implementation agents
-│   ├── backend_lead.md
-│   ├── backend_developer.md
-│   ├── frontend_lead.md
-│   ├── frontend_developer.md
-│   └── ...
-├── testers/              # Quality agents
-│   ├── unit_test_lead.md
-│   ├── unit_test_writer.md
-│   └── ...
-├── designers/            # Styling agents
-│   └── style_developer.md
-└── support/              # Cross-cutting agents
-    ├── code_reviewer.md
-    └── visual_tech.md
+├── leadership/           # 8 strategic agents
+├── coordinators/         # 3 planning agents
+├── developers/           # 7 implementation agents
+├── testers/              # 5 quality agents
+├── designers/            # 1 styling agent
+├── support/              # 9 cross-cutting agents
+└── scripts/github_bots/  # 4 automation bots
 ```
 
 Each definition file contains:

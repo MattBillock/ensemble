@@ -76,13 +76,14 @@ This document defines the complete agent hierarchy, spawn permissions, and capab
 
 | Agent | Can Spawn | Cannot Spawn |
 |-------|-----------|--------------|
-| **Executive Director** | `leadership/development_manager` | Any code writers, any test writers |
-| **Development Manager** | `leadership/system_architect`, `coordinators/*`, `leadership/tdd_coordinator` | Developers directly, testers directly |
+| **Executive Director** | `leadership/development_manager`, `leadership/question_marshal`, `leadership/code_quality_director`, `leadership/system_polish_director`, `leadership/bug_fix_director` | Any code writers, any test writers |
+| **Development Manager** | `leadership/system_architect`, `coordinators/*`, `leadership/tdd_coordinator`, `support/logistics_manager`, `support/knowledge_repository`, `support/drill_writer` | Developers directly, testers directly |
 | **System Architect** | None - produces documents only | Everything |
 | **Question Marshal** | None - queries parent only | Everything |
 | **Code Quality Director** | `support/ci_agent`, `support/code_reviewer` | Code writers |
-| **System Polish Director** | `support/*` analysis agents | Code writers |
-| **TDD Coordinator** | `developers/*_lead`, `testers/*_lead` | Code writers directly |
+| **System Polish Director** | `support/agent_refactorer`, `support/parameter_enhancer`, `support/state_evolution_agent` | Code writers |
+| **Bug Fix Director** | `coordinators/*`, `developers/*_lead`, `testers/*_lead` | Code writers directly |
+| **TDD Coordinator** | `developers/*_lead`, `testers/*_lead`, `support/visual_tech` | Code writers directly |
 
 ### Coordinator Tier (Planning)
 
@@ -97,7 +98,7 @@ This document defines the complete agent hierarchy, spawn permissions, and capab
 | Agent | Can Spawn | Cannot Spawn |
 |-------|-----------|--------------|
 | **Backend Lead** | `developers/backend_developer` | Other leads, coordinators |
-| **Frontend Lead** | `developers/frontend_developer` | Other leads, coordinators |
+| **Frontend Lead** | `developers/frontend_developer`, `designers/style_developer` | Other leads, coordinators |
 | **API Lead** | `developers/api_developer` | Other leads, coordinators |
 | **Unit Test Lead** | `testers/unit_test_writer` | Code writers, other leads |
 | **Integration Test Lead** | `testers/integration_test_writer` | Code writers, other leads |
@@ -118,6 +119,12 @@ This document defines the complete agent hierarchy, spawn permissions, and capab
 | **Unit Test Writer** | None | `can_write_code: false`, `can_write_tests: true` |
 | **Integration Test Writer** | None | `can_write_code: false`, `can_write_tests: true` |
 | **API Test Writer** | None | `can_write_code: false`, `can_write_tests: true` |
+
+### Designer Tier (Styling)
+
+| Agent | Can Spawn | Capabilities |
+|-------|-----------|--------------|
+| **Style Developer** | None | `can_write_code: true` (CSS/styling only) |
 
 ### Support Tier (Services)
 
@@ -142,6 +149,7 @@ Only these agents have `can_write_code: true`:
 - API Developer
 - Database Manager (migrations only)
 - Visual Tech (refactoring only)
+- Style Developer (CSS/styling only)
 
 ### 2. Test Writing Authority
 Only these agents have `can_write_tests: true`:
@@ -196,6 +204,7 @@ def validate_spawn(caller_agent, target_agent):
 - `leadership/question_marshal`
 - `leadership/code_quality_director`
 - `leadership/system_polish_director`
+- `leadership/bug_fix_director`
 
 ### Coordinators (`coordinators/`)
 - `coordinators/backend_coordinator`
@@ -217,6 +226,9 @@ def validate_spawn(caller_agent, target_agent):
 - `testers/integration_test_writer`
 - `testers/integration_test_lead`
 - `testers/api_test_writer`
+
+### Designers (`designers/`)
+- `designers/style_developer`
 
 ### Support (`support/`)
 - `support/code_reviewer`

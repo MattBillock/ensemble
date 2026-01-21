@@ -369,6 +369,17 @@ class RecoveryOrchestrator:
                     continue
 
                 task = queue[0]
+                agent_id = task['agent_id']
+                recovery_id = task['id']
+
+                # Check if we're already processing this agent (race condition protection)
+                with self._lock:
+                    if agent_id in self._current_recoveries:
+                        time.sleep(1)
+                        continue
+
+                # IMPORTANT: Mark as in_progress BEFORE starting thread to prevent race condition
+                swarm_state.update_recovery_status(recovery_id, "in_progress")
 
                 # Start recovery in background
                 recovery_thread = threading.Thread(
@@ -379,7 +390,7 @@ class RecoveryOrchestrator:
                 recovery_thread.start()
 
                 with self._lock:
-                    self._current_recoveries[task['agent_id']] = recovery_thread
+                    self._current_recoveries[agent_id] = recovery_thread
 
             except Exception as e:
                 logger.error(f"Recovery queue processing error: {e}")
@@ -398,7 +409,7 @@ class RecoveryOrchestrator:
         try:
             logger.info(f"Starting recovery for agent {agent_id} with strategy {strategy.value}")
 
-            # Update recovery status
+            # Increment attempts counter (status already set to in_progress in queue processor)
             swarm_state.update_recovery_status(recovery_id, "in_progress", increment_attempts=True)
 
             # Execute based on strategy
@@ -444,8 +455,10 @@ class RecoveryOrchestrator:
 
             if success:
                 swarm_state.update_recovery_status(recovery_id, "completed")
-                swarm_state.update_agent_status(agent_id, "recovered")
-                logger.info(f"Successfully recovered agent {agent_id}")
+                # Mark as completed (the recovery agent finished successfully)
+                # Don't leave as "recovered" - that's a transient state
+                swarm_state.update_agent_status(agent_id, "completed")
+                logger.info(f"Successfully recovered agent {agent_id} - marked completed")
             else:
                 # Check if we should retry or escalate
                 if task['attempts'] < task['max_attempts']:
@@ -469,7 +482,7 @@ class RecoveryOrchestrator:
         backoff: bool = False,
         escalate_model: bool = False
     ) -> bool:
-        """Retry a stalled agent."""
+        """Retry a stalled agent by restarting it in place."""
         from .definition import AgentDefinition
         from .runtime import AgentRuntime
         # Use module-level get_swarm_state() defined at end of this file
@@ -511,10 +524,35 @@ class RecoveryOrchestrator:
             # Load agent definition
             agent_types_dir = Path(__file__).parent.parent.parent.parent
             agent_def_path = agent_types_dir / f"{agent_type}.md"
+
+            # If direct path doesn't exist, try to find it based on agent name
+            if not agent_def_path.exists():
+                agent_name = task.get('agent_name', '')
+                # Convert "Executive Director" to "executive_director"
+                agent_name_snake = agent_name.lower().replace(' ', '_').replace('-', '_')
+
+                # Try common directories
+                categories = ['leadership', 'coordinators', 'developers', 'testers', 'designers']
+                for category in categories:
+                    candidate_path = agent_types_dir / category / f"{agent_name_snake}.md"
+                    if candidate_path.exists():
+                        agent_def_path = candidate_path
+                        logger.info(f"Found agent definition at {agent_def_path}")
+                        break
+
+            if not agent_def_path.exists():
+                logger.error(f"Agent definition not found: {agent_def_path}")
+                return False
+
             agent_definition = AgentDefinition.from_file(agent_def_path)
 
-            # Create new runtime with potentially escalated model
-            new_agent_id = f"{agent_id}_recovery_{int(time.time())}"
+            # IMPORTANT: Restart the ORIGINAL agent in place, don't create a new one
+            # This fixes the bug where original agent stays "recovered" forever
+            swarm_state.restart_agent(agent_id)
+
+            # Mark the original agent as running again
+            swarm_state.update_agent_status(agent_id, "running")
+            logger.info(f"Restarting original agent {agent_id} (not creating new agent)")
 
             # Create tools with the agent's permissions
             from .tools import ToolRegistry, SpawnAgentTool
@@ -522,7 +560,7 @@ class RecoveryOrchestrator:
                 agent_definition=agent_definition,
                 request_id=task.get('request_id'),
                 session_id=task.get('session_id'),
-                agent_id=new_agent_id
+                agent_id=agent_id  # Use ORIGINAL agent_id
             )
 
             # Add spawn capability
@@ -531,7 +569,7 @@ class RecoveryOrchestrator:
                 api_key=self.api_key,
                 tools=None,
                 budget_tier=budget_tier,
-                parent_agent_id=new_agent_id,
+                parent_agent_id=agent_id,  # Use ORIGINAL agent_id
                 request_id=task.get('request_id'),
                 session_id=task.get('session_id')
             )
@@ -540,15 +578,15 @@ class RecoveryOrchestrator:
             runtime = AgentRuntime(
                 agent_definition,
                 api_key=self.api_key,
-                tools=tools,  # Now includes tools with correct permissions
+                tools=tools,
                 budget_tier=budget_tier,
-                agent_id=new_agent_id,
+                agent_id=agent_id,  # Use ORIGINAL agent_id
                 request_id=task.get('request_id'),
                 parent_agent_id=agent_info.get('parent_agent_id'),
                 session_id=task.get('session_id')
             )
 
-            # Execute
+            # Execute - the original agent is now running again
             result = runtime.execute(input_data)
 
             return result.get('status') == 'success'
@@ -603,13 +641,23 @@ class RecoveryOrchestrator:
             logger.error(f"Agent refactor failed: {e}")
             return False
 
-    def _get_agent_definition_path(self, agent_type: str) -> Optional[Path]:
+    def _get_agent_definition_path(self, agent_type: str, agent_name: str = "") -> Optional[Path]:
         """Get the path to an agent definition file."""
         # Agent types are like "developers/code_writer" -> "developers/code_writer.md"
         base_path = Path(__file__).parent.parent.parent.parent
         agent_path = base_path / f"{agent_type}.md"
         if agent_path.exists():
             return agent_path
+
+        # Try to find by agent name if direct path doesn't work
+        if agent_name:
+            agent_name_snake = agent_name.lower().replace(' ', '_').replace('-', '_')
+            categories = ['leadership', 'coordinators', 'developers', 'testers', 'designers']
+            for category in categories:
+                candidate_path = base_path / category / f"{agent_name_snake}.md"
+                if candidate_path.exists():
+                    return candidate_path
+
         return None
 
     def _update_agent_definition_with_guardrails(

@@ -43,6 +43,7 @@ class AchievementCategory(Enum):
     FAMOUS_MUSTARDS = "famous_mustards"  # Famous mustard-related achievements
     DUNGEONS_DRAGONS = "dungeons_dragons"  # D&D themed achievements
     FAVORITE_TACOS = "favorite_tacos"  # Taco-themed achievements
+    FINE_DINING = "fine_dining"       # Michelin star & fine dining themed
     # Dis-achievement categories (Wall of Shame)
     LOSER_BOARD = "loser_board"       # General failures and oops moments
     # Family achievements
@@ -1228,6 +1229,188 @@ ACHIEVEMENTS = [
         points=120,
         agent_classes=["Executive Director"],
         trigger_condition={"unique_tools_used": {"min": 10}}
+    ),
+
+    # =============================================================================
+    # FINE DINING ACHIEVEMENTS
+    # Michelin stars, legendary restaurants, and culinary excellence
+    # For the sophisticated agent palette
+    # =============================================================================
+    Achievement(
+        id="michelin_one_star",
+        name="One Michelin Star",
+        description="High quality cooking, worth a stop - delivered excellent results consistently",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.RARE,
+        icon="⭐",
+        points=50,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_successes": {"min": 10}}
+    ),
+    Achievement(
+        id="michelin_two_star",
+        name="Two Michelin Stars",
+        description="Excellent cooking, worth a detour - your work is destination-worthy",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="⭐⭐",
+        points=85,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_successes": {"min": 25}}
+    ),
+    Achievement(
+        id="michelin_three_star",
+        name="Three Michelin Stars",
+        description="Exceptional cuisine, worth a special journey - the pinnacle of excellence",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="⭐⭐⭐",
+        points=150,
+        agent_classes=["*"],
+        trigger_condition={"consecutive_successes": {"min": 50}}
+    ),
+    Achievement(
+        id="french_laundry",
+        name="The French Laundry",
+        description="Thomas Keller would be proud - achieved perfection through meticulous attention to detail",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🏆",
+        points=120,
+        agent_classes=["Code Writer", "Backend Developer", "Frontend Developer"],
+        trigger_condition={"perfect_executions": {"min": 50}}
+    ),
+    Achievement(
+        id="noma",
+        name="Noma",
+        description="Innovative and unconventional - pushed boundaries like René Redzepi",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="🌿",
+        points=90,
+        agent_classes=["System Architect", "Development Manager"],
+        trigger_condition={"novel_approaches_used": {"min": 5}}
+    ),
+    Achievement(
+        id="el_bulli",
+        name="elBulli",
+        description="Molecular gastronomy of code - deconstructed and rebuilt something beautifully",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.LEGENDARY,
+        icon="🔬",
+        points=100,
+        agent_classes=["*"],
+        trigger_condition={"refactors_with_improvement": {"min": 10}}
+    ),
+    Achievement(
+        id="alinea",
+        name="Alinea",
+        description="Grant Achatz-level creativity - turned constraints into art",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="🎨",
+        points=80,
+        agent_classes=["Frontend Developer", "Style Developer"],
+        trigger_condition={"creative_solutions": {"min": 5}}
+    ),
+    Achievement(
+        id="eleven_madison",
+        name="Eleven Madison Park",
+        description="World's best service - coordinated flawlessly with other agents",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="🌳",
+        points=85,
+        agent_classes=["Development Manager", "Executive Director"],
+        trigger_condition={"coordinated_agents": {"min": 10}}
+    ),
+    Achievement(
+        id="mise_en_place",
+        name="Mise en Place",
+        description="Everything in its place - impeccable organization and preparation",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="📋",
+        points=35,
+        agent_classes=["*"],
+        trigger_condition={"well_structured_outputs": {"min": 5}}
+    ),
+    Achievement(
+        id="amuse_bouche",
+        name="Amuse-Bouche",
+        description="A delightful small bite - solved a quick task with elegance",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.COMMON,
+        icon="🥄",
+        points=15,
+        agent_classes=["*"],
+        trigger_condition={"duration_ms": {"max": 30000}}
+    ),
+    Achievement(
+        id="tasting_menu",
+        name="Tasting Menu",
+        description="A multi-course experience - completed a complex multi-step task beautifully",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.RARE,
+        icon="📜",
+        points=55,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"multi_phase_completion": {"min": 5}}
+    ),
+    Achievement(
+        id="sommelier",
+        name="Sommelier",
+        description="Perfect pairings - matched the right tools and approaches to each problem",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.RARE,
+        icon="🍷",
+        points=60,
+        agent_classes=["*"],
+        trigger_condition={"optimal_tool_selection": {"min": 10}}
+    ),
+    Achievement(
+        id="chef_de_cuisine",
+        name="Chef de Cuisine",
+        description="Head of the kitchen - successfully led a team of agents to completion",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="👨‍🍳",
+        points=75,
+        agent_classes=["Executive Director", "Development Manager"],
+        trigger_condition={"successful_delegation_chains": {"min": 3}}
+    ),
+    Achievement(
+        id="sous_chef",
+        name="Sous Chef",
+        description="The reliable second - supported senior agents with precision",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🧑‍🍳",
+        points=30,
+        agent_classes=["Backend Developer", "Frontend Developer", "Code Writer"],
+        trigger_condition={"successful_spawned_tasks": {"min": 5}}
+    ),
+    Achievement(
+        id="line_cook",
+        name="Line Cook Excellence",
+        description="Consistent execution under pressure - handled high volume with quality",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.UNCOMMON,
+        icon="🔥",
+        points=25,
+        agent_classes=["*"],
+        trigger_condition={"high_throughput_success": {"min": 10}}
+    ),
+    Achievement(
+        id="farm_to_table",
+        name="Farm to Table",
+        description="From requirements to deployment - handled the entire pipeline",
+        category=AchievementCategory.FINE_DINING,
+        rarity=AchievementRarity.EPIC,
+        icon="🌾",
+        points=80,
+        agent_classes=["Executive Director"],
+        trigger_condition={"full_pipeline_completions": {"min": 3}}
     ),
 
     # =============================================================================

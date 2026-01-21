@@ -24,6 +24,24 @@ const STAGE_COLORS = {
   'unknown': { bg: 'rgba(107, 114, 128, 0.3)', color: '#d1d5db' }
 };
 
+// Agent category colors for type badges
+const CATEGORY_COLORS = {
+  'leadership': { bg: 'rgba(251, 191, 36, 0.3)', color: '#fbbf24', border: '#fbbf24' },
+  'coordinators': { bg: 'rgba(96, 165, 250, 0.3)', color: '#60a5fa', border: '#60a5fa' },
+  'developers': { bg: 'rgba(52, 211, 153, 0.3)', color: '#34d399', border: '#34d399' },
+  'testers': { bg: 'rgba(167, 139, 250, 0.3)', color: '#a78bfa', border: '#a78bfa' },
+  'designers': { bg: 'rgba(244, 114, 182, 0.3)', color: '#f472b6', border: '#f472b6' },
+  'support': { bg: 'rgba(249, 115, 22, 0.3)', color: '#f97316', border: '#f97316' },
+  'automation': { bg: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4', border: '#06b6d4' }
+};
+
+// Get category from agent_type path (e.g., "leadership/executive_director" -> "leadership")
+const getAgentCategory = (agentType) => {
+  if (!agentType) return 'support';
+  const category = agentType.split('/')[0].toLowerCase();
+  return CATEGORY_COLORS[category] ? category : 'support';
+};
+
 const AgentHierarchyTree = ({ hierarchy = {} }) => {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [expandedProjects, setExpandedProjects] = useState(new Set());
@@ -116,16 +134,32 @@ const AgentHierarchyTree = ({ hierarchy = {} }) => {
           </span>
 
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <strong style={{ fontSize: '13px' }} title={`${node.agent_name} (${agentId})`}>
                 {generateWhimsicalName(agentId)}
               </strong>
               <Badge bg={getStatusBadge(node.status)} style={{ fontSize: '10px' }}>
                 {getStatusIcon(node.status)} {node.status}
               </Badge>
-            </div>
-            <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-              {node.agent_type}
+              {/* Agent type badge with category color */}
+              {node.agent_name && (() => {
+                const category = getAgentCategory(node.agent_type);
+                const categoryStyle = CATEGORY_COLORS[category] || CATEGORY_COLORS.support;
+                return (
+                  <span style={{
+                    padding: '1px 6px',
+                    borderRadius: '3px',
+                    fontSize: '9px',
+                    fontWeight: '500',
+                    backgroundColor: categoryStyle.bg,
+                    color: categoryStyle.color,
+                    border: `1px solid ${categoryStyle.border}`,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {node.agent_name}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 

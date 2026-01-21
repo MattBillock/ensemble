@@ -4,6 +4,9 @@ Model Router - Dynamic, self-managed LLM selection with quality fuzzing.
 Provides intelligent model selection based on task complexity, agent performance
 history, cost constraints, and randomized quality fuzzing for diversity.
 Supports multiple providers: Anthropic, OpenAI, Google, and local models.
+
+Integrates with ProviderManager for automatic failover between providers when
+cost limits are exceeded, errors occur, or providers become unavailable.
 """
 import logging
 import random
@@ -12,7 +15,10 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .providers import ProviderManager, ProviderType
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +324,10 @@ class ModelRouter:
         target_quality: float = 0.7,  # 0.0 to 1.0, target quality level
         quality_variance: float = 0.15,  # Fuzzing variance
         cost_weight: float = 0.3,  # How much to weight cost in selection
-        enable_fuzzing: bool = True
+        enable_fuzzing: bool = True,
+        use_provider_manager: bool = True,  # Enable ProviderManager integration
+        daily_cost_limit: float = 100.0,  # Daily cost limit (triggers failover)
+        error_threshold: int = 5  # Consecutive errors before failover
     ):
         self.api_keys = {
             Provider.ANTHROPIC: anthropic_key,
@@ -330,11 +339,242 @@ class ModelRouter:
         self.quality_variance = quality_variance
         self.cost_weight = cost_weight
         self.enable_fuzzing = enable_fuzzing
+        self.use_provider_manager = use_provider_manager
+        self.daily_cost_limit = daily_cost_limit
+        self.error_threshold = error_threshold
 
         self.performance_tracker = PerformanceTracker()
         self._update_model_availability()
 
+        # Provider manager integration
+        self._provider_manager: Optional["ProviderManager"] = None
+        if use_provider_manager:
+            self._init_provider_manager(anthropic_key, openai_key)
+
         logger.info(f"ModelRouter initialized with target_quality={target_quality}, fuzzing={enable_fuzzing}")
+
+    def _init_provider_manager(
+        self,
+        anthropic_key: Optional[str],
+        openai_key: Optional[str]
+    ):
+        """Initialize the ProviderManager for multi-provider support."""
+        try:
+            from .providers import ProviderManager
+            self._provider_manager = ProviderManager(
+                anthropic_key=anthropic_key,
+                openai_key=openai_key,
+                ollama_host=self.local_endpoint,
+                enable_failover=True
+            )
+
+            # Update model availability based on provider manager
+            self._sync_model_availability_with_providers()
+
+            logger.info("ProviderManager integrated with ModelRouter")
+        except ImportError:
+            logger.warning("providers module not available - using direct API calls only")
+            self._provider_manager = None
+
+    def _sync_model_availability_with_providers(self):
+        """Sync model availability with ProviderManager."""
+        if not self._provider_manager:
+            return
+
+        from .providers import ProviderType
+
+        available_providers = self._provider_manager.get_available_providers()
+
+        for model_id, spec in MODEL_CATALOG.items():
+            # Map model provider to ProviderType
+            provider_type_map = {
+                Provider.ANTHROPIC: ProviderType.ANTHROPIC,
+                Provider.OPENAI: ProviderType.OPENAI,
+                Provider.LOCAL: ProviderType.OLLAMA,
+            }
+
+            ptype = provider_type_map.get(spec.provider)
+            if ptype:
+                spec.available = ptype in available_providers
+            else:
+                spec.available = False
+
+    @property
+    def provider_manager(self) -> Optional["ProviderManager"]:
+        """Get the ProviderManager instance (if available)."""
+        return self._provider_manager
+
+    def send_message(
+        self,
+        messages: List[Dict[str, Any]],
+        model: Optional[str] = None,
+        task_profile: Optional[TaskProfile] = None,
+        system_prompt: Optional[str] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        mode: str = "dynamic",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Send a message with automatic model selection and provider failover.
+
+        This method combines model selection with the ProviderManager to provide
+        intelligent routing with automatic failover.
+
+        Args:
+            messages: List of message dicts
+            model: Override model selection (optional)
+            task_profile: Task profile for intelligent selection (optional)
+            system_prompt: System prompt
+            tools: Tool definitions
+            max_tokens: Maximum output tokens
+            temperature: Sampling temperature
+            mode: Selection mode ("dynamic", "full_power", "economical")
+            **kwargs: Additional provider options
+
+        Returns:
+            Dict with response data including:
+            - content: Response content
+            - model_used: Actual model used
+            - provider: Provider used
+            - tokens: Token usage
+            - selection_reason: Why this model was chosen
+        """
+        start_time = time.time()
+
+        # Select model if not specified
+        if model:
+            selection_result = None
+            selected_model = model
+        else:
+            if task_profile is None:
+                task_profile = TaskProfile(
+                    complexity=0.5,
+                    requires_reasoning=False,
+                    requires_code=False,
+                    requires_creativity=False,
+                    context_size=sum(len(str(m.get("content", ""))) for m in messages),
+                    priority="normal",
+                    agent_type="unknown"
+                )
+            selection_result = self.select_model(task_profile, mode=mode)
+            selected_model = selection_result.model_id
+
+        # Use ProviderManager if available
+        if self._provider_manager:
+            try:
+                from .providers import ToolDefinition
+
+                # Convert tools to ToolDefinition if provided
+                tool_definitions = None
+                if tools:
+                    tool_definitions = [
+                        ToolDefinition(
+                            name=t.get("name", ""),
+                            description=t.get("description", ""),
+                            input_schema=t.get("input_schema", t.get("parameters", {}))
+                        )
+                        for t in tools
+                    ]
+
+                response = self._provider_manager.send_message(
+                    messages=messages,
+                    model=selected_model,
+                    system_prompt=system_prompt,
+                    tools=tool_definitions,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    **kwargs
+                )
+
+                duration_ms = int((time.time() - start_time) * 1000)
+
+                # Record execution for learning
+                self.record_execution_result(
+                    model_id=response.model,
+                    agent_type=task_profile.agent_type if task_profile else "unknown",
+                    success=True,
+                    tokens_used=response.usage.total_tokens,
+                    duration_ms=duration_ms
+                )
+
+                return {
+                    "content": response.get_text(),
+                    "tool_calls": [
+                        {
+                            "id": tc.tool_use_id,
+                            "name": tc.tool_name,
+                            "input": tc.tool_input
+                        }
+                        for tc in response.get_tool_uses()
+                    ],
+                    "model_used": response.model,
+                    "provider": response.provider.value,
+                    "tokens": {
+                        "input": response.usage.input_tokens,
+                        "output": response.usage.output_tokens,
+                        "total": response.usage.total_tokens
+                    },
+                    "latency_ms": response.latency_ms,
+                    "selection_reason": (
+                        selection_result.selection_reason if selection_result
+                        else f"Direct model selection: {selected_model}"
+                    ),
+                    "stop_reason": response.stop_reason.value
+                }
+
+            except Exception as e:
+                # Record failure for learning
+                duration_ms = int((time.time() - start_time) * 1000)
+                self.record_execution_result(
+                    model_id=selected_model,
+                    agent_type=task_profile.agent_type if task_profile else "unknown",
+                    success=False,
+                    tokens_used=0,
+                    duration_ms=duration_ms
+                )
+                raise
+
+        else:
+            # Fallback: No ProviderManager - return selection result only
+            # (Caller must handle actual API call)
+            return {
+                "model_recommended": selected_model,
+                "selection_reason": (
+                    selection_result.selection_reason if selection_result
+                    else f"Direct model selection: {selected_model}"
+                ),
+                "alternatives": (
+                    selection_result.alternatives if selection_result else []
+                ),
+                "provider_manager_available": False
+            }
+
+    def get_provider_stats(self) -> Optional[Dict[str, Any]]:
+        """Get statistics from the ProviderManager (if available)."""
+        if self._provider_manager:
+            return self._provider_manager.get_stats()
+        return None
+
+    def set_provider_cost_limit(
+        self,
+        provider: str,
+        daily_limit: float
+    ):
+        """Set daily cost limit for a specific provider."""
+        if self._provider_manager:
+            from .providers import ProviderType
+            try:
+                ptype = ProviderType(provider)
+                self._provider_manager.set_daily_cost_limit(ptype, daily_limit)
+            except ValueError:
+                logger.warning(f"Unknown provider: {provider}")
+
+    def reset_daily_stats(self):
+        """Reset daily statistics for all providers."""
+        if self._provider_manager:
+            self._provider_manager.reset_daily_stats()
 
     def _update_model_availability(self):
         """Update which models are available based on API keys."""

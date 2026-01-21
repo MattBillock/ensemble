@@ -8,7 +8,9 @@ import pytest
 from src.runtime.agents.naming.name_generator import (
     NameGenerator,
     generate_agent_name,
-    get_generator
+    generate_family_name,
+    get_generator,
+    FAMILY_NAMES,
 )
 from src.runtime.agents.naming.name_data import WHIMSICAL_NAMES
 
@@ -304,3 +306,263 @@ class TestNameFormat:
             name = gen.get_name(agent_type)
             # Should be under 40 chars for readability
             assert len(name) < 40
+
+
+class TestFamilyNameGeneration:
+    """Test family name generation functionality."""
+
+    def test_generate_family_name_basic(self):
+        """Test basic family name generation."""
+        gen = NameGenerator()
+        family = gen.generate_family_name()
+
+        assert isinstance(family, str)
+        assert family in FAMILY_NAMES
+
+    def test_generate_family_name_uniqueness(self):
+        """Test that family names are unique until exhausted."""
+        gen = NameGenerator()
+
+        families = []
+        for _ in range(10):
+            family = gen.generate_family_name()
+            families.append(family)
+
+        # All should be unique
+        assert len(families) == len(set(families))
+
+    def test_generate_family_name_all_used_adds_suffix(self):
+        """Test that suffix is added when all family names are exhausted."""
+        gen = NameGenerator()
+
+        # Mark all family names as used
+        gen._used_family_names = set(FAMILY_NAMES)
+
+        # Generate a new family name - should have suffix
+        family = gen.generate_family_name()
+
+        # Should be a base family name with numeric suffix
+        base_found = False
+        for base in FAMILY_NAMES:
+            if family.startswith(base) and family != base:
+                # Has suffix
+                suffix = family[len(base):]
+                assert suffix.isdigit()
+                assert len(suffix) == 2
+                base_found = True
+                break
+
+        assert base_found, f"Expected family name with suffix, got: {family}"
+
+    def test_generate_family_name_tracks_used(self):
+        """Test that used family names are tracked."""
+        gen = NameGenerator()
+
+        family = gen.generate_family_name()
+
+        assert family in gen._used_family_names
+
+    def test_reset_clears_family_names(self):
+        """Test that reset clears used family names."""
+        gen = NameGenerator()
+
+        gen.generate_family_name()
+        gen.generate_family_name()
+
+        assert len(gen._used_family_names) == 2
+
+        gen.reset()
+
+        assert len(gen._used_family_names) == 0
+        assert gen._family_index == 0
+
+
+class TestNameWithFamily:
+    """Test get_name_with_family method."""
+
+    def test_get_name_with_family_basic(self):
+        """Test basic name with family generation."""
+        gen = NameGenerator()
+        name = gen.get_name_with_family("Backend Developer", "Sparrow")
+
+        assert isinstance(name, str)
+        assert "Sparrow" in name
+        # Format: FirstName FamilyName-ShortType-Suffix
+        parts = name.split()
+        assert len(parts) == 2
+        # First part is whimsical name
+        assert parts[0] in WHIMSICAL_NAMES
+        # Second part contains family-type-suffix
+        assert parts[1].startswith("Sparrow-")
+
+    def test_get_name_with_family_no_whimsical(self):
+        """Test name with family when whimsical names disabled."""
+        gen = NameGenerator(use_whimsical_names=False)
+        name = gen.get_name_with_family("Backend Developer", "Sparrow")
+
+        # Should use default format
+        assert "Backend Developer_" in name
+        assert "." in name  # timestamp has decimal
+
+    def test_get_name_with_family_uniqueness(self):
+        """Test that names with same family are unique."""
+        gen = NameGenerator()
+
+        names = set()
+        for _ in range(20):
+            name = gen.get_name_with_family("Frontend Developer", "TestFamily")
+            assert name not in names
+            names.add(name)
+
+    def test_get_name_with_family_collision_handling(self):
+        """Test that collisions are handled by generating new suffix."""
+        gen = NameGenerator()
+
+        # Generate a name
+        name1 = gen.get_name_with_family("Backend Developer", "Sparrow")
+
+        # Add it to used names and try to generate again with same index
+        # This forces a collision scenario
+        gen._used_names.add(name1)
+
+        # Generate another - should be different
+        name2 = gen.get_name_with_family("Backend Developer", "Sparrow")
+
+        assert name1 != name2
+
+    def test_get_name_with_family_format(self):
+        """Test name format with family."""
+        gen = NameGenerator()
+        name = gen.get_name_with_family("Unit Test Writer", "Phoenix")
+
+        parts = name.split()
+        assert len(parts) == 2
+
+        first_name = parts[0]
+        remainder = parts[1]
+
+        # First name is whimsical
+        assert first_name in WHIMSICAL_NAMES
+
+        # Remainder has format: Family-ShortType-Suffix
+        remainder_parts = remainder.split("-")
+        assert len(remainder_parts) == 3
+        assert remainder_parts[0] == "Phoenix"
+        assert remainder_parts[1] == "UnitTest"  # Shortened type
+        assert len(remainder_parts[2]) == 4  # 4-digit suffix
+
+
+class TestModuleFunctions:
+    """Test module-level convenience functions."""
+
+    def test_generate_family_name_function(self):
+        """Test generate_family_name module function."""
+        # Reset global state
+        import src.runtime.agents.naming.name_generator as module
+        module._generator = None
+
+        family = generate_family_name()
+
+        assert isinstance(family, str)
+        assert family in FAMILY_NAMES
+
+    def test_generate_agent_name_with_family(self):
+        """Test generate_agent_name with family_name parameter."""
+        # Reset global state
+        import src.runtime.agents.naming.name_generator as module
+        module._generator = None
+
+        name = generate_agent_name("Frontend Developer", family_name="TestFamily")
+
+        assert "TestFamily" in name
+        parts = name.split()
+        assert len(parts) == 2
+
+    def test_generate_agent_name_with_family_no_whimsical(self):
+        """Test generate_agent_name with family_name and use_whimsical=False."""
+        name = generate_agent_name(
+            "Frontend Developer",
+            family_name="TestFamily",
+            use_whimsical=False
+        )
+
+        # Should use default format (no whimsical names)
+        assert "Frontend Developer_" in name
+
+    def test_generate_agent_name_with_parent_and_family(self):
+        """Test generate_agent_name with both parent_id and family_name."""
+        # Reset global state
+        import src.runtime.agents.naming.name_generator as module
+        module._generator = None
+
+        parent = generate_agent_name("Executive Director")
+        child = generate_agent_name(
+            "Backend Developer",
+            parent_id=parent,
+            family_name="Robin"
+        )
+
+        assert "Robin" in child
+
+
+class TestUniqueNameCollisions:
+    """Test collision handling in name generation."""
+
+    def test_get_name_collision_regenerates_suffix(self):
+        """Test that get_name handles collisions by regenerating suffix."""
+        gen = NameGenerator()
+
+        # Generate first name
+        name1 = gen.get_name("Executive Director")
+
+        # Manually add it back to used_names (simulating collision scenario)
+        # and reset index to same position
+        gen._used_names.add(name1)
+        gen._name_index = 0  # Reset to same whimsical name
+
+        # Generate another name - should get different suffix
+        name2 = gen.get_name("Executive Director")
+
+        # Both use same whimsical name and short type, but different suffixes
+        parts1 = name1.split("-")
+        parts2 = name2.split("-")
+
+        assert parts1[0] == parts2[0]  # Same whimsical name (since index reset)
+        assert parts1[1] == parts2[1]  # Same short type
+        # Suffixes might be same or different, but final names should be unique
+        assert name1 != name2
+
+    def test_many_names_same_type_all_unique(self):
+        """Test generating many names for same type doesn't cause collisions."""
+        gen = NameGenerator()
+
+        names = set()
+        for _ in range(200):
+            name = gen.get_name("Frontend Developer")
+            assert name not in names, f"Duplicate: {name}"
+            names.add(name)
+
+
+class TestShortTypeEdgeCases:
+    """Test edge cases in agent type shortening."""
+
+    def test_shorten_with_underscores(self):
+        """Test shortening agent type with underscores."""
+        gen = NameGenerator()
+
+        result = gen._shorten_agent_type("custom_agent_type")
+
+        assert isinstance(result, str)
+        assert "_" not in result  # Underscores replaced with spaces, then joined
+
+    def test_shorten_with_articles(self):
+        """Test that articles are filtered out."""
+        gen = NameGenerator()
+
+        result = gen._shorten_agent_type("The Great A Agent An Worker")
+
+        # Should filter out "The", "a", "an"
+        assert "The" not in result
+        assert "Great" in result
+        assert "Agent" in result
+        assert "Worker" in result

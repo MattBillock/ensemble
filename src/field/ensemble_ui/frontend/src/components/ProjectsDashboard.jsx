@@ -36,24 +36,33 @@ function ProjectsDashboard({ onViewTimeline }) {
     }
   };
 
-  // Status badge reflects AGENT activity, not project completion
-  // Projects are only complete when milestones/tasks are verified
-  const getStatusBadge = (project) => {
-    if (project.active_agents > 0) {
-      return <Badge bg="primary">Running</Badge>;
+  // Deliverable status badge - shows project deliverable/review status
+  const getDeliverableStatusBadge = (project) => {
+    const status = project.deliverable_status || project.current_stage;
+    const statusConfig = {
+      pending_review: { bg: 'warning', label: `📋 ${project.pending_reviews || 0} Pending Review` },
+      deliverables_complete: { bg: 'success', label: '✅ Deliverables Complete' },
+      in_progress: { bg: 'primary', label: '🔄 In Progress' },
+      failed: { bg: 'danger', label: '❌ Failed' },
+      awaiting_input: { bg: 'warning', label: '⏳ Awaiting Input' },
+      agents_done: { bg: 'info', label: '✓ Agents Done' },
+      idle: { bg: 'secondary', label: 'Idle' },
+    };
+    const config = statusConfig[status] || { bg: 'secondary', label: status };
+    return <Badge bg={config.bg}>{config.label}</Badge>;
+  };
+
+  // Agent status badge - shows agent activity status separately
+  const getAgentStatusBadge = (project) => {
+    const status = project.agent_status;
+    if (status === 'running') {
+      return <Badge bg="primary">🏃 Running</Badge>;
     }
-    if (project.failed_agents > 0 && project.completed_agents === 0) {
-      return <Badge bg="danger">Failed</Badge>;
+    if (status === 'failed') {
+      return <Badge bg="danger">❌ Failed</Badge>;
     }
-    if (project.awaiting_input > 0) {
-      return <Badge bg="warning">Awaiting Input</Badge>;
-    }
-    if (project.completed_agents > 0 && project.completed_agents === project.total_agents) {
-      // All agents done, but project may need verification
-      return <Badge bg="info">Agents Done</Badge>;
-    }
-    if (project.completed_agents > 0) {
-      return <Badge bg="secondary">Partial</Badge>;
+    if (status === 'completed') {
+      return <Badge bg="success">✓ Done</Badge>;
     }
     return <Badge bg="secondary">Idle</Badge>;
   };
@@ -248,8 +257,8 @@ function ProjectsDashboard({ onViewTimeline }) {
                   <thead>
                     <tr>
                       <th>Project</th>
-                      <th>Status</th>
-                      <th>Stage</th>
+                      <th>Deliverable Status</th>
+                      <th>Agents</th>
                       <th>Progress</th>
                     </tr>
                   </thead>
@@ -270,8 +279,8 @@ function ProjectsDashboard({ onViewTimeline }) {
                             </small>
                           </div>
                         </td>
-                        <td>{getStatusBadge(project)}</td>
-                        <td>{getStageBadge(project.current_stage)}</td>
+                        <td>{getDeliverableStatusBadge(project)}</td>
+                        <td>{getAgentStatusBadge(project)}</td>
                         <td style={{ width: '150px' }}>
                           <ProgressBar
                             now={getCompletionPercentage(project)}
@@ -315,7 +324,7 @@ function ProjectsDashboard({ onViewTimeline }) {
 
                 <Row className="mb-3">
                   <Col sm={6}>
-                    <strong>Status:</strong> {getStatusBadge(selectedProject)}
+                    <strong>Status:</strong> {getDeliverableStatusBadge(selectedProject)}
                   </Col>
                   <Col sm={6}>
                     <strong>Stage:</strong> {getStageBadge(selectedProject.current_stage)}

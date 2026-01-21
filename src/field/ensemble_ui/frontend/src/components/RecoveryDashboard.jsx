@@ -74,10 +74,20 @@ function RecoveryDashboard() {
 
     setActionInProgress(selectedAgent);
     try {
-      const response = await fetch(
-        `${API_BASE}/api/recovery/trigger/${selectedAgent}?strategy=${selectedStrategy}`,
-        { method: 'POST' }
-      );
+      let response;
+      // For simple retry, use the proper restart endpoint that resets iteration to 0
+      if (selectedStrategy === 'retry') {
+        response = await fetch(
+          `${API_BASE}/api/agents/${selectedAgent}/restart?clear_messages=true`,
+          { method: 'POST' }
+        );
+      } else {
+        // For other strategies, use the recovery trigger
+        response = await fetch(
+          `${API_BASE}/api/recovery/trigger/${selectedAgent}?strategy=${selectedStrategy}`,
+          { method: 'POST' }
+        );
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
       if (result.success) {

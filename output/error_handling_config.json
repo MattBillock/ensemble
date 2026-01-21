@@ -1,0 +1,32 @@
+{
+    "error_handling_strategies": {
+        "BadRequestError": {
+            "retry_mechanism": {
+                "max_attempts": 3,
+                "backoff_strategy": "exponential",
+                "initial_backoff_seconds": 1.0
+            },
+            "logging": {
+                "level": "WARNING",
+                "message_template": "BadRequestError on attempt {attempt}: {error_details}"
+            }
+        },
+        "CircuitBreakerOpenError": {
+            "recovery_mechanism": {
+                "failure_threshold": 5,
+                "recovery_time_seconds": 30.0,
+                "states": ["CLOSED", "OPEN", "HALF_OPEN"]
+            },
+            "logging": {
+                "level": "ERROR",
+                "message_template": "Circuit Breaker Open: {error_details}"
+            },
+            "fallback_strategy": "graceful_degradation"
+        }
+    },
+    "global_logging_config": {
+        "log_file_path": "/Users/mattbillock/Development/ai_exploration/ensemble/src/field/ensemble_ui/output/error_handler.log",
+        "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "log_level": "INFO"
+    }
+}

@@ -14,7 +14,7 @@ import {
   clearAgentStates,
   getSwarmPauseStatus,
   toggleSwarmPause,
-  triggerRecovery
+  restartAgent
 } from './services/api';
 import { generateWhimsicalName, getAgentEmoji } from './utils/whimsicalNames';
 
@@ -82,6 +82,9 @@ function App() {
   // YOLO Mode (fully autonomous, no reviews)
   const [yoloMode, setYoloModeState] = useState(false);
 
+  // Dismissed agents (won't reappear after polling)
+  const [dismissedAgents, setDismissedAgents] = useState(new Set());
+
   // Filter state
   const [hideCompleted, setHideCompleted] = useState(false);
   const [activityFilter, setActivityFilter] = useState('all'); // all, spawned, completed, tool_use, error
@@ -112,7 +115,13 @@ function App() {
 
       setActivities(activitiesRes.activities || []);
       setHierarchy(hierarchyRes.hierarchy || {});
-      setAgentStates(statesRes.agent_states || {});
+      // Filter out dismissed agents so they don't reappear
+      const filteredStates = Object.fromEntries(
+        Object.entries(statesRes.agent_states || {}).filter(
+          ([agentId]) => !dismissedAgents.has(agentId)
+        )
+      );
+      setAgentStates(filteredStates);
       setQuestions(questionsRes.questions || {});
       setGeneratedFiles(filesRes.files || []);
       setAppStatus(statusRes);
@@ -185,21 +194,28 @@ function App() {
     }
   };
 
-  // Retry a failed agent
+  // Retry a failed agent - properly restarts the job with iteration=0
   const handleRetryAgent = async (agentId) => {
     try {
-      await triggerRecovery(agentId, 'retry');
+      const result = await restartAgent(agentId, { clearMessages: true });
+      if (result.success) {
+        console.log(`Successfully restarted agent ${agentId}`);
+      } else {
+        throw new Error(result.error || 'Unknown error');
+      }
       await fetchActivityData();
     } catch (err) {
       console.error(`Failed to retry agent ${agentId}:`, err);
-      setError(`Failed to retry agent`);
+      setError(`Failed to retry agent: ${err.message}`);
     }
   };
 
-  // Delete a single agent from the UI state
+  // Delete a single agent from the UI state (persists across polls)
   const handleDeleteAgent = async (agentId) => {
     try {
-      // Clear just this agent by filtering it out locally
+      // Add to dismissed set so it won't reappear on next poll
+      setDismissedAgents(prev => new Set([...prev, agentId]));
+      // Also remove from current state immediately
       setAgentStates(prev => {
         const updated = { ...prev };
         delete updated[agentId];
