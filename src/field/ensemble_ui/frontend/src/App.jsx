@@ -17,6 +17,7 @@ import {
   restartAgent
 } from './services/api';
 import { generateWhimsicalName, getAgentEmoji } from './utils/whimsicalNames';
+import ThemeSwitcher from './components/ThemeSwitcher';
 
 // Core components loaded immediately (used in main view)
 import ActivityFeed from './components/ActivityFeed';
@@ -309,11 +310,11 @@ function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#1a1d29' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg-secondary)' }}>
       {/* Header */}
       <div style={{
-        backgroundColor: '#242836',
-        borderBottom: '1px solid #3a3f52',
+        backgroundColor: 'var(--color-bg-tertiary)',
+        borderBottom: '1px solid var(--color-border-primary)',
         padding: '12px 0'
       }}>
         <Container fluid>
@@ -321,7 +322,7 @@ function App() {
             <Col>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <h4 style={{ margin: 0, color: '#e4e6eb' }}>🎭 Ensemble AI</h4>
+                  <h4 style={{ margin: 0, color: 'var(--color-text-secondary)' }}>🎭 Ensemble AI</h4>
                   <Badge bg={appStatus.status === 'running' ? 'success' : 'secondary'}>
                     {appStatus.status === 'running' ? 'Online' : 'Connecting...'}
                   </Badge>
@@ -346,25 +347,25 @@ function App() {
                     >
                       🎯 Command Center
                     </Dropdown.Toggle>
-                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                    <Dropdown.Menu style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)' }}>
                       <Dropdown.Item
                         onClick={() => setCurrentView('main')}
                         active={currentView === 'main'}
-                        style={{ color: currentView === 'main' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'main' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         🎭 Activity
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('recovery')}
                         active={currentView === 'recovery'}
-                        style={{ color: currentView === 'recovery' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'recovery' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         🔧 Recovery
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('review')}
                         active={currentView === 'review'}
-                        style={{ color: currentView === 'review' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'review' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         📋 Pending Review
                       </Dropdown.Item>
@@ -380,32 +381,32 @@ function App() {
                     >
                       📊 Insights
                     </Dropdown.Toggle>
-                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                    <Dropdown.Menu style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)' }}>
                       <Dropdown.Item
                         onClick={() => setCurrentView('timeline')}
                         active={currentView === 'timeline'}
-                        style={{ color: currentView === 'timeline' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'timeline' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         ⏱️ Timeline
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('metrics')}
                         active={currentView === 'metrics'}
-                        style={{ color: currentView === 'metrics' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'metrics' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         📈 Metrics
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('agentstats')}
                         active={currentView === 'agentstats'}
-                        style={{ color: currentView === 'agentstats' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'agentstats' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         🤖 Agent Stats
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('costs')}
                         active={currentView === 'costs'}
-                        style={{ color: currentView === 'costs' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'costs' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         💰 Costs
                       </Dropdown.Item>
@@ -421,18 +422,18 @@ function App() {
                     >
                       📦 Deliverables
                     </Dropdown.Toggle>
-                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                    <Dropdown.Menu style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)' }}>
                       <Dropdown.Item
                         onClick={() => setCurrentView('projects')}
                         active={currentView === 'projects'}
-                        style={{ color: currentView === 'projects' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'projects' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         📁 Projects
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('completed')}
                         active={currentView === 'completed'}
-                        style={{ color: currentView === 'completed' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'completed' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         ✅ Completed Work
                       </Dropdown.Item>
@@ -448,25 +449,25 @@ function App() {
                     >
                       🧪 Growth Lab
                     </Dropdown.Toggle>
-                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                    <Dropdown.Menu style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)' }}>
                       <Dropdown.Item
                         onClick={() => setCurrentView('improve')}
                         active={currentView === 'improve'}
-                        style={{ color: currentView === 'improve' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'improve' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         🔄 Self-Improve
                       </Dropdown.Item>
                       <Dropdown.Item
                         onClick={() => setCurrentView('achievements')}
                         active={currentView === 'achievements'}
-                        style={{ color: currentView === 'achievements' ? '#fff' : '#e4e6eb' }}
+                        style={{ color: currentView === 'achievements' ? '#fff' : 'var(--color-text-secondary)' }}
                       >
                         🏆 Achievements
                       </Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
 
-                  <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', marginRight: '4px' }}>Refresh:</span>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '500', marginRight: '4px' }}>Refresh:</span>
                   <ButtonGroup size="sm">
                     <Button
                       variant={pollInterval === 2000 && !isUIUpdatesPaused ? 'primary' : 'outline-light'}
@@ -522,11 +523,12 @@ function App() {
                   >
                     {yoloMode ? '🔥 YOLO ON' : '💀 YOLO'}
                   </Button>
+                  <ThemeSwitcher />
                   <Dropdown>
                     <Dropdown.Toggle variant="outline-secondary" size="sm" id="clear-dropdown">
                       🧹 Clear
                     </Dropdown.Toggle>
-                    <Dropdown.Menu style={{ backgroundColor: '#1a1d29', border: '1px solid #3a3f52' }}>
+                    <Dropdown.Menu style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-primary)' }}>
                       <Dropdown.Item
                         onClick={() => handleClearByStatus('completed')}
                         style={{ color: '#10b981' }}
@@ -626,9 +628,9 @@ function App() {
                       onChange={(e) => setProblemInput(e.target.value)}
                       placeholder="Describe what you want to build..."
                       style={{
-                        backgroundColor: '#1a1d29',
-                        color: '#e4e6eb',
-                        border: '1px solid #3a3f52',
+                        backgroundColor: 'var(--color-bg-secondary)',
+                        color: 'var(--color-text-secondary)',
+                        border: '1px solid var(--color-border-primary)',
                         fontSize: '13px'
                       }}
                     />
@@ -640,9 +642,9 @@ function App() {
                       value={budgetTier}
                       onChange={(e) => setBudgetTier(e.target.value)}
                       style={{
-                        backgroundColor: '#1a1d29',
-                        color: '#e4e6eb',
-                        border: '1px solid #3a3f52',
+                        backgroundColor: 'var(--color-bg-secondary)',
+                        color: 'var(--color-text-secondary)',
+                        border: '1px solid var(--color-border-primary)',
                         fontSize: '13px'
                       }}
                     >
@@ -731,7 +733,7 @@ function App() {
                     onChange={(e) => setActivityFilter(e.target.value)}
                     style={{
                       backgroundColor: '#1a1d29',
-                      color: '#e4e6eb',
+                      color: 'var(--color-text-secondary)',
                       border: '1px solid #3a3f52',
                       fontSize: '12px'
                     }}
@@ -822,9 +824,9 @@ function App() {
                       style={{
                         marginBottom: '12px',
                         padding: '12px',
-                        backgroundColor: '#1a1d29',
+                        backgroundColor: 'var(--color-bg-secondary)',
                         borderRadius: '4px',
-                        border: '1px solid #3a3f52'
+                        border: '1px solid var(--color-border-primary)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -849,7 +851,7 @@ function App() {
                         </Badge>
                       </div>
 
-                      <div style={{ fontSize: '12px', color: '#e4e6eb', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
                         {state.current_task || 'Working...'}
                       </div>
 
